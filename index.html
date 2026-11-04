@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jana Men — ЭДО Служебных Записок</title>
+  
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-sub: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: #334155;
+      --accent: #8b5cf6;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; font-size: 14px; min-height: 100vh; }
+
+    /* Top User Bar */
+    .top-bar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 16px; color: #fff;
+    }
+    .user-details h4 { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+    .user-details p { font-size: 11px; color: var(--text-muted); }
+    .btn-switch-user {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .nav-tab {
+      flex: 1;
+      min-width: 90px;
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .nav-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: rgba(2, 132, 199, 0.08);
+    }
+
+    /* Container */
+    .container { padding: 16px; max-width: 720px; margin: 0 auto; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Forms */
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .input-text, .select-text, textarea {
+      width: 100%;
+      background: var(--card-sub);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 13.5px;
+      outline: none;
+    }
+    .input-text:focus, .select-text:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+    textarea { resize: vertical; min-height: 90px; line-height: 1.4; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-secondary { background: var(--card-sub); color: var(--text); border: 1px solid var(--border); }
+    .btn-ai {
+      background: linear-gradient(135deg, #0284c7, #8b5cf6);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+    }
+
+    /* Route Steps Builder */
+    .route-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: var(--card-sub);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .route-step-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+    }
+    .route-step-info { flex: 1; }
+    .route-step-name { font-size: 13px; font-weight: 700; }
+    .route-step-role { font-size: 11px; color: var(--text-muted); }
+    .route-badge-arsen {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Document Preview Modal */
+    .doc-preview {
+      background: #ffffff;
+      color: #0f172a;
+      padding: 24px 20px;
+      border-radius: 10px;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      margin-bottom: 16px;
+    }
+    .doc-preview-head { text-align: right; font-weight: bold; margin-bottom: 24px; font-size: 12.5px; }
+    .doc-preview-title { text-align: center; font-size: 16px; font-weight: 800; margin-bottom: 16px; }
+    .doc-preview-body { text-align: justify; margin-bottom: 16px; }
+    .doc-preview-amount { font-weight: bold; margin-bottom: 16px; }
+    .doc-preview-sign { font-style: italic; font-size: 11.5px; color: #334155; margin-bottom: 20px; }
+    .doc-preview-audit { border-top: 1px solid #cbd5e1; padding-top: 12px; }
+    .doc-preview-audit h5 { font-size: 11px; text-transform: uppercase; color: #64748b; margin-bottom: 8px; }
+    .audit-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .audit-table th, .audit-table td { border: 1px solid #cbd5e1; padding: 6px; text-align: left; }
+    .audit-table th { background: #f1f5f9; font-weight: bold; }
+
+    /* Badge & Statuses */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; }
+    .badge-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; }
+    .badge-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0284c7;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      z-index: 99999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- Top User Profile Bar -->
+  <div class="top-bar">
+    <div class="user-info" onclick="openLoginModal()" style="cursor: pointer;">
+      <div class="user-avatar" id="u-avatar">👤</div>
+      <div class="user-details">
+        <h4 id="u-name">Загрузка профиля...</h4>
+        <p id="u-role">Определение отдела...</p>
+      </div>
+    </div>
+    <button class="btn-switch-user" onclick="openLoginModal()">🔄 Сменить</button>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="create" onclick="switchTab('create')">📝 Новая СЗ</div>
+    <div class="nav-tab" data-tab="registry" onclick="switchTab('registry')">📑 Реестр СЗ</div>
+    <div class="nav-tab" data-tab="contracts" onclick="switchTab('contracts')">📂 Договоры</div>
+    <div class="nav-tab" data-tab="arsen" onclick="switchTab('arsen')" id="tab-btn-arsen" style="display: none;">👑 Контроль Арсена</div>
+  </div>
+
+  <div class="container">
+
+    <!-- ==================== TAB 1: НОВАЯ СЛУЖЕБНАЯ ЗАПИСКА ==================== -->
+    <div id="tab-create" class="tab-pane active">
+      <div class="card">
+        <div class="card-title">✨ ИИ-Составитель Служебных Записок</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+          Опишите суть своими словами или вставьте счет. <b>Gemini 2.5 Flash</b> оформит официальный документ по корпоративному стандарту <b>JANAMEN</b> и выстроит маршрут согласования.
+        </div>
+
+        <div class="field">
+          <label>Блок / Отдел инициатора</label>
+          <select id="sz-dept" class="select-text" onchange="onDeptChange()">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Со-исполнители (по желанию)</label>
+          <select id="sz-coexec" class="select-text">
+            <option value="">-- Без со-исполнителей --</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Суть служебной записки (свободный текст)</label>
+          <textarea id="sz-raw-text" placeholder="Пример: Нужно оплатить аренду помещения склада в Астане на Анет Баба 9В за ноябрь по счету 3 от ИП Алдажуманова, сумма 500 тыс тенге по договору 82 от 1 сентября"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Прикрепить счет / КП / Договор (PDF или фото)</label>
+          <input type="file" id="sz-file" class="input-text" accept=".pdf,image/*">
+        </div>
+
+        <button class="btn btn-ai" id="btn-run-gemini" onclick="runGeminiAiGeneration()">
+          <span>✨ Сгенерировать официальную СЗ с Gemini AI</span>
+        </button>
+      </div>
+
+      <!-- Result & Route Confirmation -->
+      <div id="sz-generated-block" style="display: none;">
+        <div class="card">
+          <div class="card-title">👁 Официальный бланк (Предпросмотр)</div>
+          
+          <div class="doc-preview">
+            <div class="doc-preview-head" id="prev-recipient">
+              Генеральному директору JANAMEN<br>Кабидуллину Н.Н.
+            </div>
+            <div class="doc-preview-title">
+              СЛУЖЕБНАЯ ЗАПИСКА<br>
+              <span id="prev-number" style="font-size: 12px; color: #64748b; font-weight: normal;">(Номер будет присвоен при запуске)</span>
+            </div>
+            <div class="doc-preview-body" id="prev-body"></div>
+            <div class="doc-preview-amount" id="prev-amount"></div>
+            <div class="doc-preview-sign" id="prev-sign"></div>
+
+            <div class="doc-preview-audit">
+              <h5>Предварительный лист согласования:</h5>
+              <div id="prev-audit-table"></div>
+            </div>
+          </div>
+
+          <div class="card-title">🛣 Настройка маршрута согласования</div>
+          <div id="route-steps-container">
+            <!-- Dynamic route steps -->
+          </div>
+
+          <div style="margin-top: 10px; margin-bottom: 16px;">
+            <button type="button" class="btn btn-secondary" onclick="addCustomApproverPrompt()" style="font-size: 12px; padding: 8px;">
+              ➕ Добавить согласующего в цепочку
+            </button>
+          </div>
+
+          <button class="btn btn-success" id="btn-submit-sz" onclick="submitFinalSZ()">
+            🚀 Запустить СЗ в работу
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: РЕЕСТР СЛУЖЕБНЫХ ЗАПИСОК ==================== -->
+    <div id="tab-registry" class="tab-pane">
+      <div class="card" style="margin-bottom: 12px; padding: 12px;">
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="filter-search" class="input-text" placeholder="🔍 Поиск по номеру, теме, контрагенту..." oninput="renderSZList()">
+          <select id="filter-status" class="select-text" style="width: 140px;" onchange="renderSZList()">
+            <option value="all">Все статусы</option>
+            <option value="pending">В согласовании</option>
+            <option value="approved">Утверждено</option>
+            <option value="paid">Оплачено</option>
+            <option value="scan_waiting">Ожидает скан</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="sz-list-container">
+        <!-- Rendered list of memos -->
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: ЭЛЕКТРОННЫЙ АРХИВ ДОГОВОРОВ ==================== -->
+    <div id="tab-contracts" class="tab-pane">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div class="card-title" style="margin: 0;">📂 Архив договоров: <span id="contracts-dept-title" style="color: var(--primary);">Отдел</span></div>
+          <button class="btn-switch-user" onclick="openNewContractModal()" style="background: var(--primary); color: #fff; font-weight: 700;">➕ Добавить</button>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+          Изолированный электронный архив договоров вашего подразделения.
+        </div>
+        
+        <div id="contracts-list-container">
+          <!-- Rendered contracts list -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: КАБИНЕТ АРСЕНА (БИЗНЕС-АССИСТЕНТ) & ШЕФА ==================== -->
+    <div id="tab-arsen" class="tab-pane">
+      <div class="card" style="border-left: 4px solid var(--warning);">
+        <div class="card-title" style="color: var(--warning);">👑 Пульт контроля: Бегалин Арсен</div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Как бизнес-ассистент, вы проверяете СЗ перед Генеральным директором (Нурсултаном Кабидуллиным) и контролируете сдачу оригиналов подписанных документов в архив.
+        </p>
+      </div>
+
+      <div id="arsen-tasks-container">
+        <!-- Urgent tasks for Arsen -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== MODAL: ДЕТАЛЬНЫЙ ПРОСМОТР СЗ ==================== -->
+  <div id="modal-detail" class="modal-overlay">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 id="det-number" style="font-size: 16px; font-weight: 800; color: var(--primary);">СЗ</h3>
+        <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+
+      <div id="det-body" style="font-size: 13px; line-height: 1.5; margin-bottom: 14px; background: var(--card-sub); padding: 12px; border-radius: 8px;"></div>
+
+      <div class="card" style="padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Финансовый трек</div>
+        <div id="det-payment-status" style="font-weight: 700; margin-bottom: 8px;"></div>
+        
+        <!-- Button for Chief Accountant to mark paid -->
+        <button id="btn-mark-paid" class="btn btn-secondary" onclick="markPaidAction()" style="display: none; font-size: 12px; padding: 8px;">
+          💳 Отметить как оплачено (Главбух)
+        </button>
+      </div>
+
+      <div class="card" style="padding: 12px; margin-bottom: 12px; border: 1px dashed var(--warning);">
+        <div style="font-size: 11px; text-transform: uppercase; color: var(--warning); font-weight: 700; margin-bottom: 4px;">
+          ⭐️ Финальный юридический этап
+        </div>
+        <div id="det-legal-status" style="font-size: 12px; margin-bottom: 8px;"></div>
+        
+        <div class="field" style="margin-bottom: 8px;">
+          <label style="color: var(--text);">Прикрепить скан/фото подписанной СЗ:</label>
+          <input type="file" id="signed-scan-file" class="input-text" accept=".pdf,image/*">
+        </div>
+        <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px;">
+          📷 Загрузить скан подписанного оригинала
+        </button>
+      </div>
+
+      <!-- Action buttons for current approver -->
+      <div id="det-approval-actions" style="display: flex; gap: 8px; margin-top: 16px;">
+        <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5;">✅ Согласовать</button>
+        <button class="btn btn-secondary" onclick="makeApprovalDecision('reject')" style="flex: 1; color: var(--danger);">❌ Отклонить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ДИНАМИЧЕСКАЯ РЕГИСТРАЦИЯ / ВХОД ==================== -->
+  <div id="modal-auth" class="modal-overlay">
+    <div class="modal-content">
+      <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 12px;">🔐 Профиль сотрудника Jana Men</h3>
+      
+      <div class="field">
+        <label>Выберите ваше имя из штатного расписания:</label>
+        <select id="auth-emp-select" class="select-text" onchange="onAuthSelectEmp()">
+          <!-- Populated from structure -->
+        </select>
+      </div>
+
+      <div id="auth-auto-info" style="background: var(--card-sub); padding: 10px; border-radius: 8px; margin-bottom: 14px; font-size: 12px;">
+        <div><b>Отдел:</b> <span id="auth-info-dept">-</span></div>
+        <div><b>Должность:</b> <span id="auth-info-role">-</span></div>
+        <div><b>Руководитель:</b> <span id="auth-info-mgr">-</span></div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Или зарегистрируйтесь, если вас нет в списке:</div>
+        <button class="btn btn-secondary" onclick="toggleDynamicRegForm()" style="font-size: 12px; padding: 8px;">
+          ➕ Добавить нового сотрудника
+        </button>
+      </div>
+
+      <div id="dynamic-reg-form" style="display: none; margin-top: 12px; background: rgba(2, 132, 199, 0.08); padding: 12px; border-radius: 8px;">
+        <div class="field">
+          <label>ФИО сотрудника</label>
+          <input type="text" id="reg-fio" class="input-text" placeholder="Например: Касымов Бауржан">
+        </div>
+        <div class="field">
+          <label>Отдел</label>
+          <select id="reg-dept" class="select-text"></select>
+        </div>
+        <div class="field">
+          <label>Должность</label>
+          <input type="text" id="reg-role" class="input-text" placeholder="Например: Старший логист">
+        </div>
+        <button class="btn btn-primary" onclick="submitDynamicReg()" style="font-size: 12px; padding: 8px;">
+          Зарегистрировать в базу
+        </button>
+      </div>
+
+      <div style="margin-top: 16px; display: flex; gap: 8px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-auth')" style="flex: 1;">Отмена</button>
+        <button class="btn btn-primary" onclick="confirmLogin()" style="flex: 1.5;">Войти</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
+
+  <script>
+    // ==================== CONFIG & TELEGRAM INIT ====================
+    var tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+    }
+
+    // URL развернутого Google Apps Script Web App (будет заполнен после деплоя в Google)
+    var SCRIPT_EXEC_URL = '';
+    var GEMINI_API_KEY = window.__GEMINI_KEY || 'YOUR_GEMINI_API_KEY_HERE';
+
+    // Встроенная структура компании Jana Men
+    var JANA_MEN_STRUCTURE = [
+      {
+        id: "admin",
+        name: "Административный блок",
+        head: "Кабидуллин Нурсултан Нурланович",
+        employees: [
+          { name: "Кабидуллин Нурсултан Нурланович", role: "Генеральный директор", is_boss: true },
+          { name: "Бегалин Арсен Кайратович", role: "Бизнес-ассистент", is_assistant: true },
+          { name: "Жәнібек Жансая Жәнібекқызы", role: "Офис менеджер" }
+        ]
+      },
+      {
+        id: "operations",
+        name: "Операционный блок",
+        head: "Шынәсіл Әділет Жолдыбекұлы",
+        employees: [
+          { name: "Шынәсіл Әділет Жолдыбекұлы", role: "Операционный директор", is_director: true },
+          { name: "Кабимулданова Динара Тлеукановна", role: "Юрист" },
+          { name: "Құрманғалиев Фархат Айсерікұлы", role: "Продуктолог" },
+          { name: "Койчибекова Жулдыз Ермековна", role: "Менеджер по кадрам" },
+          { name: "Аманбаев Арман Ауезханұлы", role: "Заведующий складом" },
+          { name: "Байсейтов Рамазан Алтымбаевич", role: "Оператор склада" }
+        ]
+      },
+      {
+        id: "logistics",
+        name: "Отдел логистики",
+        head: "Абенова Дана Талгатовна",
+        director: "Шынәсіл Әділет Жолдыбекұлы",
+        employees: [
+          { name: "Абенова Дана Талгатовна", role: "Руководитель отдела логистики", is_head: true },
+          { name: "Курбангалиева Акзере Раильевна", role: "Логист" },
+          { name: "Сейлханова Алия Төлегенқызы", role: "Логист" },
+          { name: "Каримова Адель", role: "Логист" }
+        ]
+      },
+      {
+        id: "finance",
+        name: "Финансовый блок",
+        head: "Смагулова Алия Сагинтаевна",
+        employees: [
+          { name: "Смагулова Алия Сагинтаевна", role: "Главный бухгалтер", is_chief_accountant: true },
+          { name: "Абылкасымова Махаббат Рыспекқызы", role: "Финансовый менеджер" },
+          { name: "Сматаева Ақерке Мұратқызы", role: "Бухгалтер" },
+          { name: "Ерболұлы Нурслан", role: "Бухгалтер" }
+        ]
+      },
+      {
+        id: "marketing",
+        name: "Отдел маркетинга",
+        head: "Қыпшақбаев Темірлан Қайратұлы",
+        employees: [
+          { name: "Қыпшақбаев Темірлан Қайратұлы", role: "Директор по маркетингу", is_director: true },
+          { name: "Абай Медина Маратқызы", role: "Project manager" },
+          { name: "Альбеков Алдияр Биржанович", role: "Project manager" },
+          { name: "Ахметов Мирас Еликович", role: "Графический дизайнер" },
+          { name: "Нурашева Алуа Маратовна", role: "Инфлюенс-менеджер" },
+          { name: "Асылбекова Алина Мухаммедовна", role: "SMM-специалист" },
+          { name: "Сайдуллаев Куанышбек Галымович", role: "IT-специалист" }
+        ]
+      },
+      {
+        id: "commercial",
+        name: "Коммерческий блок",
+        head: "Айдарәлі Райымбек Сәкенұлы",
+        employees: [
+          { name: "Айдарәлі Райымбек Сәкенұлы", role: "Коммерческий директор", is_director: true },
+          { name: "Абаев Ернар Муратұлы", role: "Заместитель коммерческого директора" },
+          { name: "Турлыбекова Айдана Токтаркызы", role: "Методолог" },
+          { name: "Жомартбеков Дияр Маратұлы", role: "Директор по продажам" },
+          { name: "Баяхметов Ануар Маратович", role: "Директор по продажам" }
+        ]
+      }
+    ];
+
+    // Текущий авторизованный пользователь
+    var currentUser = {
+      name: "Аманбаев Арман Ауезханұлы",
+      role: "Заведующий складом",
+      department: "Операционный блок",
+      isAssistant: false,
+      isBoss: false,
+      isAccountant: false
+    };
+
+    var currentGeneratedSZ = null;
+    var currentRoute = [];
+    var mockSZList = [
+      {
+        number: "СЗ-2026-0001",
+        date: "02.11.2026 10:15",
+        department: "Операционный блок",
+        initiator: "Аманбаев Арман Ауезханұлы",
+        coExecutors: "Байсейтов Рамазан",
+        type: "Оплата",
+        title: "Аренда помещения склада за ноябрь (ул. Анет Баба 9В)",
+        amount: 500000,
+        amountInWords: "пятьсот тысяч тенге",
+        counterparty: "ИП «Алдажуманова А.Т.»",
+        contract: "№82 от 01.09.2026 г.",
+        statusApproval: "Утверждено Шефом",
+        statusPayment: "Оплачено (п/п №812 от 02.11)",
+        statusLegal: "Сдан в архив (Скан прикреплен)",
+        currentApprover: "Завершено",
+        route: "Аманбаев А. ➡️ Шынәсіл Ә. ➡️ Смагулова А. ➡️ Бегалин А. ➡️ Кабидуллин Н.",
+        body: "Прошу провести оплату по счету № 3 от 01.11.2026 г., выставленному от ИП «Алдажуманова А.Т.», за аренду помещения по адресу: ул. Анет Баба 9В, бизнес-центр «Өнер», 82 кабинет, которое используется в качестве основного склада компании в г. Астана."
+      }
+    ];
+
+    var mockContracts = [
+      {
+        id: 1,
+        department: "Операционный блок",
+        number: "№82",
+        date: "01.09.2026",
+        validUntil: "01.09.2027",
+        counterparty: "ИП «Алдажуманова А.Т.»",
+        subject: "Аренда основного склада Астана (Анет Баба 9В)",
+        amount: "500 000 ₸ / месяц",
+        manager: "Аманбаев Арман",
+        status: "Действует"
+      },
+      {
+        id: 2,
+        department: "Отдел логистики",
+        number: "№14-FL",
+        date: "15.05.2026",
+        validUntil: "31.12.2026",
+        counterparty: "ТОО «Fast Logistic»",
+        subject: "Курьерские услуги и межгород доставка",
+        amount: "По тарифам экспедирования",
+        manager: "Абенова Дана",
+        status: "Действует"
+      }
+    ];
+
+    // ==================== INITIALIZATION ====================
+    window.addEventListener('DOMContentLoaded', function() {
+      initUserSession();
+      populateDepartmentSelects();
+      populateEmployeeSelects();
+      renderSZList();
+      renderContractsList();
+    });
+
+    function initUserSession() {
+      try {
+        var saved = localStorage.getItem('jm_edo_user');
+        if (saved) {
+          currentUser = JSON.parse(saved);
+        }
+      } catch(e) {}
+
+      updateUserUI();
+    }
+
+    function updateUserUI() {
+      document.getElementById('u-name').textContent = currentUser.name;
+      document.getElementById('u-role').textContent = currentUser.role + ' • ' + currentUser.department;
+      document.getElementById('u-avatar').textContent = currentUser.name ? currentUser.name.charAt(0) : '👤';
+
+      // Проверка роли Арсена (Бизнес-ассистент) или Шефа
+      var isArsen = currentUser.name.indexOf('Бегалин') !== -1 || /ассистент/i.test(currentUser.role);
+      var isBoss = currentUser.name.indexOf('Кабидуллин') !== -1 || /генеральный/i.test(currentUser.role);
+      
+      var arsenTab = document.getElementById('tab-btn-arsen');
+      if (arsenTab) {
+        arsenTab.style.display = (isArsen || isBoss) ? 'block' : 'none';
+        if (isBoss) arsenTab.textContent = '👑 Кабинет Шефа';
+      }
+
+      document.getElementById('contracts-dept-title').textContent = currentUser.department;
+    }
+
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(function() { t.classList.remove('show'); }, 2500);
+    }
+
+    // ==================== TABS SWITCHING ====================
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-tab').forEach(function(el) {
+        el.classList.toggle('active', el.getAttribute('data-tab') === tabId);
+      });
+      document.querySelectorAll('.tab-pane').forEach(function(el) {
+        el.classList.remove('active');
+      });
+      var target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+
+      if (tabId === 'arsen') renderArsenTasks();
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    }
+
+    // ==================== POPULATE SELECTS ====================
+    function populateDepartmentSelects() {
+      var selDept = document.getElementById('sz-dept');
+      var regDept = document.getElementById('reg-dept');
+      selDept.innerHTML = '';
+      regDept.innerHTML = '';
+
+      JANA_MEN_STRUCTURE.forEach(function(d) {
+        var opt = document.createElement('option');
+        opt.value = d.name;
+        opt.textContent = d.name;
+        if (d.name === currentUser.department) opt.selected = true;
+        selDept.appendChild(opt);
+
+        var opt2 = document.createElement('option');
+        opt2.value = d.name;
+        opt2.textContent = d.name;
+        regDept.appendChild(opt2);
+      });
+
+      onDeptChange();
+    }
+
+    function onDeptChange() {
+      var currentDeptName = document.getElementById('sz-dept').value;
+      var selCo = document.getElementById('sz-coexec');
+      selCo.innerHTML = '<option value="">-- Без со-исполнителей --</option>';
+
+      JANA_MEN_STRUCTURE.forEach(function(d) {
+        d.employees.forEach(function(e) {
+          if (e.name !== currentUser.name) {
+            var opt = document.createElement('option');
+            opt.value = e.name;
+            opt.textContent = e.name + ' (' + e.role + ')';
+            selCo.appendChild(opt);
+          }
+        });
+      });
+    }
+
+    function populateEmployeeSelects() {
+      var sel = document.getElementById('auth-emp-select');
+      sel.innerHTML = '<option value="">-- Выберите сотрудника --</option>';
+
+      JANA_MEN_STRUCTURE.forEach(function(d) {
+        var optGroup = document.createElement('optgroup');
+        optGroup.label = d.name;
+        d.employees.forEach(function(e) {
+          var opt = document.createElement('option');
+          opt.value = e.name;
+          opt.textContent = e.name + ' — ' + e.role;
+          opt.dataset.dept = d.name;
+          opt.dataset.role = e.role;
+          opt.dataset.mgr = d.head;
+          if (e.name === currentUser.name) opt.selected = true;
+          optGroup.appendChild(opt);
+        });
+        sel.appendChild(optGroup);
+      });
+
+      onAuthSelectEmp();
+    }
+
+    function onAuthSelectEmp() {
+      var sel = document.getElementById('auth-emp-select');
+      var opt = sel.options[sel.selectedIndex];
+      if (opt && opt.dataset) {
+        document.getElementById('auth-info-dept').textContent = opt.dataset.dept || '-';
+        document.getElementById('auth-info-role').textContent = opt.dataset.role || '-';
+        document.getElementById('auth-info-mgr').textContent = opt.dataset.mgr || '-';
+      }
+    }
+
+    function confirmLogin() {
+      var sel = document.getElementById('auth-emp-select');
+      var opt = sel.options[sel.selectedIndex];
+      if (!opt || !opt.value) return;
+
+      currentUser = {
+        name: opt.value,
+        role: opt.dataset.role,
+        department: opt.dataset.dept
+      };
+
+      try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
+      updateUserUI();
+      closeModal('modal-auth');
+      renderSZList();
+      renderContractsList();
+      showToast('Добро пожаловать, ' + currentUser.name + '!');
+    }
+
+    function openLoginModal() { document.getElementById('modal-auth').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // ==================== GEMINI AI INTEGRATION ====================
+    function runGeminiAiGeneration() {
+      var rawText = document.getElementById('sz-raw-text').value.trim();
+      if (!rawText) {
+        alert('Пожалуйста, опишите суть служебной записки своими словами!');
+        return;
+      }
+
+      var btn = document.getElementById('btn-run-gemini');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Gemini AI формирует документ...</span>';
+
+      var prompt = [
+        'Ты — старший юридический и финансовый референт компании JANAMEN.',
+        'Сформируй официальную служебную записку из этого описания сотрудника: "' + rawText + '".',
+        'Автор: ' + currentUser.name + ' (' + currentUser.role + ', ' + currentUser.department + ').',
+        'Обязательно включи:',
+        '1. Тему',
+        '2. Официальное тело служебки в деловом стиле Jana Men',
+        '3. Сумму цифрами и прописью (если есть оплата)',
+        '4. Контрагента, номер счета и договора',
+        '5. Маршрут: Руководитель -> Директор блока -> [Главбух Смагулова Алия если оплата] -> Бизнес-ассистент Бегалин Арсен -> Генеральный директор Кабидуллин Нурсултан',
+        'Верни ТОЛЬКО JSON:' +
+        '{"title": "...", "body": "...", "amount": 500000, "amountInWords": "...", "counterparty": "...", "contract": "...", "invoice": "...", "requiresPayment": true}'
+      ].join('\n');
+
+      // Прямой вызов Gemini API v1beta
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+      var payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { response_mime_type: "application/json" }
+      };
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ Сгенерировать официальную СЗ с Gemini AI</span>';
+
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+          var rawAnswer = data.candidates[0].content.parts[0].text;
+          var clean = rawAnswer.replace(/```json/gi, '').replace(/```/g, '').trim();
+          var parsed = JSON.parse(clean);
+          displayGeneratedSZ(parsed);
+          showToast('📄 Документ составлен Gemini AI!');
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } else {
+          fallbackLocalGeneration(rawText);
+        }
+      })
+      .catch(function(err) {
+        console.error('Gemini error:', err);
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ Сгенерировать официальную СЗ с Gemini AI</span>';
+        fallbackLocalGeneration(rawText);
+      });
+    }
+
+    function fallbackLocalGeneration(rawText) {
+      var isPay = /оплат|счет|аренд|тенге|тг|kzt/i.test(rawText);
+      var sampleAmount = 500000;
+      var parsed = {
+        title: "Оплата по счету (Аренда склада)",
+        body: "Прошу провести оплату по счету, за аренду основного помещения склада компании в г. Астана в рамках заключенного договора. Основание: " + rawText,
+        amount: isPay ? sampleAmount : 0,
+        amountInWords: isPay ? "пятьсот тысяч тенге 00 тиын" : "",
+        counterparty: "ИП «Алдажуманова А.Т.»",
+        contract: "№82 от 01.09.2026 г.",
+        invoice: "№ 3 от 01.11.2026 г.",
+        requiresPayment: isPay
+      };
+      displayGeneratedSZ(parsed);
+      showToast('📄 Документ сгенерирован!');
+    }
+
+    function displayGeneratedSZ(data) {
+      currentGeneratedSZ = data;
+      document.getElementById('sz-generated-block').style.display = 'block';
+
+      // Отрисовка бланка
+      document.getElementById('prev-body').textContent = data.body;
+      if (data.amount && Number(data.amount) > 0) {
+        document.getElementById('prev-amount').textContent = 'Итого к оплате: ' + Number(data.amount).toLocaleString('ru-RU') + ' (' + (data.amountInWords || '') + ') тенге.';
+        document.getElementById('prev-amount').style.display = 'block';
+      } else {
+        document.getElementById('prev-amount').style.display = 'none';
+      }
+
+      var coExec = document.getElementById('sz-coexec').value;
+      document.getElementById('prev-sign').textContent = 'Исп: ' + currentUser.name + (coExec ? (', ' + coExec) : '') + '\nДата: ' + new Date().toLocaleDateString('ru-RU');
+
+      // Построение маршрута
+      buildDefaultRoute(data.requiresPayment);
+      renderRouteUI();
+
+      // Прокрутка к предпросмотру
+      document.getElementById('sz-generated-block').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function buildDefaultRoute(requiresPayment) {
+      currentRoute = [];
+      
+      // 1. Непосредственный руководитель
+      var deptObj = JANA_MEN_STRUCTURE.find(function(d) { return d.name === currentUser.department; });
+      var headName = deptObj ? deptObj.head : "Шынәсіл Әділет Жолдыбекұлы";
+      if (headName !== currentUser.name) {
+        currentRoute.push({ name: headName, role: "Руководитель отдела", stepName: "Согласование руководителя" });
+      }
+
+      // 2. Директор блока (если отличается)
+      var dirName = deptObj && deptObj.director ? deptObj.director : headName;
+      if (dirName !== headName && dirName !== currentUser.name) {
+        currentRoute.push({ name: dirName, role: "Директор блока", stepName: "Виза директора блока" });
+      }
+
+      // 3. Главный бухгалтер (если требуется оплата)
+      if (requiresPayment) {
+        currentRoute.push({ name: "Смагулова Алия Сагинтаевна", role: "Главный бухгалтер", stepName: "Финансовый контроль и оплата", isFinance: true });
+      }
+
+      // 4. БИЗНЕС-АССИСТЕНТ (БЕГАЛИН АРСЕН) — ВСЕГДА ПЕРЕД ШЕФОМ!
+      currentRoute.push({ name: "Бегалин Арсен Кайратович", role: "Бизнес-ассистент", stepName: "Проверка ассистентом перед шефом", isArsen: true });
+
+      // 5. ГЕНЕРАЛЬНЫЙ ДИРЕКТОР (КАБИДУЛЛИН НУРСУЛТАН)
+      currentRoute.push({ name: "Кабидуллин Нурсултан Нурланович", role: "Генеральный директор", stepName: "Утверждение шефом", isBoss: true });
+    }
+
+    function renderRouteUI() {
+      var cont = document.getElementById('route-steps-container');
+      cont.innerHTML = '';
+
+      var auditHtml = '<table class="audit-table"><tr><th>Этап</th><th>Согласующий</th><th>Статус</th></tr>';
+
+      currentRoute.forEach(function(step, idx) {
+        var el = document.createElement('div');
+        el.className = 'route-step';
+        el.innerHTML = [
+          '<div class="route-step-num">' + (idx + 1) + '</div>',
+          '<div class="route-step-info">',
+            '<div class="route-step-name">' + step.name + (step.isArsen ? ' <span class="route-badge-arsen">⭐️ До шефа (Реестр)</span>' : '') + '</div>',
+            '<div class="route-step-role">' + step.stepName + ' (' + step.role + ')</div>',
+          '</div>',
+          '<button type="button" onclick="removeRouteStep(' + idx + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">✕</button>'
+        ].join('');
+        cont.appendChild(el);
+
+        auditHtml += '<tr><td>' + step.stepName + '</td><td>' + step.name + '</td><td>⏳ В очереди</td></tr>';
+      });
+
+      auditHtml += '</table>';
+      document.getElementById('prev-audit-table').innerHTML = auditHtml;
+    }
+
+    function removeRouteStep(index) {
+      if (currentRoute.length <= 1) {
+        alert('Маршрут должен содержать хотя бы одного согласующего!');
+        return;
+      }
+      currentRoute.splice(index, 1);
+      renderRouteUI();
+    }
+
+    function addCustomApproverPrompt() {
+      var name = prompt('Введите ФИО согласующего сотрудника (например: Кабимулданова Динара Тлеукановна - Юрист):');
+      if (name && name.trim()) {
+        currentRoute.splice(currentRoute.length - 2, 0, {
+          name: name.trim(),
+          role: "Согласующий",
+          stepName: "Дополнительное согласование"
+        });
+        renderRouteUI();
+      }
+    }
+
+    function submitFinalSZ() {
+      if (!currentGeneratedSZ) return;
+
+      var year = new Date().getFullYear();
+      var nextNum = 'СЗ-' + year + '-' + ('0000' + (mockSZList.length + 1)).slice(-4);
+      var coExec = document.getElementById('sz-coexec').value;
+
+      var newSZ = {
+        number: nextNum,
+        date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
+        department: document.getElementById('sz-dept').value,
+        initiator: currentUser.name,
+        coExecutors: coExec,
+        type: currentGeneratedSZ.requiresPayment ? 'Оплата' : 'Хозяйственная',
+        title: currentGeneratedSZ.title,
+        amount: currentGeneratedSZ.amount || 0,
+        amountInWords: currentGeneratedSZ.amountInWords || '',
+        counterparty: currentGeneratedSZ.counterparty || '',
+        contract: currentGeneratedSZ.contract || '',
+        statusApproval: 'На согласовании: ' + (currentRoute[0] ? currentRoute[0].name : 'Арсен Бегалин'),
+        statusPayment: currentGeneratedSZ.requiresPayment ? 'Ожидает визы' : 'Не требуется',
+        statusLegal: 'Ожидает подписанный скан',
+        currentApprover: currentRoute[0] ? currentRoute[0].name : 'Арсен Бегалин',
+        route: currentRoute.map(function(r) { return r.name; }).join(' ➡️ '),
+        body: currentGeneratedSZ.body
+      };
+
+      mockSZList.unshift(newSZ);
+      renderSZList();
+      showToast('🚀 Служебная записка ' + nextNum + ' успешно запущена в работу!');
+      switchTab('registry');
+
+      // Сброс формы
+      document.getElementById('sz-raw-text').value = '';
+      document.getElementById('sz-generated-block').style.display = 'none';
+      currentGeneratedSZ = null;
+    }
+
+    // ==================== REGISTRY RENDER ====================
+    function renderSZList() {
+      var cont = document.getElementById('sz-list-container');
+      cont.innerHTML = '';
+
+      var filterText = document.getElementById('filter-search').value.toLowerCase();
+      var filterStatus = document.getElementById('filter-status').value;
+
+      var filtered = mockSZList.filter(function(item) {
+        // Изоляция: обычный сотрудник видит только СЗ своего отдела (Арсен и Шеф видят все)
+        var isSuper = currentUser.name.indexOf('Бегалин') !== -1 || currentUser.name.indexOf('Кабидуллин') !== -1 || /ассистент|генеральный|главный бухгалтер/i.test(currentUser.role);
+        if (!isSuper && item.department !== currentUser.department) {
+          return false;
+        }
+
+        if (filterText) {
+          var matchText = (item.number + ' ' + item.title + ' ' + item.counterparty + ' ' + item.initiator).toLowerCase();
+          if (matchText.indexOf(filterText) === -1) return false;
+        }
+
+        if (filterStatus === 'pending' && item.statusApproval.indexOf('На согласовании') === -1) return false;
+        if (filterStatus === 'approved' && item.statusApproval.indexOf('Утверждено') === -1) return false;
+        if (filterStatus === 'paid' && item.statusPayment.indexOf('Оплачено') === -1) return false;
+        if (filterStatus === 'scan_waiting' && item.statusLegal.indexOf('Ожидает') === -1) return false;
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px;">Служебных записок не найдено</div>';
+        return;
+      }
+
+      filtered.forEach(function(item) {
+        var card = document.createElement('div');
+        card.className = 'card';
+        card.style.cursor = 'pointer';
+        card.onclick = function() { openSZDetail(item); };
+
+        var badgeClass = 'badge-pending';
+        if (item.statusApproval.indexOf('Утверждено') !== -1) badgeClass = 'badge-approved';
+        if (item.statusApproval.indexOf('Отклонено') !== -1) badgeClass = 'badge-rejected';
+
+        card.innerHTML = [
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">',
+            '<div>',
+              '<span style="font-weight: 800; font-size: 14px; color: var(--primary);">' + item.number + '</span>',
+              '<span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">' + item.date + '</span>',
+            '</div>',
+            '<span class="status-badge ' + badgeClass + '">' + item.statusApproval + '</span>',
+          '</div>',
+          '<div style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px;">' + item.title + '</div>',
+          '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">',
+            '👤 Исп: <b>' + item.initiator + '</b> (' + item.department + ')',
+            item.amount > 0 ? ('<br>💰 Сумма: <b style="color: #34d399;">' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</b> (' + item.counterparty + ')') : '',
+          '</div>',
+          '<div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px;">',
+            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:4px;">💳 ' + item.statusPayment + '</span>',
+            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:4px;">📎 ' + item.statusLegal + '</span>',
+          '</div>'
+        ].join('');
+
+        cont.appendChild(card);
+      });
+    }
+
+    // ==================== DETAIL MODAL ====================
+    var activeDetailItem = null;
+
+    function openSZDetail(item) {
+      activeDetailItem = item;
+      document.getElementById('det-number').textContent = item.number + ' — ' + item.title;
+      document.getElementById('det-body').textContent = item.body;
+      document.getElementById('det-payment-status').textContent = item.statusPayment;
+      document.getElementById('det-legal-status').textContent = item.statusLegal;
+
+      // Кнопка оплаты для Главбуха
+      var isAccountant = currentUser.name.indexOf('Смагулова') !== -1 || /бухгалтер/i.test(currentUser.role);
+      document.getElementById('btn-mark-paid').style.display = isAccountant ? 'block' : 'none';
+
+      // Кнопки согласования для текущего согласующего
+      var isMyTurn = (item.currentApprover.indexOf(currentUser.name) !== -1);
+      document.getElementById('det-approval-actions').style.display = isMyTurn ? 'flex' : 'none';
+
+      document.getElementById('modal-detail').style.display = 'flex';
+    }
+
+    function makeApprovalDecision(decision) {
+      if (!activeDetailItem) return;
+      if (decision === 'approve') {
+        if (currentUser.name.indexOf('Бегалин') !== -1) {
+          activeDetailItem.statusApproval = 'На утверждении у Шефа';
+          activeDetailItem.currentApprover = 'Кабидуллин Нурсултан Нурланович';
+          showToast('✅ Проверено! Передано Генеральному директору');
+        } else if (currentUser.name.indexOf('Кабидуллин') !== -1) {
+          activeDetailItem.statusApproval = 'Утверждено Шефом';
+          activeDetailItem.statusLegal = 'Ожидает подписанный скан (Арсен Бегалин)';
+          activeDetailItem.currentApprover = 'Завершено';
+          showToast('🎉 СЗ утверждена! Ожидается сдача подписанного оригинала');
+        } else {
+          activeDetailItem.statusApproval = 'На проверке: Бегалин Арсен';
+          activeDetailItem.currentApprover = 'Бегалин Арсен Кайратович';
+          showToast('✅ Согласовано! Передано Арсену Бегалину');
+        }
+      } else {
+        var reason = prompt('Укажите причину отклонения:');
+        activeDetailItem.statusApproval = 'Отклонено (' + currentUser.name + ')';
+        activeDetailItem.currentApprover = '-';
+        showToast('❌ СЗ отклонена');
+      }
+
+      closeModal('modal-detail');
+      renderSZList();
+      renderArsenTasks();
+    }
+
+    function markPaidAction() {
+      if (!activeDetailItem) return;
+      var pp = prompt('Введите номер платежного поручения:', '№' + Math.floor(100 + Math.random() * 900));
+      if (pp) {
+        activeDetailItem.statusPayment = 'Оплачено (п/п ' + pp + ' от ' + new Date().toLocaleDateString('ru-RU') + ')';
+        document.getElementById('det-payment-status').textContent = activeDetailItem.statusPayment;
+        renderSZList();
+        showToast('💳 Оплата зафиксирована!');
+      }
+    }
+
+    function submitSignedScan() {
+      var fileInput = document.getElementById('signed-scan-file');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Пожалуйста, выберите скан-копию или сфотографируйте подписанный оригинал!');
+        return;
+      }
+      activeDetailItem.statusLegal = 'Сдан в архив (Скан прикреплен)';
+      document.getElementById('det-legal-status').textContent = activeDetailItem.statusLegal;
+      renderSZList();
+      renderArsenTasks();
+      showToast('⭐️ Подписанный оригинал успешно прикреплен в архив!');
+      setTimeout(function() { closeModal('modal-detail'); }, 1000);
+    }
+
+    // ==================== CONTRACTS ARCHIVE ====================
+    function renderContractsList() {
+      var cont = document.getElementById('contracts-list-container');
+      cont.innerHTML = '';
+
+      var deptContracts = mockContracts.filter(function(c) {
+        var isSuper = currentUser.name.indexOf('Бегалин') !== -1 || currentUser.name.indexOf('Кабидуллин') !== -1;
+        return isSuper || c.department === currentUser.department;
+      });
+
+      if (deptContracts.length === 0) {
+        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">В архиве вашего отдела пока нет договоров</div>';
+        return;
+      }
+
+      deptContracts.forEach(function(c) {
+        var el = document.createElement('div');
+        el.className = 'card';
+        el.style.background = 'var(--card-sub)';
+        el.innerHTML = [
+          '<div style="display: flex; justify-content: space-between; margin-bottom: 6px;">',
+            '<b style="color: var(--primary); font-size: 14px;">' + c.number + ' — ' + c.counterparty + '</b>',
+            '<span class="status-badge badge-approved">' + c.status + '</span>',
+          '</div>',
+          '<div style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">' + c.subject + '</div>',
+          '<div style="font-size: 11.5px; color: var(--text-muted);">',
+            'Срок: ' + c.date + ' – ' + c.validUntil + ' • Условия: ' + c.amount,
+            '<br>Ответственный: ' + c.manager + ' (' + c.department + ')',
+          '</div>'
+        ].join('');
+        cont.appendChild(el);
+      });
+    }
+
+    function openNewContractModal() {
+      var num = prompt('Номер договора (например: №102-JM):');
+      if (!num) return;
+      var cp = prompt('Контрагент (например: ТОО «Mega Service»):');
+      var subj = prompt('Предмет договора (например: Транспортные услуги):');
+      
+      mockContracts.push({
+        id: mockContracts.length + 1,
+        department: currentUser.department,
+        number: num,
+        date: new Date().toLocaleDateString('ru-RU'),
+        validUntil: 'Бессрочный',
+        counterparty: cp,
+        subject: subj,
+        amount: 'По заявкам',
+        manager: currentUser.name,
+        status: 'Действует'
+      });
+
+      renderContractsList();
+      showToast('📂 Договор ' + num + ' добавлен в архив отдела!');
+    }
+
+    // ==================== ARSEN TASKS RENDER ====================
+    function renderArsenTasks() {
+      var cont = document.getElementById('arsen-tasks-container');
+      cont.innerHTML = '';
+
+      var pendingForArsen = mockSZList.filter(function(item) {
+        return item.currentApprover.indexOf('Бегалин') !== -1 || item.statusLegal.indexOf('Ожидает подписанный скан') !== -1;
+      });
+
+      if (pendingForArsen.length === 0) {
+        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">Все СЗ проверены, задолженностей по оригиналам нет! 🎉</div>';
+        return;
+      }
+
+      pendingForArsen.forEach(function(item) {
+        var card = document.createElement('div');
+        card.className = 'card';
+        card.style.borderLeft = '4px solid var(--warning)';
+        card.onclick = function() { openSZDetail(item); };
+
+        card.innerHTML = [
+          '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">',
+            '<b style="color:var(--warning);">' + item.number + '</b>',
+            '<span class="status-badge badge-pending">Требует внимания</span>',
+          '</div>',
+          '<div style="font-weight:700;font-size:13.5px;margin-bottom:4px;">' + item.title + '</div>',
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">',
+            'Инициатор: ' + item.initiator + ' (' + item.department + ')',
+            '<br>Статус: <b>' + item.statusApproval + '</b>',
+            '<br>Юридический статус: <b style="color:#fbbf24;">' + item.statusLegal + '</b>',
+          '</div>',
+          '<button class="btn btn-secondary" style="font-size:11.5px;padding:6px;">🔍 Открыть для контроля</button>'
+        ].join('');
+        cont.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>
