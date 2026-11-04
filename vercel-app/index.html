@@ -843,8 +843,8 @@
         '{"title": "...", "body": "...", "amount": 500000, "amountInWords": "...", "counterparty": "...", "contract": "...", "invoice": "...", "requiresPayment": true}'
       ].join('\n');
 
-      // Прямой вызов Gemini API v1beta
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+      // Вызов Gemini API v1beta (gemini-3.8-flash)
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + GEMINI_API_KEY;
       var payload = {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { response_mime_type: "application/json" }
