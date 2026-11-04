@@ -92,6 +92,19 @@ function doGet(e) {
     } else if (action === 'get_contracts') {
       var cDept = e.parameter.department || '';
       result = getContractsList(cDept);
+    } else if (action === 'request_login_code') {
+      var empId = e.parameter.id || '';
+      var empName = e.parameter.name || '';
+      result = sendAuthCodeToEmployee(empId, empName);
+    } else if (action === 'verify_login_code') {
+      var code = e.parameter.code || '';
+      var empId = e.parameter.id || '';
+      result = verifyAuthCode(code, empId);
+    } else if (action === 'request_register_code') {
+      result = requestRegistrationCode(e.parameter || {});
+    } else if (action === 'verify_register_code') {
+      var code = e.parameter.code || '';
+      result = verifyRegistrationCode(code);
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -139,6 +152,14 @@ function doPost(e) {
       result = registerEmployeeDynamic(postData);
     } else if (action === 'create_contract') {
       result = createNewContract(postData);
+    } else if (action === 'request_login_code') {
+      result = sendAuthCodeToEmployee(postData.id || postData.empId, postData.name || postData.empName);
+    } else if (action === 'verify_login_code') {
+      result = verifyAuthCode(postData.code, postData.id || postData.empId);
+    } else if (action === 'request_register_code') {
+      result = requestRegistrationCode(postData);
+    } else if (action === 'verify_register_code') {
+      result = verifyRegistrationCode(postData.code);
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -895,6 +916,151 @@ function registerEmployeeDynamic(data) {
       role: data.role
     }
   };
+}
+
+/**
+ * Отправка одноразового проверочного кода в Telegram для авторизации / смены аккаунта
+ */
+function sendAuthCodeToEmployee(empId, empName) {
+  try {
+    var emps = getEmployeesList().employees;
+    var targetEmp = null;
+
+    for (var i = 0; i < emps.length; i++) {
+      var e = emps[i];
+      if (empId && String(e.id).trim() === String(empId).trim()) {
+        targetEmp = e;
+        break;
+      }
+      if (empName && (e.name.toLowerCase() === empName.toLowerCase() || e.name.toLowerCase().indexOf(empName.toLowerCase()) !== -1)) {
+        targetEmp = e;
+        break;
+      }
+    }
+
+    if (!targetEmp) {
+      return { ok: false, error: 'Сотрудник не найден в штатном расписании' };
+    }
+
+    var tgTarget = targetEmp.telegramId || targetEmp.username;
+    if (!tgTarget) {
+      return { 
+        ok: false, 
+        error: 'У сотрудника «' + targetEmp.name + '» не привязан Telegram. Пожалуйста, запустите бота @janamen_docs_bot и отправьте /start или пройдите регистрацию.' 
+      };
+    }
+
+    // Генерируем 6-значный код
+    var code = Math.floor(100000 + Math.random() * 900000).toString();
+    var cache = CacheService.getScriptCache();
+    cache.put('auth_otp_' + targetEmp.id, code, 600);
+    cache.put('auth_user_' + code, JSON.stringify(targetEmp), 600);
+
+    var msg = [
+      '🔐 *КОД ДЛЯ ВХОДА В JANA MEN ЭДО*',
+      '',
+      'Здравствуйте, *' + targetEmp.name + '*!',
+      '',
+      'Ваш проверочный код для входа / смены аккаунта:',
+      '👉 `' + code + '`',
+      '',
+      '⏱ Код действителен *10 минут*. Никому не передавайте этот код.'
+    ].join('\n');
+
+    sendTelegramMessage(targetEmp.telegramId, msg);
+
+    return {
+      ok: true,
+      message: 'Код отправлен в Telegram бота @janamen_docs_bot!',
+      employee: {
+        id: targetEmp.id,
+        name: targetEmp.name,
+        role: targetEmp.role,
+        department: targetEmp.department
+      }
+    };
+  } catch(err) {
+    Logger.log('sendAuthCodeToEmployee error: ' + err);
+    return { ok: false, error: err.toString() };
+  }
+}
+
+/**
+ * Проверка введенного одноразового кода
+ */
+function verifyAuthCode(code, empId) {
+  try {
+    if (!code) return { ok: false, error: 'Код не указан' };
+    var cleanCode = String(code).trim();
+    var cache = CacheService.getScriptCache();
+
+    var rawUser = cache.get('auth_user_' + cleanCode);
+    if (!rawUser && empId) {
+      var savedCode = cache.get('auth_otp_' + empId);
+      if (savedCode && savedCode === cleanCode) {
+        var empProfile = getUserProfile(empId);
+        if (empProfile.ok) rawUser = JSON.stringify(empProfile.employee);
+      }
+    }
+
+    if (!rawUser) {
+      return { ok: false, error: 'Неверный или истёкший код. Пожалуйста, запросите код повторно.' };
+    }
+
+    cache.remove('auth_user_' + cleanCode);
+    var userObj = JSON.parse(rawUser);
+
+    return {
+      ok: true,
+      message: 'Авторизация успешна!',
+      user: userObj
+    };
+  } catch(err) {
+    return { ok: false, error: err.toString() };
+  }
+}
+
+function requestRegistrationCode(data) {
+  try {
+    var tgId = data.telegramId || '';
+    if (!tgId) return { ok: false, error: 'Не указан Telegram ID' };
+
+    var code = Math.floor(100000 + Math.random() * 900000).toString();
+    var cache = CacheService.getScriptCache();
+    cache.put('reg_draft_' + code, JSON.stringify(data), 600);
+
+    var msg = [
+      '📝 *РЕГИСТРАЦИЯ В JANA MEN ЭДО*',
+      '',
+      'Сотрудник: *' + (data.fio || '') + '* (' + (data.role || '') + ')',
+      'Отдел: ' + (data.department || ''),
+      '',
+      'Ваш проверочный код: 👉 `' + code + '`',
+      '⏱ Действует 10 минут.'
+    ].join('\n');
+
+    sendTelegramMessage(tgId, msg);
+    return { ok: true, message: 'Код отправлен в Telegram!' };
+  } catch(e) {
+    return { ok: false, error: e.toString() };
+  }
+}
+
+function verifyRegistrationCode(code) {
+  try {
+    if (!code) return { ok: false, error: 'Код не указан' };
+    var cleanCode = String(code).trim();
+    var cache = CacheService.getScriptCache();
+    var draft = cache.get('reg_draft_' + cleanCode);
+
+    if (!draft) return { ok: false, error: 'Неверный или истёкший код' };
+
+    cache.remove('reg_draft_' + cleanCode);
+    var d = JSON.parse(draft);
+    return registerEmployeeDynamic(d);
+  } catch(e) {
+    return { ok: false, error: e.toString() };
+  }
 }
 
 /**
