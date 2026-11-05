@@ -579,23 +579,48 @@
       box-shadow: 0 4px 16px rgba(150, 116, 56, 0.3);
     }
 
-    /* Gamified Route Steps Builder */
+    /* Gamified Route Steps Builder & Drag/Drop Reorder */
     .route-step {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
+      gap: 10px;
+      padding: 11px 13px;
       background: #FFFFFF;
       border: 1px solid var(--border);
       border-radius: 12px;
       margin-bottom: 9px;
       box-shadow: 0 2px 6px rgba(17, 23, 19, 0.03);
       position: relative;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
     }
     .route-step:hover {
       border-color: var(--border-strong);
-      transform: translateX(2px);
+      background: #fafaf9;
+    }
+    .route-step.route-dragging {
+      opacity: 0.4;
+      border: 2px dashed var(--primary);
+      background: rgba(30, 70, 43, 0.06);
+      transform: scale(0.98);
+    }
+    .route-step.route-drag-over {
+      border: 2px solid var(--primary);
+      background: #f0fdf4;
+      transform: translateY(2px);
+    }
+    .route-drag-handle {
+      cursor: grab;
+      color: #94a3b8;
+      font-size: 16px;
+      line-height: 1;
+      padding: 4px 2px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .route-drag-handle:active {
+      cursor: grabbing;
     }
     .route-step-num {
       width: 28px; height: 28px; border-radius: 50%;
@@ -606,7 +631,7 @@
       box-shadow: 0 2px 6px rgba(30, 70, 43, 0.25);
       flex-shrink: 0;
     }
-    .route-step-info { flex: 1; }
+    .route-step-info { flex: 1; min-width: 0; }
     .route-step-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
     .route-step-role { font-size: 11px; color: var(--text-muted); }
     .route-step-xp {
@@ -618,6 +643,42 @@
       border-radius: 6px;
       border: 1px solid rgba(150, 116, 56, 0.2);
       flex-shrink: 0;
+    }
+    .route-step-actions {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      flex-shrink: 0;
+      margin-left: 4px;
+    }
+    .route-ctrl-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 25px;
+      height: 25px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10.5px;
+      cursor: pointer;
+      color: var(--text);
+      transition: all 0.15s;
+      padding: 0;
+    }
+    .route-ctrl-btn:hover:not(:disabled) {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .route-ctrl-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+    .route-ctrl-btn.route-remove-btn:hover {
+      background: #fef2f2 !important;
+      color: #dc2626 !important;
+      border-color: #fca5a5 !important;
     }
 
     /* Paper Document Preview */
@@ -933,6 +994,145 @@
         gap: 8px !important;
       }
     }
+
+    /* ==================== АДАПТИВНЫЙ МАСШТАБ: НОУТБУКИ И ДЕСКТОП (ОТ 992px) ==================== */
+    @media (min-width: 992px) {
+      body {
+        font-size: 14px;
+        padding-bottom: 50px;
+      }
+      .brand-bar {
+        padding: 12px 32px;
+      }
+      .brand-bar-inner {
+        max-width: 1240px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+      .game-banner {
+        max-width: 1240px;
+        margin: 16px auto 18px auto;
+        padding: 22px 28px;
+        border-radius: var(--radius-lg);
+      }
+      .game-avatar-ring {
+        width: 50px;
+        height: 50px;
+        font-size: 22px;
+      }
+      .game-user-name {
+        font-size: 16.5px;
+      }
+      .game-user-role {
+        font-size: 12.5px;
+      }
+      .nav-tabs-wrapper {
+        padding: 10px 0;
+      }
+      .nav-tabs {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 5px;
+      }
+      .nav-tab {
+        padding: 10px 24px;
+        font-size: 13.5px;
+      }
+      .container {
+        max-width: 1240px;
+        padding: 10px 32px 50px 32px;
+      }
+      .card {
+        padding: 22px 24px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+      }
+      .card-title {
+        font-size: 16.5px;
+        margin-bottom: 16px;
+      }
+
+      /* Двухколоночный эргономичный вид для создания СЗ */
+      .create-layout-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .create-preview-col {
+        position: sticky;
+        top: 80px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      .create-preview-col::-webkit-scrollbar {
+        width: 6px;
+      }
+      .create-preview-col::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+      }
+
+      /* Сетка карточек в реестре договоров на ноутбуках */
+      #contracts-list-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+        gap: 16px;
+      }
+      #contracts-list-container .card {
+        margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      /* Сетка карточек в реестре СЗ на ноутбуках */
+      #sz-list-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+        gap: 16px;
+      }
+      #sz-list-container .card {
+        margin-bottom: 0;
+      }
+
+      /* Детальное модальное окно на десктопе: 2 колонки */
+      #modal-detail .modal-content {
+        max-width: 980px;
+        padding: 26px 30px;
+      }
+      .detail-desktop-split {
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        gap: 22px;
+        align-items: start;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding-right: 6px;
+      }
+      .detail-desktop-split::-webkit-scrollbar {
+        width: 6px;
+      }
+      .detail-desktop-split::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+      }
+    }
+    @media (max-width: 991px) {
+      .create-layout-grid {
+        display: block;
+      }
+      #sz-desktop-placeholder {
+        display: none !important;
+      }
+      .detail-desktop-split {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1046,21 +1246,23 @@
   
   <!-- Верхняя бренд-панель с официальным логотипом Jana Men -->
   <div class="brand-bar">
-    <div class="brand-left" onclick="openAchievementsModal()">
-      <img src="logo.png" alt="Jana Men Logo" class="brand-logo-img" onerror="this.style.display='none'; document.getElementById('brand-fallback-text').style.display='inline-block';">
-      <span id="brand-fallback-text" style="display:none; font-weight:900; font-size:16px; color:var(--primary); letter-spacing:-0.03em;">JANA MEN</span>
-      <span class="brand-badge">ЭДО ПРОТОКОЛ</span>
-    </div>
-    <div class="brand-actions">
-      <button class="btn-streak-pill" onclick="openAchievementsModal()" title="Серия дней без задержек">
-        <span>🔥</span> <span id="u-streak-num">5</span> дн
-      </button>
-      <button class="btn-icon-action" onclick="testMyTelegramBotConnection()" title="Проверить уведомления в Telegram">
-        <span>🔔</span>
-      </button>
-      <button class="btn-icon-action" onclick="openSwitchAccountModal()" title="Сменить профиль">
-        <span>🔄</span>
-      </button>
+    <div class="brand-bar-inner">
+      <div class="brand-left" onclick="openAchievementsModal()">
+        <img src="logo.png" alt="Jana Men Logo" class="brand-logo-img" onerror="this.style.display='none'; document.getElementById('brand-fallback-text').style.display='inline-block';">
+        <span id="brand-fallback-text" style="display:none; font-weight:900; font-size:16px; color:var(--primary); letter-spacing:-0.03em;">JANA MEN</span>
+        <span class="brand-badge">ЭДО ПРОТОКОЛ</span>
+      </div>
+      <div class="brand-actions">
+        <button class="btn-streak-pill" onclick="openAchievementsModal()" title="Серия дней без задержек">
+          <span>🔥</span> <span id="u-streak-num">5</span> дн
+        </button>
+        <button class="btn-icon-action" onclick="testMyTelegramBotConnection()" title="Проверить уведомления в Telegram">
+          <span>🔔</span>
+        </button>
+        <button class="btn-icon-action" onclick="openSwitchAccountModal()" title="Сменить профиль">
+          <span>🔄</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1115,177 +1317,198 @@
 
     <!-- ==================== ВКЛАДКА 1: СОЗДАНИЕ ДОКУМЕНТА (СЗ / ЗАЯВЛЕНИЯ) ==================== -->
     <div id="tab-create" class="tab-pane active">
-      <div class="card">
-        <div class="card-title">
-          <div style="width: 100%;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 15px; font-weight: 800; color: var(--text);">✨ Инициация документа</span>
-              <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 10.5px; padding: 2px 8px;">Gemini 3.8 AI</span>
-            </div>
-            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;" id="initiator-badge"></div>
-          </div>
-        </div>
-
-        <!-- Выбор типа документа -->
-        <div class="field">
-          <label>Тип документа:</label>
-          <div class="type-pills">
-            <div class="type-pill active" onclick="selectDocType('sz_payment')">💳 СЗ на оплату</div>
-            <div class="type-pill" onclick="selectDocType('sz_general')">📋 Общая СЗ</div>
-            <div class="type-pill" onclick="selectDocType('vacation_bs')">🏖 Отпуск БС</div>
-            <div class="type-pill" onclick="selectDocType('advance')">💵 Аванс</div>
-            <div class="type-pill" onclick="selectDocType('resignation')">📄 Увольнение</div>
-          </div>
-        </div>
-
-        <!-- Поле привязки договора своего отдела -->
-        <div class="field" id="field-contract-binding">
-          <label>Привязать договор вашего отдела (по желанию):</label>
-          <div class="searchable-box">
-            <input type="text" id="sz-contract-search" class="input-text" placeholder="🔍 Выберите договор, например: №82 (Аренда склада)..." onfocus="onContractSearchFocus()" oninput="onContractSearchInput(this.value)">
-            <div id="sz-contract-dropdown" class="search-results-dropdown"></div>
-          </div>
-          <div id="selected-contract-badge" style="display: none; margin-top: 8px;"></div>
-        </div>
-
-        <!-- Со-исполнители (ТОЛЬКО ЛИНЕЙНЫЕ СОТРУДНИКИ!) -->
-        <div class="field">
-          <label>Со-исполнители (только линейные специалисты):</label>
-          <div class="searchable-box">
-            <input type="text" id="coexec-search" class="input-text" placeholder="🔍 Поиск линейного сотрудника: Адель, Акзере, Арман..." oninput="onCoExecSearchInput(this.value)">
-            <div id="coexec-dropdown" class="search-results-dropdown"></div>
-          </div>
-          <div id="selected-coexec-tags" class="selected-tags"></div>
-        </div>
-
-        <!-- Суть документа -->
-        <div class="field">
-          <label id="label-raw-text">Суть служебной записки своими словами:</label>
-          <textarea id="sz-raw-text" placeholder="Например: Мне нужно согласовать возмещение за оплату абонентской платы за Vercel в размере 20 долларов месяц."></textarea>
-        </div>
-
-        <!-- Прикрепление файлов / сканов / инвойсов / АВР (Мульти-фото и пачка из галереи) -->
-        <div class="field">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label id="label-file" style="margin-bottom: 0;">Прикрепить подтверждающие документы / фото:</label>
-            <span id="sz-files-count-badge" style="font-size: 11px; font-weight: 700; color: var(--primary); display: none;">0 файлов</span>
-          </div>
-
-          <!-- Скрытые инпуты: 1) Камера (одиночная/поочередная съемка), 2) Галерея (выбор пачкой) -->
-          <input type="file" id="sz-camera-input" accept="image/*" capture="environment" style="display: none;" onchange="onSZPhotosAdded(event)">
-          <input type="file" id="sz-gallery-input" accept="image/*,application/pdf" multiple style="display: none;" onchange="onSZPhotosAdded(event)">
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="file-upload-box" onclick="document.getElementById('sz-camera-input').click()" style="text-align: center; padding: 10px 8px;">
-              <div style="font-size: 20px; margin-bottom: 2px;">📷</div>
-              <div style="font-size: 12px; font-weight: 700; color: var(--primary);">Снять на камеру</div>
-              <div style="font-size: 10.5px; color: var(--text-muted);">Поочередно стр. 1, 2...</div>
-            </div>
-            <div class="file-upload-box" onclick="document.getElementById('sz-gallery-input').click()" style="text-align: center; padding: 10px 8px;">
-              <div style="font-size: 20px; margin-bottom: 2px;">🖼️ 📑</div>
-              <div style="font-size: 12px; font-weight: 700; color: var(--primary);">Выбрать пачкой</div>
-              <div style="font-size: 10.5px; color: var(--text-muted);">Из галереи или PDF</div>
-            </div>
-          </div>
-
-          <!-- Превью прикрепленных фотографий / файлов -->
-          <div id="sz-photos-gallery" class="photo-gallery-grid" style="display: none;"></div>
-        </div>
-
-        <!-- Чекбокс сдачи оригинала АВР (если прикреплен договор) -->
-        <div class="field" id="field-avr-original" style="display: none; background: #fffbeb; border: 1px dashed var(--warning); padding: 12px; border-radius: 8px;">
-          <label style="color: #b45309; font-weight: 700; margin-bottom: 4px;">📥 Статус оригиналов закрывающих документов (АВР / Накладная):</label>
-          <div style="display: flex; gap: 14px; font-size: 13px; margin-top: 6px;">
-            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
-              <input type="radio" name="avr_status" value="submitted"> ✅ Оригинал АВР уже сдан в бухгалтерию
-            </label>
-            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
-              <input type="radio" name="avr_status" value="pending" checked> ⏳ Ожидается сдача оригинала
-            </label>
-          </div>
-        </div>
-
-        <button class="btn btn-ai" id="btn-run-gemini" onclick="generateSmartSZ()">
-          <span>✨ Сформировать официальный документ</span>
-        </button>
-      </div>
-
-      <!-- Предпросмотр сформированного бланка -->
-      <div id="sz-generated-block" style="display: none;">
-        <div class="card">
-          <div class="card-title" style="flex-wrap: wrap; gap: 8px;">
-            <span>👁 Официальный бланк документа (Предпросмотр)</span>
-            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <button type="button" class="btn btn-secondary" id="btn-toggle-sz-edit" onclick="toggleEditGeneratedSZ()" style="font-size: 11.5px; padding: 5px 10px;">
-                ✏️ Редактировать текст
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="scrollToRawInput()" style="font-size: 11.5px; padding: 5px 10px;">
-                🔄 Изменить запрос
-              </button>
-              <span class="status-badge badge-pending">Черновик</span>
-            </div>
-          </div>
-
-          <!-- Блок ручного редактирования текста менеджером -->
-          <div id="sz-inline-edit-box" style="display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
-            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
-              ✏️ Редактирование текста документа:
-            </div>
-            <div class="field" style="margin-bottom: 8px;">
-              <label style="font-size: 11px; font-weight: 700;">Тема / Подзаголовок:</label>
-              <input type="text" id="edit-sz-subtitle" class="input-text" oninput="onEditedSZInput()">
-            </div>
-            <div class="field" style="margin-bottom: 8px;">
-              <label style="font-size: 11px; font-weight: 700;">Текст документа (тело):</label>
-              <textarea id="edit-sz-body" class="input-text" rows="7" style="font-size: 12.5px; line-height: 1.45;" oninput="onEditedSZInput()"></textarea>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-              <div class="field" style="margin-bottom: 0;">
-                <label style="font-size: 11px; font-weight: 700;">Сумма цифрами:</label>
-                <input type="number" id="edit-sz-amount" class="input-text" oninput="onEditedSZAmountInput()">
-              </div>
-              <div class="field" style="margin-bottom: 0;">
-                <label style="font-size: 11px; font-weight: 700;">Сумма прописью:</label>
-                <input type="text" id="edit-sz-amount-words" class="input-text" oninput="onEditedSZInput()">
+      <div class="create-layout-grid">
+        <div class="create-form-col">
+          <div class="card">
+            <div class="card-title">
+              <div style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 15px; font-weight: 800; color: var(--text);">✨ Инициация документа</span>
+                  <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 10.5px; padding: 2px 8px;">Gemini 3.8 AI</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;" id="initiator-badge"></div>
               </div>
             </div>
-            <button type="button" class="btn btn-primary" onclick="toggleEditGeneratedSZ()" style="width: 100%; padding: 8px; font-size: 12px;">
-              ✅ Применить изменения в бланк
+
+            <!-- Выбор типа документа -->
+            <div class="field">
+              <label>Тип документа:</label>
+              <div class="type-pills">
+                <div class="type-pill active" onclick="selectDocType('sz_payment')">💳 СЗ на оплату</div>
+                <div class="type-pill" onclick="selectDocType('sz_general')">📋 Общая СЗ</div>
+                <div class="type-pill" onclick="selectDocType('vacation_bs')">🏖 Отпуск БС</div>
+                <div class="type-pill" onclick="selectDocType('advance')">💵 Аванс</div>
+                <div class="type-pill" onclick="selectDocType('resignation')">📄 Увольнение</div>
+              </div>
+            </div>
+
+            <!-- Поле привязки договора своего отдела -->
+            <div class="field" id="field-contract-binding">
+              <label>Привязать договор вашего отдела (по желанию):</label>
+              <div class="searchable-box">
+                <input type="text" id="sz-contract-search" class="input-text" placeholder="🔍 Выберите договор, например: №82 (Аренда склада)..." onfocus="onContractSearchFocus()" oninput="onContractSearchInput(this.value)">
+                <div id="sz-contract-dropdown" class="search-results-dropdown"></div>
+              </div>
+              <div id="selected-contract-badge" style="display: none; margin-top: 8px;"></div>
+            </div>
+
+            <!-- Со-исполнители (ТОЛЬКО ЛИНЕЙНЫЕ СОТРУДНИКИ!) -->
+            <div class="field">
+              <label>Со-исполнители (только линейные специалисты):</label>
+              <div class="searchable-box">
+                <input type="text" id="coexec-search" class="input-text" placeholder="🔍 Поиск линейного сотрудника: Адель, Акзере, Арман..." oninput="onCoExecSearchInput(this.value)">
+                <div id="coexec-dropdown" class="search-results-dropdown"></div>
+              </div>
+              <div id="selected-coexec-tags" class="selected-tags"></div>
+            </div>
+
+            <!-- Суть документа -->
+            <div class="field">
+              <label id="label-raw-text">Суть служебной записки своими словами:</label>
+              <textarea id="sz-raw-text" placeholder="Например: Мне нужно согласовать возмещение за оплату абонентской платы за Vercel в размере 20 долларов месяц."></textarea>
+            </div>
+
+            <!-- Прикрепление файлов / сканов / инвойсов / АВР (Мульти-фото и пачка из галереи) -->
+            <div class="field">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label id="label-file" style="margin-bottom: 0;">Прикрепить подтверждающие документы / фото:</label>
+                <span id="sz-files-count-badge" style="font-size: 11px; font-weight: 700; color: var(--primary); display: none;">0 файлов</span>
+              </div>
+
+              <!-- Скрытые инпуты: 1) Камера (одиночная/поочередная съемка), 2) Галерея (выбор пачкой) -->
+              <input type="file" id="sz-camera-input" accept="image/*" capture="environment" style="display: none;" onchange="onSZPhotosAdded(event)">
+              <input type="file" id="sz-gallery-input" accept="image/*,application/pdf" multiple style="display: none;" onchange="onSZPhotosAdded(event)">
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="file-upload-box" onclick="document.getElementById('sz-camera-input').click()" style="text-align: center; padding: 10px 8px;">
+                  <div style="font-size: 20px; margin-bottom: 2px;">📷</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--primary);">Снять на камеру</div>
+                  <div style="font-size: 10.5px; color: var(--text-muted);">Поочередно стр. 1, 2...</div>
+                </div>
+                <div class="file-upload-box" onclick="document.getElementById('sz-gallery-input').click()" style="text-align: center; padding: 10px 8px;">
+                  <div style="font-size: 20px; margin-bottom: 2px;">🖼️ 📑</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--primary);">Выбрать пачкой</div>
+                  <div style="font-size: 10.5px; color: var(--text-muted);">Из галереи или PDF</div>
+                </div>
+              </div>
+
+              <!-- Превью прикрепленных фотографий / файлов -->
+              <div id="sz-photos-gallery" class="photo-gallery-grid" style="display: none;"></div>
+            </div>
+
+            <!-- Чекбокс сдачи оригинала АВР (если прикреплен договор) -->
+            <div class="field" id="field-avr-original" style="display: none; background: #fffbeb; border: 1px dashed var(--warning); padding: 12px; border-radius: 8px;">
+              <label style="color: #b45309; font-weight: 700; margin-bottom: 4px;">📥 Статус оригиналов закрывающих документов (АВР / Накладная):</label>
+              <div style="display: flex; gap: 14px; font-size: 13px; margin-top: 6px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
+                  <input type="radio" name="avr_status" value="submitted"> ✅ Оригинал АВР уже сдан в бухгалтерию
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
+                  <input type="radio" name="avr_status" value="pending" checked> ⏳ Ожидается сдача оригинала
+                </label>
+              </div>
+            </div>
+
+            <button class="btn btn-ai" id="btn-run-gemini" onclick="generateSmartSZ()">
+              <span>✨ Сформировать официальный документ</span>
             </button>
           </div>
-          
-          <div class="doc-preview">
-            <div class="doc-preview-head" id="prev-recipient">
-              Генеральному директору JANAMEN<br>Кабидуллину Н.Н.
-            </div>
-            <div class="doc-preview-title" id="prev-doc-title">
-              СЛУЖЕБНАЯ ЗАПИСКА<br>
-              <span id="prev-number" style="font-size: 11px; color: var(--text-muted); font-weight: normal;">[Номер будет присвоен при запуске]</span>
-            </div>
-            <div class="doc-preview-body" id="prev-body"></div>
-            <div class="doc-preview-amount" id="prev-amount"></div>
-            <div class="doc-preview-sign" id="prev-sign"></div>
+        </div>
 
-            <div class="doc-preview-audit">
-              <h5>Лист согласования по маршруту:</h5>
-              <div id="prev-audit-table"></div>
+        <div class="create-preview-col">
+          <!-- Подсказка / плейсхолдер для десктопа до нажатия генерации -->
+          <div class="card" id="sz-desktop-placeholder" style="border: 2px dashed var(--border-strong); background: #fafaf9; text-align: center; padding: 40px 24px;">
+            <div style="font-size: 38px; margin-bottom: 12px;">📄 ⚡️</div>
+            <h4 style="font-size: 16.5px; font-weight: 800; color: var(--text); margin-bottom: 8px;">Официальный бланк и маршрут</h4>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.55; max-width: 380px; margin: 0 auto 16px auto;">
+              Заполните форму слева или прикрепите скан счета / накладной / договора. ИИ моментально сформирует строгий официальный документ и выстроит цепочку визирования.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+              <span class="status-badge" style="background: rgba(30,70,43,0.08); color: var(--primary); font-size: 11px; padding: 4px 10px;">⚡️ Авто-расчет сумм</span>
+              <span class="status-badge" style="background: rgba(150,116,56,0.1); color: var(--gold); font-size: 11px; padding: 4px 10px;">👑 Маршрут без посредников</span>
+              <span class="status-badge" style="background: #e0f2fe; color: #0284c7; font-size: 11px; padding: 4px 10px;">🎯 +100 XP за запуск</span>
             </div>
           </div>
 
-          <div class="card-title">
-            <span>🛣 Маршрут согласования</span>
-          </div>
-          <div id="route-steps-container"></div>
+          <!-- Предпросмотр сформированного бланка -->
+          <div id="sz-generated-block" style="display: none;">
+            <div class="card">
+              <div class="card-title" style="flex-wrap: wrap; gap: 8px;">
+                <span>👁 Официальный бланк документа (Предпросмотр)</span>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary" id="btn-toggle-sz-edit" onclick="toggleEditGeneratedSZ()" style="font-size: 11.5px; padding: 5px 10px;">
+                    ✏️ Редактировать текст
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="scrollToRawInput()" style="font-size: 11.5px; padding: 5px 10px;">
+                    🔄 Изменить запрос
+                  </button>
+                  <span class="status-badge badge-pending">Черновик</span>
+                </div>
+              </div>
 
-          <div style="margin-top: 10px; margin-bottom: 16px;">
-            <button type="button" class="btn btn-secondary" onclick="addCustomApproverPrompt()" style="font-size: 12px; padding: 8px;">
-              ➕ Добавить согласующего в цепочку
-            </button>
-          </div>
+              <!-- Блок ручного редактирования текста менеджером -->
+              <div id="sz-inline-edit-box" style="display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+                  ✏️ Редактирование текста документа:
+                </div>
+                <div class="field" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px; font-weight: 700;">Тема / Подзаголовок:</label>
+                  <input type="text" id="edit-sz-subtitle" class="input-text" oninput="onEditedSZInput()">
+                </div>
+                <div class="field" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px; font-weight: 700;">Текст документа (тело):</label>
+                  <textarea id="edit-sz-body" class="input-text" rows="7" style="font-size: 12.5px; line-height: 1.45;" oninput="onEditedSZInput()"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                  <div class="field" style="margin-bottom: 0;">
+                    <label style="font-size: 11px; font-weight: 700;">Сумма цифрами:</label>
+                    <input type="number" id="edit-sz-amount" class="input-text" oninput="onEditedSZAmountInput()">
+                  </div>
+                  <div class="field" style="margin-bottom: 0;">
+                    <label style="font-size: 11px; font-weight: 700;">Сумма прописью:</label>
+                    <input type="text" id="edit-sz-amount-words" class="input-text" oninput="onEditedSZInput()">
+                  </div>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="toggleEditGeneratedSZ()" style="width: 100%; padding: 8px; font-size: 12px;">
+                  ✅ Применить изменения в бланк
+                </button>
+              </div>
+              
+              <div class="doc-preview">
+                <div class="doc-preview-head" id="prev-recipient">
+                  Генеральному директору JANAMEN<br>Кабидуллину Н.Н.
+                </div>
+                <div class="doc-preview-title" id="prev-doc-title">
+                  СЛУЖЕБНАЯ ЗАПИСКА<br>
+                  <span id="prev-number" style="font-size: 11px; color: var(--text-muted); font-weight: normal;">[Номер будет присвоен при запуске]</span>
+                </div>
+                <div class="doc-preview-body" id="prev-body"></div>
+                <div class="doc-preview-amount" id="prev-amount"></div>
+                <div class="doc-preview-sign" id="prev-sign"></div>
 
-          <button class="btn btn-success" id="btn-submit-sz" onclick="submitFinalSZ()">
-            🚀 Запустить в работу
-          </button>
+                <div class="doc-preview-audit">
+                  <h5>Лист согласования по маршруту:</h5>
+                  <div id="prev-audit-table"></div>
+                </div>
+              </div>
+
+              <div class="card-title" style="margin-top: 16px; flex-wrap: wrap; gap: 6px;">
+                <span>🛣 Маршрут согласования</span>
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Перетаскивайте (Drag & Drop) или используйте стрелки</span>
+              </div>
+              <div id="route-steps-container"></div>
+
+              <div style="margin-top: 10px; margin-bottom: 16px;">
+                <button type="button" class="btn btn-secondary" onclick="openAddApproverModal()" style="font-size: 12.5px; padding: 9px; width: 100%;">
+                  ➕ Добавить согласующего в цепочку
+                </button>
+              </div>
+
+              <button class="btn btn-success" id="btn-submit-sz" onclick="submitFinalSZ()">
+                🚀 Запустить в работу
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1316,20 +1539,41 @@
 
     <!-- ==================== ВКЛАДКА 3: ЭЛЕКТРОННЫЙ АРХИВ ДОГОВОРОВ ==================== -->
     <div id="tab-contracts" class="tab-pane">
-      <div class="card">
-        <div class="card-title">
-          <span>📂 Архив договоров: <span id="contracts-dept-title" style="color: var(--primary);">Отдел</span></span>
+      <div class="card" style="margin-bottom: 14px; padding: 14px 16px;">
+        <div class="card-title" style="flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+          <div>
+            <span>📂 Архив договоров: <span id="contracts-dept-title" style="color: var(--primary);">Отдел</span></span>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;" id="contracts-access-hint">
+              Отображаются договоры вашего подразделения.
+            </div>
+          </div>
           <div style="display: flex; gap: 6px;">
-            <button class="btn btn-secondary" onclick="loadContractsFromBackend(); showToast('🔄 Синхронизация архива...');" style="font-size: 11.5px; padding: 6px 10px;">🔄 Синхронизировать</button>
-            <button class="btn-switch-user" onclick="openNewContractModal()">➕ Новый договор</button>
+            <button class="btn btn-secondary" onclick="loadContractsFromBackend(); showToast('🔄 Синхронизация архива...');" style="font-size: 11.5px; padding: 6px 12px;">🔄 Синхронизировать</button>
+            <button class="btn-switch-user" onclick="openNewContractModal()" style="font-size: 12px; padding: 6px 14px;">➕ Новый договор</button>
           </div>
         </div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;" id="contracts-access-hint">
-          Отображаются договоры вашего подразделения.
-        </p>
-        
-        <div id="contracts-list-container"></div>
+
+        <!-- Панель быстрого поиска и фильтрации договоров -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+          <input type="text" id="contracts-filter-search" class="input-text" style="flex: 2; min-width: 220px;" placeholder="🔍 Поиск по контрагенту, номеру, БИН или предмету..." oninput="renderContractsList()">
+          <select id="contracts-filter-date" class="select-text" style="flex: 1; min-width: 140px;" onchange="renderContractsList()">
+            <option value="all">Все даты (за всё время)</option>
+            <option value="2026">2026 год</option>
+            <option value="2025">2025 год</option>
+            <option value="active">Только действующие</option>
+          </select>
+          <select id="contracts-filter-dept" class="select-text" style="flex: 1; min-width: 150px;" onchange="renderContractsList()">
+            <option value="all">Все подразделения</option>
+            <option value="маркетинг">Отдел маркетинга</option>
+            <option value="операционный">Операционный блок</option>
+            <option value="административный">Административный блок</option>
+            <option value="финанс">Финансовый отдел</option>
+            <option value="коммерческ">Коммерческий блок</option>
+          </select>
+        </div>
       </div>
+        
+      <div id="contracts-list-container"></div>
     </div>
 
   </div>
@@ -1345,66 +1589,75 @@
         <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px;">✕</button>
       </div>
 
-      <!-- 1. Точная копия официального документа -->
-      <div class="doc-preview" style="box-shadow: none; border: 1px solid var(--border); padding: 20px 18px; margin-bottom: 14px;">
-        <div class="doc-preview-head" id="det-view-recipient">Генеральному директору JANAMEN<br>Кабидуллину Н.Н.</div>
-        <div class="doc-preview-title" id="det-view-title">СЛУЖЕБНАЯ ЗАПИСКА</div>
-        <div class="doc-preview-body" id="det-view-body"></div>
-        <div class="doc-preview-amount" id="det-view-amount" style="display: none;"></div>
-        <div class="doc-preview-sign" id="det-view-sign"></div>
-      </div>
-
-      <!-- 2. Таймлайн согласования -->
-      <div class="inspect-section">
-        <div class="inspect-section-title">
-          <span>🛣 Лист согласования и визирования</span>
-          <span id="det-approval-badge" class="status-badge badge-pending">В процессе</span>
+      <div class="detail-desktop-split">
+        <!-- Левая колонка: официальный бланк документа -->
+        <div>
+          <div class="doc-preview" style="box-shadow: none; border: 1px solid var(--border); padding: 20px 18px; margin-bottom: 14px;">
+            <div class="doc-preview-head" id="det-view-recipient">Генеральному директору JANAMEN<br>Кабидуллину Н.Н.</div>
+            <div class="doc-preview-title" id="det-view-title">СЛУЖЕБНАЯ ЗАПИСКА</div>
+            <div class="doc-preview-body" id="det-view-body"></div>
+            <div class="doc-preview-amount" id="det-view-amount" style="display: none;"></div>
+            <div class="doc-preview-sign" id="det-view-sign"></div>
+          </div>
         </div>
-        <div id="det-timeline-container"></div>
-      </div>
 
-      <!-- 3. Прикрепленные документы, договоры и АВР -->
-      <div class="inspect-section">
-        <div class="inspect-section-title">
-          <span>📎 Прикрепленные документы и АВР</span>
-        </div>
-        <div id="det-attachments-list" style="font-size: 13px;"></div>
-      </div>
+        <!-- Правая колонка: согласование, приложения, финансы и архив -->
+        <div>
+          <!-- 2. Таймлайн согласования -->
+          <div class="inspect-section">
+            <div class="inspect-section-title">
+              <span>🛣 Лист согласования и визирования</span>
+              <span id="det-approval-badge" class="status-badge badge-pending">В процессе</span>
+            </div>
+            <div id="det-timeline-container"></div>
+          </div>
 
-      <!-- 4. Финансовый трек -->
-      <div class="inspect-section" id="det-finance-section">
-        <div class="inspect-section-title">
-          <span>💳 Финансовый трек (Бухгалтерия)</span>
-          <span id="det-payment-badge" class="status-badge">Не требуется</span>
-        </div>
-        <div id="det-payment-details" style="font-size: 13px; font-weight: 600; margin-bottom: 8px;"></div>
-        <button id="btn-mark-paid" class="btn btn-secondary" onclick="markPaidAction()" style="display: none; font-size: 12px; padding: 8px;">
-          💳 Отметить оплату в казначействе (Главбух)
-        </button>
-      </div>
+          <!-- 3. Прикрепленные документы, договоры и АВР -->
+          <div class="inspect-section" id="det-attachments-section">
+            <div class="inspect-section-title">
+              <span>📎 Прикрепленные документы</span>
+            </div>
+            <div id="det-attachments-list" style="font-size: 13px;"></div>
+          </div>
 
-      <!-- 5. Скан подписанного оригинала -->
-      <div class="inspect-section" style="border: 1px dashed var(--warning); background: #fffbeb;">
-        <div class="inspect-section-title">
-          <span style="color: #b45309;">⭐️ Финальный оригинал с подписями</span>
-          <span id="det-legal-badge" class="status-badge badge-pending">Ожидается</span>
-        </div>
-        <div id="det-legal-status-text" style="font-size: 12.5px; margin-bottom: 8px; font-weight: 600;"></div>
-        
-        <div class="field" style="margin-bottom: 8px;">
-          <label style="color: var(--text); font-weight: 600;">Прикрепить скан/фото подписанного оригинала:</label>
-          <input type="file" id="signed-scan-file" class="input-text" accept=".pdf,image/*">
-        </div>
-        <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px;">
-          📷 Загрузить скан подписанного документа
-        </button>
-      </div>
+          <!-- 4. Финансовый трек -->
+          <div class="inspect-section" id="det-finance-section">
+            <div class="inspect-section-title">
+              <span>💳 Финансовый трек (Бухгалтерия)</span>
+              <span id="det-payment-badge" class="status-badge">Не требуется</span>
+            </div>
+            <div id="det-payment-details" style="font-size: 13px; font-weight: 600; margin-bottom: 8px;"></div>
+            <button id="btn-mark-paid" class="btn btn-secondary" onclick="markPaidAction()" style="display: none; font-size: 12px; padding: 8px;">
+              💳 Отметить оплату в казначействе (Главбух)
+            </button>
+          </div>
 
-      <!-- Кнопки визирования для текущего согласующего -->
-      <div id="det-approval-actions" style="display: flex; gap: 8px; margin-top: 16px;">
-        <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5;">✅ Согласовать</button>
-        <button class="btn btn-secondary" onclick="makeApprovalDecision('reject')" style="flex: 1; color: var(--danger);">❌ Отклонить</button>
+          <!-- 5. Скан подписанного оригинала -->
+          <div class="inspect-section" style="border: 1px dashed var(--warning); background: #fffbeb;">
+            <div class="inspect-section-title">
+              <span style="color: #b45309;">⭐️ Финальный оригинал с подписями</span>
+              <span id="det-legal-badge" class="status-badge badge-pending">Ожидается</span>
+            </div>
+            <div id="det-legal-status-text" style="font-size: 12.5px; margin-bottom: 8px; font-weight: 600;"></div>
+            
+            <div class="field" style="margin-bottom: 8px;">
+              <label style="color: var(--text); font-weight: 600;">Прикрепить скан/фото подписанного оригинала:</label>
+              <input type="file" id="signed-scan-file" class="input-text" accept=".pdf,image/*">
+            </div>
+            <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px;">
+              📷 Загрузить скан подписанного документа
+            </button>
+          </div>
+
+          <!-- Кнопки визирования для текущего согласующего -->
+          <div id="det-approval-actions" style="display: flex; gap: 8px; margin-top: 16px;">
+            <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5;">✅ Согласовать</button>
+            <button class="btn btn-secondary" onclick="makeApprovalDecision('reject')" style="flex: 1; color: var(--danger);">❌ Отклонить</button>
+          </div>
+        </div>
       </div>
+    </div>
+  </div>
     </div>
   </div>
 
@@ -1633,6 +1886,56 @@
     </div>
   </div>
 
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ СОГЛАСУЮЩЕГО В МАРШРУТ ==================== -->
+  <div id="modal-add-approver" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: var(--text);">➕ Добавить согласующего в цепочку</h3>
+        <button onclick="closeModal('modal-add-approver')" style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+
+      <div class="field" style="margin-bottom: 12px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: var(--text);">Выберите сотрудника Jana Men:</label>
+        <div class="searchable-box">
+          <input type="text" id="approver-search-input" class="input-text" placeholder="🔍 Введите ФИО, должность или отдел..." oninput="onApproverSearchInput(this.value)">
+          <div id="approver-search-dropdown" class="search-results-dropdown" style="max-height: 220px; overflow-y: auto;"></div>
+        </div>
+      </div>
+
+      <!-- Выбранный согласующий карточка -->
+      <div id="selected-new-approver-box" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;">
+        <div style="font-size: 13.5px; font-weight: 800; color: #166534;" id="new-approver-name">Имя</div>
+        <div style="font-size: 11.5px; color: #15803d; margin-top: 2px;" id="new-approver-meta">Должность • Отдел</div>
+      </div>
+
+      <div class="field" style="margin-bottom: 12px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: var(--text);">Название этапа согласования:</label>
+        <select id="new-approver-step-type" class="select-text">
+          <option value="Дополнительное согласование">Дополнительное согласование</option>
+          <option value="Юридическая экспертиза">Юридическая экспертиза</option>
+          <option value="Финансовый контроль">Финансовый контроль</option>
+          <option value="Согласование руководителя">Согласование руководителя</option>
+          <option value="Техническая экспертиза">Техническая экспертиза</option>
+          <option value="Проверка отдела кадров (HR)">Проверка отдела кадров (HR)</option>
+        </select>
+      </div>
+
+      <div class="field" style="margin-bottom: 16px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: var(--text);">Позиция в цепочке:</label>
+        <select id="new-approver-position" class="select-text">
+          <option value="before_boss">Перед финальным утверждением Шефа (Рекомендуется)</option>
+          <option value="first">В самое начало (Первым согласующим)</option>
+          <option value="end">В самый конец</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add-approver')" style="flex: 1;">Отмена</button>
+        <button type="button" class="btn btn-success" id="btn-confirm-add-approver" onclick="confirmAddApprover()" style="flex: 2;" disabled>Включить в маршрут</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toast"></div>
 
@@ -1645,7 +1948,7 @@
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     }
 
-    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbyNRrIM55hR2r3HzpMZmmFwtkjlXQRPqnpmsfQmOZ1ZO76dnbPx_Uq4A_3k949-eZa_Iw/exec';
+    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbxsIObydWva8uslsR5onfnnjPfLafzgBdBlJM9qjvVVBebZXPcKqu3rtyc2u4BG38-a6Q/exec';
 
     // ==================== УПРАВЛЕНИЕ GEMINI API КЛЮЧОМ ====================
     function getActiveGeminiKey() {
@@ -1978,7 +2281,7 @@
                 amount: item.amount,
                 counterparty: item.counterparty,
                 contract: item.contract,
-                avrStatus: 'Не требуется',
+                avrStatus: item.avrStatus || (item.contract ? '⏳ Ожидается сдача оригинала АВР' : 'Не требуется'),
                 statusApproval: item.statusApproval,
                 statusPayment: item.statusPayment,
                 statusLegal: item.statusLegal,
@@ -2011,7 +2314,9 @@
       var dept = currentUser ? currentUser.department : '';
       var isLawyer = isLawyerOrAdmin(currentUser);
       var queryDept = isLawyer ? 'Все' : dept;
-      var url = SCRIPT_EXEC_URL + '?action=get_contracts&department=' + encodeURIComponent(queryDept);
+      var userFio = currentUser ? currentUser.name : '';
+      var userRole = (isLawyer || (currentUser && currentUser.isAdmin)) ? 'Администратор' : (currentUser ? currentUser.role : '');
+      var url = SCRIPT_EXEC_URL + '?action=get_contracts&department=' + encodeURIComponent(queryDept) + '&userFio=' + encodeURIComponent(userFio) + '&userRole=' + encodeURIComponent(userRole);
 
       fetch(url)
         .then(function(res) { return res.json(); })
@@ -3069,6 +3374,7 @@
         '   - Ссылка на счет/акт/договор (если есть).',
         '   - «Подтверждающие документы прилагаются.»',
         '5. amount — точная сумма числом, amountInWords — официальная сумма прописью на русском языке (например: "четырнадцать тысяч девятьсот пятьдесят тенге 00 тиын").',
+        (selectedContract ? ('6. ДОГОВОР-ОСНОВАНИЕ: К служебной записке привязан договор: ' + selectedContract.number + ' (' + (selectedContract.counterparty || selectedContract.title) + '). Обязательно укажи его номер в тексте!') : ''),
         '',
         'Верни ТОЛЬКО валидный JSON следующей структуры:',
         '{',
@@ -3078,7 +3384,7 @@
         '  "amount": 14950,',
         '  "amountInWords": "четырнадцать тысяч девятьсот пятьдесят тенге 00 тиын",',
         '  "currency": "тенге (KZT)",',
-        '  "counterparty": "Контрагент",',
+        '  "counterparty": "' + (selectedContract ? selectedContract.counterparty : 'Контрагент') + '",',
         '  "requiresPayment": true',
         '}'
       ].join('\n');
@@ -3124,6 +3430,14 @@
           var clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
           var parsed = JSON.parse(clean);
           parsed.docTypeCategory = currentDocType;
+          if (selectedContract) {
+            parsed.contract = selectedContract.number + ' — ' + (selectedContract.counterparty || selectedContract.title || selectedContract.subject);
+            if (!parsed.counterparty) parsed.counterparty = selectedContract.counterparty;
+          }
+          var avrChecked = document.querySelector('input[name="avr_status"]:checked');
+          parsed.avrStatus = (avrChecked && avrChecked.value === 'submitted') 
+            ? "✅ Оригинал АВР сдан в бухгалтерию" 
+            : (selectedContract ? "⏳ Ожидается сдача оригинала АВР" : "Не требуется");
           callback(parsed);
         } else {
           callback(null);
@@ -3276,7 +3590,20 @@
     }
 
     function displayGeneratedSZ(data) {
+      if (selectedContract && !data.contract) {
+        data.contract = selectedContract.number + ' — ' + (selectedContract.counterparty || selectedContract.title || selectedContract.subject);
+      }
+      if (!data.avrStatus) {
+        var avrChecked = document.querySelector('input[name="avr_status"]:checked');
+        data.avrStatus = (avrChecked && avrChecked.value === 'submitted') 
+          ? "✅ Оригинал АВР сдан в бухгалтерию" 
+          : (selectedContract ? "⏳ Ожидается сдача оригинала АВР" : "Не требуется");
+      }
       currentGeneratedSZ = data;
+
+      var placeholder = document.getElementById('sz-desktop-placeholder');
+      if (placeholder) placeholder.style.display = 'none';
+
       document.getElementById('sz-generated-block').style.display = 'block';
 
       document.getElementById('prev-doc-title').innerHTML = data.title + '<br><span style="font-size:12px;color:var(--text-muted);font-weight:600;">' + data.subTitle + '</span>';
@@ -3298,7 +3625,7 @@
       document.getElementById('sz-generated-block').scrollIntoView({ behavior: 'smooth' });
     }
 
-        // ==================== РЕДАКТИРОВАНИЕ СФОРМИРОВАННОГО БЛАНКА ====================
+    // ==================== РЕДАКТИРОВАНИЕ СФОРМИРОВАННОГО БЛАНКА ====================
     function toggleEditGeneratedSZ() {
       var box = document.getElementById('sz-inline-edit-box');
       var btn = document.getElementById('btn-toggle-sz-edit');
@@ -3354,7 +3681,7 @@
       textarea.focus();
     }
 
-// МАРШРУТ: БЕЗ АРСЕНА БЕГАЛИНА! Исполнитель -> Руководитель -> Директор блока -> [Главбух/HR] -> Шеф!
+    // МАРШРУТ: БЕЗ АРСЕНА БЕГАЛИНА! Исполнитель -> Руководитель -> Директор блока -> [Главбух/HR] -> Шеф!
     function buildDefaultRoute(data) {
       currentRoute = [];
       var deptObj = JANA_MEN_STRUCTURE.find(function(d) { return currentUser && d.name === currentUser.department; });
@@ -3382,6 +3709,10 @@
       currentRoute.push({ name: "Кабидуллин Нурсултан Нурланович", role: "Генеральный директор", stepName: "Утверждение шефом", isBoss: true });
     }
 
+    // ==================== МАРШРУТ СОГЛАСОВАНИЯ: DRAG-AND-DROP И УПРАВЛЕНИЕ ====================
+    var draggedRouteIndex = null;
+    var pendingNewApprover = null;
+
     function renderRouteUI() {
       var cont = document.getElementById('route-steps-container');
       cont.innerHTML = '';
@@ -3392,16 +3723,33 @@
         var xpReward = isBoss ? '+200 XP' : (step.isPaymentStep || /бухгалтер/i.test(step.role) ? '+100 XP' : '+50 XP');
         var stepIcon = isBoss ? '👑' : (idx === 0 ? '🟢' : '⚡');
 
+        var isFirst = idx === 0;
+        var isLast = idx === currentRoute.length - 1;
+
         var el = document.createElement('div');
         el.className = 'route-step';
+        el.setAttribute('draggable', 'true');
+        el.dataset.index = idx;
+
+        el.ondragstart = function(e) { onRouteDragStart(e, idx); };
+        el.ondragend = function(e) { onRouteDragEnd(e); };
+        el.ondragover = function(e) { onRouteDragOver(e); };
+        el.ondragleave = function(e) { onRouteDragLeave(e); };
+        el.ondrop = function(e) { onRouteDrop(e, idx); };
+
         el.innerHTML = [
+          '<div class="route-drag-handle" title="Зажмите и перетащите мышкой">⠿</div>',
           '<div class="route-step-num">' + (idx + 1) + '</div>',
           '<div class="route-step-info">',
             '<div class="route-step-name">' + stepIcon + ' ' + step.name + (isBoss ? ' <span style="color:var(--gold); font-size:11px; font-weight:800;">(Финальный Шеф)</span>' : '') + '</div>',
             '<div class="route-step-role">' + step.stepName + ' • ' + step.role + '</div>',
           '</div>',
           '<div class="route-step-xp">' + xpReward + '</div>',
-          '<button type="button" onclick="removeRouteStep(' + idx + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px 6px;">✕</button>'
+          '<div class="route-step-actions">',
+            '<button type="button" class="route-ctrl-btn" title="Переместить выше" onclick="moveRouteStep(' + idx + ', ' + (idx - 1) + ')" ' + (isFirst ? 'disabled' : '') + '>▲</button>',
+            '<button type="button" class="route-ctrl-btn" title="Переместить ниже" onclick="moveRouteStep(' + idx + ', ' + (idx + 1) + ')" ' + (isLast ? 'disabled' : '') + '>▼</button>',
+            '<button type="button" class="route-ctrl-btn route-remove-btn" title="Исключить из цепочки" onclick="removeRouteStep(' + idx + ')">✕</button>',
+          '</div>'
         ].join('');
         cont.appendChild(el);
 
@@ -3410,6 +3758,64 @@
 
       auditHtml += '</table>';
       document.getElementById('prev-audit-table').innerHTML = auditHtml;
+    }
+
+    function onRouteDragStart(e, idx) {
+      draggedRouteIndex = idx;
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(idx));
+      }
+      var el = e.currentTarget || e.target;
+      if (el) el.classList.add('route-dragging');
+    }
+
+    function onRouteDragEnd(e) {
+      draggedRouteIndex = null;
+      document.querySelectorAll('.route-step').forEach(function(el) {
+        el.classList.remove('route-dragging');
+        el.classList.remove('route-drag-over');
+      });
+    }
+
+    function onRouteDragOver(e) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      var target = e.currentTarget;
+      if (target && !target.classList.contains('route-drag-over')) {
+        target.classList.add('route-drag-over');
+      }
+    }
+
+    function onRouteDragLeave(e) {
+      var target = e.currentTarget;
+      if (target) target.classList.remove('route-drag-over');
+    }
+
+    function onRouteDrop(e, targetIdx) {
+      e.preventDefault();
+      var target = e.currentTarget;
+      if (target) target.classList.remove('route-drag-over');
+
+      var fromIdx = draggedRouteIndex;
+      if (fromIdx === null && e.dataTransfer) {
+        var raw = e.dataTransfer.getData('text/plain');
+        if (raw !== '') fromIdx = parseInt(raw, 10);
+      }
+
+      if (fromIdx !== null && !isNaN(fromIdx) && fromIdx !== targetIdx) {
+        moveRouteStep(fromIdx, targetIdx);
+      }
+    }
+
+    function moveRouteStep(fromIdx, toIdx) {
+      if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= currentRoute.length || toIdx < 0 || toIdx >= currentRoute.length) {
+        return;
+      }
+      var step = currentRoute.splice(fromIdx, 1)[0];
+      currentRoute.splice(toIdx, 0, step);
+      renderRouteUI();
+      showToast('↕ Порядок согласующих обновлен');
     }
 
     function removeRouteStep(index) {
@@ -3421,16 +3827,98 @@
       renderRouteUI();
     }
 
-    function addCustomApproverPrompt() {
-      var name = prompt('Введите ФИО согласующего сотрудника (например: Кабимулданова Динара Тлеукановна - Юрист):');
-      if (name && name.trim()) {
-        currentRoute.splice(currentRoute.length - 1, 0, {
-          name: name.trim(),
-          role: "Согласующий",
-          stepName: "Дополнительное согласование"
+    function openAddApproverModal() {
+      document.getElementById('modal-add-approver').style.display = 'flex';
+      document.getElementById('approver-search-input').value = '';
+      document.getElementById('approver-search-dropdown').style.display = 'none';
+      document.getElementById('selected-new-approver-box').style.display = 'none';
+      document.getElementById('btn-confirm-add-approver').disabled = true;
+      pendingNewApprover = null;
+      onApproverSearchInput('');
+    }
+
+    function onApproverSearchInput(query) {
+      var dropdown = document.getElementById('approver-search-dropdown');
+      var q = (query || '').toLowerCase().trim();
+      var matches = [];
+
+      JANA_MEN_STRUCTURE.forEach(function(dept) {
+        dept.employees.forEach(function(emp) {
+          var alreadyInRoute = currentRoute.some(function(r) { return r.name === emp.name; });
+          if (!alreadyInRoute) {
+            if (!q || emp.name.toLowerCase().indexOf(q) !== -1 || emp.role.toLowerCase().indexOf(q) !== -1 || dept.name.toLowerCase().indexOf(q) !== -1) {
+              matches.push({ emp: emp, deptName: dept.name });
+            }
+          }
         });
-        renderRouteUI();
+      });
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 12px; font-size: 12px; color: var(--text-muted); text-align: center;">Сотрудники не найдены или уже включены в маршрут</div>';
+        dropdown.style.display = 'block';
+        return;
       }
+
+      var html = '';
+      matches.slice(0, 10).forEach(function(m) {
+        var empSafe = encodeURIComponent(JSON.stringify({ id: m.emp.id, name: m.emp.name, role: m.emp.role, dept: m.deptName }));
+        html += [
+          '<div class="search-result-item" onclick="selectNewApproverCandidate(\'' + empSafe + '\')">',
+            '<div class="search-result-name" style="color:var(--text); font-weight:700;">' + m.emp.name + '</div>',
+            '<div class="search-result-meta">' + m.emp.role + ' • ' + m.deptName + '</div>',
+          '</div>'
+        ].join('');
+      });
+
+      dropdown.innerHTML = html;
+      dropdown.style.display = 'block';
+    }
+
+    function selectNewApproverCandidate(encodedData) {
+      try {
+        var data = JSON.parse(decodeURIComponent(encodedData));
+        pendingNewApprover = data;
+        document.getElementById('approver-search-dropdown').style.display = 'none';
+        document.getElementById('approver-search-input').value = data.name;
+
+        document.getElementById('new-approver-name').textContent = data.name;
+        document.getElementById('new-approver-meta').textContent = data.role + ' • ' + data.dept;
+        document.getElementById('selected-new-approver-box').style.display = 'block';
+        document.getElementById('btn-confirm-add-approver').disabled = false;
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    function confirmAddApprover() {
+      if (!pendingNewApprover) return;
+
+      var stepType = document.getElementById('new-approver-step-type').value;
+      var pos = document.getElementById('new-approver-position').value;
+
+      var newStep = {
+        name: pendingNewApprover.name,
+        role: pendingNewApprover.role,
+        stepName: stepType,
+        isCustom: true
+      };
+
+      if (pos === 'first') {
+        currentRoute.unshift(newStep);
+      } else if (pos === 'end') {
+        currentRoute.push(newStep);
+      } else {
+        var bossIdx = currentRoute.findIndex(function(r) { return r.isBoss || /генеральный/i.test(r.role); });
+        if (bossIdx !== -1) {
+          currentRoute.splice(bossIdx, 0, newStep);
+        } else {
+          currentRoute.splice(Math.max(0, currentRoute.length - 1), 0, newStep);
+        }
+      }
+
+      renderRouteUI();
+      closeModal('modal-add-approver');
+      showToast('✅ ' + pendingNewApprover.name + ' добавлен в маршрут!');
     }
 
     function submitFinalSZ() {
@@ -3449,6 +3937,10 @@
       var initiator = currentUser ? currentUser.name : 'Сотрудник';
       var coExNames = selectedCoExecutors.map(function(e) { return e.name; });
 
+      var chosenContract = (selectedContract ? (selectedContract.number + ' — ' + (selectedContract.counterparty || selectedContract.title || selectedContract.subject)) : '') || (currentGeneratedSZ && currentGeneratedSZ.contract) || '';
+
+      var chosenAvr = (currentGeneratedSZ && currentGeneratedSZ.avrStatus) ? currentGeneratedSZ.avrStatus : (selectedContract ? "⏳ Ожидается сдача оригинала АВР" : "Не требуется");
+
       var payload = {
         action: 'create_sz',
         department: dept,
@@ -3459,8 +3951,9 @@
         body: currentGeneratedSZ.body,
         amount: currentGeneratedSZ.amount || 0,
         amountInWords: currentGeneratedSZ.amountInWords || '',
-        counterparty: currentGeneratedSZ.counterparty || '',
-        contract: currentGeneratedSZ.contract || '',
+        counterparty: currentGeneratedSZ.counterparty || (selectedContract ? selectedContract.counterparty : ''),
+        contract: chosenContract,
+        avrStatus: chosenAvr,
         route: currentRoute,
         attachments: szUploadedFiles.map(function(f) { return { name: f.name, mimeType: f.type, base64: f.base64 }; })
       };
@@ -3476,8 +3969,8 @@
         amount: payload.amount,
         amountInWords: payload.amountInWords,
         counterparty: payload.counterparty,
-        contract: payload.contract,
-        avrStatus: currentGeneratedSZ.avrStatus || 'Не требуется',
+        contract: chosenContract,
+        avrStatus: chosenAvr,
         statusApproval: 'На согласовании: ' + (currentRoute[0] ? currentRoute[0].name : 'Руководитель'),
         statusPayment: currentGeneratedSZ.requiresPayment ? 'Ожидает визы' : 'Не требуется',
         statusLegal: 'Ожидает подписанный скан',
@@ -3675,21 +4168,39 @@
       }
 
       // Приложения и ссылки Google Doc / Drive
+      var attSection = document.getElementById('det-attachments-section');
       var attList = document.getElementById('det-attachments-list');
       var linksHtml = [];
+
       if (item.docUrl) {
-        linksHtml.push('<div style="margin-bottom:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:8px;">📄 <b>Google Doc (СЗ):</b> <a href="' + item.docUrl + '" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;">Открыть официальный документ ↗</a></div>');
+        linksHtml.push('<div style="margin-bottom:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px;">📄 <b>Google Doc (СЗ):</b> <a href="' + item.docUrl + '" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;margin-left:4px;">Открыть официальный документ ↗</a></div>');
       }
       if (item.folderUrl) {
-        linksHtml.push('<div style="margin-bottom:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:8px;">📁 <b>Папка на Google Диске:</b> <a href="' + item.folderUrl + '" target="_blank" style="color:#166534;font-weight:700;text-decoration:underline;">Перейти в архив документов ↗</a></div>');
+        linksHtml.push('<div style="margin-bottom:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px;">📁 <b>Папка на Google Диске:</b> <a href="' + item.folderUrl + '" target="_blank" style="color:#166534;font-weight:700;text-decoration:underline;margin-left:4px;">Перейти в архив документов ↗</a></div>');
       }
       if (item.scanUrl) {
-        linksHtml.push('<div style="margin-bottom:8px;">📎 <b>Подписанный скан:</b> <a href="' + item.scanUrl + '" target="_blank" style="color:#2563eb;font-weight:600;">Открыть скан оригинала ↗</a></div>');
+        linksHtml.push('<div style="margin-bottom:8px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:10px 12px;">📎 <b>Подписанный скан:</b> <a href="' + item.scanUrl + '" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;margin-left:4px;">Открыть скан оригинала ↗</a></div>');
       }
-      linksHtml.push('<div style="margin-bottom:6px;">📑 <b>Договор-основание:</b> ' + (item.contract || 'Не привязан к договору') + '</div>');
-      linksHtml.push('<div>📑 <b>Статус оригинала АВР:</b> <span style="color:#b45309;font-weight:700;">' + (item.avrStatus || 'Не требуется') + '</span></div>');
 
-      attList.innerHTML = linksHtml.join('');
+      // Договор-основание показываем ТОЛЬКО если договор действительно указан!
+      var hasContract = item.contract && String(item.contract).trim() && item.contract !== 'Не привязан к договору' && item.contract !== 'Нет' && item.contract !== 'б/н';
+      if (hasContract) {
+        linksHtml.push('<div style="margin-bottom:8px; background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px 12px;">📑 <b>Договор-основание:</b> <span style="font-weight:700; color:#854d0e; margin-left:4px;">' + item.contract + '</span></div>');
+      }
+
+      // АВР показываем ТОЛЬКО если статус АВР реальный и требует внимания (не "Не требуется")!
+      var hasAvr = item.avrStatus && item.avrStatus !== 'Не требуется' && item.avrStatus.indexOf('Не требуется') === -1;
+      if (hasAvr) {
+        linksHtml.push('<div style="margin-bottom:8px; background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px 12px;">📑 <b>Статус оригинала АВР:</b> <span style="color:#b45309;font-weight:700;margin-left:4px;">' + item.avrStatus + '</span></div>');
+      }
+
+      if (linksHtml.length > 0) {
+        attList.innerHTML = linksHtml.join('');
+        if (attSection) attSection.style.display = 'block';
+      } else {
+        attList.innerHTML = '';
+        if (attSection) attSection.style.display = 'none';
+      }
 
       // Финансы
       document.getElementById('det-payment-badge').textContent = item.statusPayment;
@@ -3780,13 +4291,57 @@
 
       var isLawyer = isLawyerOrAdmin(currentUser);
 
+      // Фильтры поиска и даты
+      var searchEl = document.getElementById('contracts-filter-search');
+      var filterText = searchEl ? searchEl.value.toLowerCase().trim() : '';
+
+      var dateEl = document.getElementById('contracts-filter-date');
+      var dateFilter = dateEl ? dateEl.value : 'all';
+
+      var deptEl = document.getElementById('contracts-filter-dept');
+      var deptFilter = deptEl ? deptEl.value.toLowerCase() : 'all';
+
       // Юрист видит ВСЕ договоры! Обычный сотрудник — только своего отдела!
       var visibleContracts = mockContracts.filter(function(c) {
-        return isLawyer || (currentUser && c.department === currentUser.department);
+        if (!isLawyer && currentUser && c.department !== currentUser.department) return false;
+
+        // Фильтр по отделу
+        if (deptFilter !== 'all') {
+          if ((c.department || '').toLowerCase().indexOf(deptFilter) === -1) return false;
+        }
+
+        // Фильтр по дате / году / статусу
+        if (dateFilter === '2026') {
+          var match2026 = (c.date && c.date.indexOf('2026') !== -1) || (c.validUntil && c.validUntil.indexOf('2026') !== -1) || (c.number && c.number.indexOf('2026') !== -1);
+          if (!match2026) return false;
+        } else if (dateFilter === '2025') {
+          var match2025 = (c.date && c.date.indexOf('2025') !== -1) || (c.validUntil && c.validUntil.indexOf('2025') !== -1) || (c.number && c.number.indexOf('2025') !== -1);
+          if (!match2025) return false;
+        } else if (dateFilter === 'active') {
+          if (c.status !== 'Действует') return false;
+        }
+
+        // Поиск по контрагенту, номеру, БИН, предмету, менеджеру
+        if (filterText) {
+          var haystack = [
+            c.counterparty || '',
+            c.title || '',
+            c.number || '',
+            c.externalNumber || '',
+            c.bin || '',
+            c.subject || '',
+            c.manager || '',
+            c.department || ''
+          ].join(' ').toLowerCase();
+
+          if (haystack.indexOf(filterText) === -1) return false;
+        }
+
+        return true;
       });
 
       if (visibleContracts.length === 0) {
-        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">В архиве пока нет договоров вашего отдела. Нажмите «➕ Новый договор», чтобы зарегистрировать документ.</div>';
+        cont.innerHTML = '<div style="text-align:center;padding:36px 16px;color:var(--text-muted);font-size:13px;grid-column: 1 / -1;">Договоров не найдено по заданным критериям поиска.</div>';
         return;
       }
 

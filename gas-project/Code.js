@@ -431,6 +431,13 @@ function generateSZGoogleDoc(szNumber, data, dateStr, folder) {
   pBody.setLineSpacing(1.15);
   pBody.setSpacingAfter(12);
 
+  if (data.contract) {
+    var pContract = docBody.appendParagraph('Договор-основание: ' + data.contract);
+    pContract.setFontSize(10.5);
+    pContract.setBold(true);
+    pContract.setSpacingAfter(10);
+  }
+
   if (data.amount && Number(data.amount) > 0) {
     var pAmount = docBody.appendParagraph('Итого к оплате: ' + Number(data.amount).toLocaleString('ru-RU') + ' (' + (data.amountInWords || '') + ') тенге.');
     pAmount.setFontSize(11);
