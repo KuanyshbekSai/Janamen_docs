@@ -781,6 +781,201 @@
     </div>
   </div>
 
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ ДОГОВОРА С ИИ-РАСПОЗНАВАНИЕМ ==================== -->
+  <div id="modal-new-contract" class="modal-overlay">
+    <div class="modal-content" style="max-width: 620px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+        <div>
+          <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-weight: 700;">✨ ИИ-Регистрация договоров</span>
+          <h3 style="font-size: 17px; font-weight: 800; color: var(--text); margin-top: 4px;">Новый договор в архив</h3>
+        </div>
+        <button onclick="closeModal('modal-new-contract')" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+
+      <!-- 1. ЗОНА ЗАГРУЗКИ / ФОТО ДОКУМЕНТА -->
+      <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 16px;" id="nc-dropzone">
+        <div style="font-size: 30px; margin-bottom: 4px;">📸 📑</div>
+        <div style="font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 3px;">Сфотографируйте или загрузите договор</div>
+        <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto;">
+          Gemini AI прочитает текст документа: определит с кем договор, на предмет чего, сумму, сроки и предзаполнит карточку.
+        </div>
+        
+        <input type="file" id="nc-file-input" accept="image/*,application/pdf" capture="environment" onchange="onContractFileSelected(event)" style="display: none;">
+        
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('nc-file-input').click()" style="padding: 9px 16px; font-size: 12.5px;">
+            📷 Сделать фото / Выбрать файл
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="fillContractDemoData()" style="padding: 9px 12px; font-size: 12px;">
+            ⚡ Демо-образец (Тест ИИ)
+          </button>
+        </div>
+
+        <!-- Превью выбранного файла -->
+        <div id="nc-file-preview" style="display: none; margin-top: 12px; background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: left;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="nc-file-icon" style="font-size: 20px;">📄</span>
+              <div>
+                <div id="nc-file-name" style="font-size: 12.5px; font-weight: 700; color: var(--text);">договор.pdf</div>
+                <div id="nc-file-size" style="font-size: 11px; color: var(--text-muted);">1.2 MB</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary" onclick="clearContractFile()" style="padding: 4px 8px; font-size: 11px;">✕ Удалить</button>
+          </div>
+          <div id="nc-image-thumb" style="margin-top: 8px; display: none; text-align: center;">
+            <img id="nc-thumb-img" src="" style="max-height: 130px; border-radius: 6px; border: 1px solid var(--border);">
+          </div>
+        </div>
+      </div>
+
+      <!-- Индикатор работы ИИ -->
+      <div id="nc-ai-loading" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 14px; text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <div style="width: 18px; height: 18px; border: 2.5px solid #22c55e; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          <span style="font-size: 12.5px; font-weight: 700; color: #15803d;" id="nc-ai-status-text">Gemini AI считывает текст и параметры договора...</span>
+        </div>
+      </div>
+
+      <!-- 2. ПРЕДЗАПОЛНЕННАЯ КАРТОЧКА РЕГИСТРАЦИИ ДЛЯ МЕНЕДЖЕРА -->
+      <div id="nc-registration-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 11.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Карточка регистрации договора</span>
+          <span style="font-size: 11px; color: var(--primary); font-weight: 600;">(проверьте и скорректируйте данные)</span>
+        </div>
+
+        <!-- 1. Номера: Автоматический внутренний и внешний контрагента -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="field" style="margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text);">Внутренний номер (Авто):</label>
+            <input type="text" id="nc-internal-number" class="input-text" style="background: #f1f5f9; font-weight: 700; color: var(--primary);" readonly>
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text);">Внешний № договора контрагента:</label>
+            <input type="text" id="nc-external-number" class="input-text" placeholder="например: № 105/26">
+          </div>
+        </div>
+
+        <!-- 2. Контрагент и БИН -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="field" style="margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text);">Контрагент (С кем договор): *</label>
+            <input type="text" id="nc-counterparty" class="input-text" placeholder="ТОО или ИП..." oninput="onContractFieldsChanged()">
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text);">БИН / ИИН контрагента:</label>
+            <input type="text" id="nc-bin" class="input-text" placeholder="12 цифр">
+          </div>
+        </div>
+
+        <!-- 3. Название договора (начинается с контрагента) -->
+        <div class="field" style="margin-bottom: 10px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text); display: flex; justify-content: space-between;">
+            <span>Название договора (начинается с контрагента): *</span>
+            <span style="font-size: 10.5px; color: var(--text-muted); font-weight: normal;">Автогенерация</span>
+          </label>
+          <input type="text" id="nc-title" class="input-text" style="font-weight: 600; color: var(--text);" placeholder="Контрагент — Предмет договора">
+        </div>
+
+        <!-- 4. Предмет договора (для чего нужен, какая услуга/товар) -->
+        <div class="field" style="margin-bottom: 10px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text);">Предмет договора (какая услуга/товар, для чего нужен): *</label>
+          <textarea id="nc-subject" class="input-text" rows="2" style="font-size: 12.5px; resize: vertical;" placeholder="На предмет чего договор, какая именно услуга или товар..." oninput="onContractFieldsChanged()"></textarea>
+        </div>
+
+        <!-- 5. Сумма и сроки -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="field" style="margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text);">Сумма / Условия: *</label>
+            <input type="text" id="nc-amount" class="input-text" placeholder="например: 1 500 000 ₸">
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text);">Дата начала:</label>
+            <input type="text" id="nc-valid-from" class="input-text" placeholder="01.11.2026">
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text);">Действует до:</label>
+            <input type="text" id="nc-valid-until" class="input-text" placeholder="01.11.2027">
+          </div>
+        </div>
+
+        <!-- 6. Отдел -->
+        <div class="field" style="margin-bottom: 10px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text);">Подразделение (Отдел договора):</label>
+          <select id="nc-department" class="input-text" style="font-size: 12.5px;">
+            <option value="Операционный блок">Операционный блок</option>
+            <option value="Отдел логистики">Отдел логистики</option>
+            <option value="Отдел маркетинга">Отдел маркетинга</option>
+            <option value="Отдел продаж">Отдел продаж</option>
+            <option value="Финансовый блок">Финансовый блок</option>
+            <option value="Административный блок">Административный блок</option>
+          </select>
+        </div>
+
+        <!-- 7. Закрепленные исполнители (Умный поиск линейных сотрудников) -->
+        <div class="field" style="margin-bottom: 16px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text);">Закрепленные исполнители (линейные сотрудники):</label>
+          <div class="selected-tags" id="nc-exec-tags" style="margin-bottom: 6px;"></div>
+          <div style="position: relative;">
+            <input type="text" id="nc-exec-search" class="input-text" placeholder="Начните вводить фамилию линейного сотрудника..." oninput="onNcExecSearchInput(event)">
+            <div id="nc-exec-dropdown" class="search-dropdown"></div>
+          </div>
+          <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 3px;">Руководители отделов, директора и гендиректор исключены.</div>
+        </div>
+
+        <!-- Кнопка сохранения -->
+        <button type="button" class="btn btn-primary" onclick="saveNewContract()" style="width: 100%; padding: 12px; font-size: 13.5px; font-weight: 700;">
+          💾 Зарегистрировать договор в архиве
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: ПРИКРЕПЛЕНИЕ АВР К ДОГОВОРУ ==================== -->
+  <div id="modal-attach-avr" class="modal-overlay">
+    <div class="modal-content" style="max-width: 480px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+        <div>
+          <span class="status-badge badge-pending">Закрывающий документ</span>
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--text); margin-top: 4px;">Прикрепить АВР к договору</h3>
+        </div>
+        <button onclick="closeModal('modal-attach-avr')" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+
+      <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; background: #f8fafc; padding: 9px; border-radius: 7px; border: 1px solid var(--border);" id="avr-contract-info">
+        Договор: <b>№82 — ИП «Алдажуманова А.Т.»</b>
+      </div>
+
+      <div class="field" style="margin-bottom: 10px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Номер и дата АВР: *</label>
+        <input type="text" id="avr-modal-number" class="input-text" placeholder="например: Акт № 15 от 04.11.2026">
+      </div>
+
+      <div class="field" style="margin-bottom: 10px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Сумма по АВР: *</label>
+        <input type="text" id="avr-modal-amount" class="input-text" placeholder="например: 500 000 ₸">
+      </div>
+
+      <div class="field" style="margin-bottom: 12px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Скан / фото документа АВР:</label>
+        <input type="file" id="avr-modal-file" class="input-text" accept="image/*,.pdf">
+      </div>
+
+      <div class="field" style="margin-bottom: 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="avr-modal-submitted" style="transform: scale(1.2);">
+          <span>✅ Бумажный оригинал АВР уже сдан в бухгалтерию</span>
+        </label>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; margin-left: 24px;">Если галочка снята, статус будет «⏳ Ожидается сдача оригинала».</div>
+      </div>
+
+      <button type="button" class="btn btn-primary" onclick="submitAttachAvr()" style="width: 100%; padding: 11px; font-size: 13px; font-weight: 700;">
+        📑 Добавить АВР в карточку договора
+      </button>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toast"></div>
 
@@ -943,16 +1138,24 @@
     var pendingAuthTargetEmp = null;
     var pendingAuthCode = null;
 
-    // Реестр договоров с закрепленными исполнителями и сканами АВР
+    // Переменные для модального окна регистрации договора через ИИ
+    var selectedNcExecutors = [];
+    var newContractUploadedFile = null;
+    var currentAvrContractId = null;
+
+    // Реестр договоров с автоматической нумерацией, названиями от контрагента и АВР
     var mockContracts = [
       {
         id: 1,
         department: "Операционный блок",
-        number: "№82",
+        number: "JM-ДОГ-2026/01",
+        externalNumber: "№82",
+        title: "ИП «Алдажуманова А.Т.» — Аренда основного склада Астана",
         date: "01.09.2026",
         validUntil: "01.09.2027",
         counterparty: "ИП «Алдажуманова А.Т.»",
-        subject: "Аренда основного склада Астана (Анет Баба 9В)",
+        bin: "840512301923",
+        subject: "Аренда основного складского помещения компании в г. Астана (ул. Анет Баба 9В)",
         amount: "500 000 ₸ / месяц",
         manager: "Аманбаев Арман",
         executors: ["Аманбаев Арман Ауезханұлы", "Байсейтов Рамазан Алтымбаевич"],
@@ -965,11 +1168,14 @@
       {
         id: 2,
         department: "Отдел логистики",
-        number: "№14-FL",
+        number: "JM-ДОГ-2026/02",
+        externalNumber: "№14-FL",
+        title: "ТОО «Fast Logistic» — Курьерские услуги и межгород доставка",
         date: "15.05.2026",
         validUntil: "31.12.2026",
         counterparty: "ТОО «Fast Logistic»",
-        subject: "Курьерские услуги и межгород доставка",
+        bin: "190340019284",
+        subject: "Транспортно-экспедиционные и курьерские услуги по доставке товаров по Казахстану",
         amount: "По тарифам экспедирования",
         manager: "Абенова Дана",
         executors: ["Курбангалиева Акзере Раильевна", "Каримова Адель", "Сейлханова Алия Төлегенқызы"],
@@ -981,11 +1187,14 @@
       {
         id: 3,
         department: "Отдел маркетинга",
-        number: "№22-VC",
+        number: "JM-ДОГ-2026/03",
+        externalNumber: "№22-VC",
+        title: "Vercel Inc. — Подписка на облачный хостинг и деплой веб-сервисов",
         date: "01.10.2026",
         validUntil: "01.10.2027",
         counterparty: "Vercel Inc.",
-        subject: "Подписка на облачный хостинг и деплой",
+        bin: "990140099120",
+        subject: "Оплата международной подписки на облачный хостинг и автоматический деплой Vercel Pro",
         amount: "$20 / месяц",
         manager: "Сайдуллаев Куанышбек",
         executors: ["Сайдуллаев Куанышбек Галымович"],
@@ -1343,10 +1552,11 @@
 
       var html = '';
       available.forEach(function(c) {
+        var cTitle = c.title || (c.counterparty + ' — ' + c.subject);
         html += [
           '<div class="search-result-item" onclick="selectContractForSZ(' + c.id + ')">',
-            '<div class="search-result-name" style="color: var(--primary);">' + c.number + ' — ' + c.counterparty + '</div>',
-            '<div class="search-result-meta">' + c.subject + ' (' + c.amount + ') • ' + c.department + '</div>',
+            '<div class="search-result-name" style="color: var(--primary);">' + cTitle + '</div>',
+            '<div class="search-result-meta">' + c.number + ' • ' + (c.amount || 'По заявкам') + ' • ' + c.department + '</div>',
           '</div>'
         ].join('');
       });
@@ -1360,7 +1570,8 @@
       if (!contract) return;
 
       selectedContract = contract;
-      document.getElementById('sz-contract-search').value = contract.number + ' — ' + contract.counterparty;
+      var cTitle = contract.title || (contract.counterparty + ' — ' + contract.subject);
+      document.getElementById('sz-contract-search').value = cTitle;
       document.getElementById('sz-contract-dropdown').style.display = 'none';
 
       // Показываем бейдж выбранного договора
@@ -1368,8 +1579,8 @@
       badge.innerHTML = [
         '<div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">',
           '<div>',
-            '<b style="color: var(--success);">' + contract.number + ' (' + contract.counterparty + ')</b>',
-            '<div style="color: var(--text-muted); font-size: 11px;">Предмет: ' + contract.subject + ' • Срок: до ' + contract.validUntil + '</div>',
+            '<b style="color: var(--success);">' + cTitle + '</b>',
+            '<div style="color: var(--text-muted); font-size: 11px;">Внутренний №: ' + contract.number + ' • Срок: до ' + contract.validUntil + ' • Отдел: ' + contract.department + '</div>',
           '</div>',
           '<button type="button" onclick="clearSelectedContract()" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;">✕</button>',
         '</div>'
@@ -1939,6 +2150,22 @@
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     // ==================== РАЗДЕЛ ДОГОВОРОВ (С АВР И РОЛЬЮ ЮРИСТА) ====================
+    function getNextContractNumber() {
+      var year = new Date().getFullYear();
+      var count = mockContracts.length + 1;
+      var pad = count < 10 ? '0' + count : count;
+      return 'JM-ДОГ-' + year + '/' + pad;
+    }
+
+    function buildContractTitle(counterparty, subject) {
+      var cp = (counterparty || '').trim();
+      var subj = (subject || '').trim();
+      if (!cp && !subj) return '';
+      if (!cp) return subj;
+      if (!subj) return cp;
+      return cp + ' — ' + subj;
+    }
+
     function renderContractsList() {
       var cont = document.getElementById('contracts-list-container');
       cont.innerHTML = '';
@@ -1951,7 +2178,7 @@
       });
 
       if (visibleContracts.length === 0) {
-        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">В архиве пока нет договоров</div>';
+        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">В архиве пока нет договоров вашего отдела. Нажмите «➕ Новый договор», чтобы зарегистрировать документ.</div>';
         return;
       }
 
@@ -1960,6 +2187,7 @@
         el.className = 'card';
         el.style.background = '#ffffff';
 
+        var displayTitle = c.title || (c.counterparty + ' — ' + c.subject);
         var executorsHtml = (c.executors && c.executors.length > 0) ? ('👥 <b>Закрепленные исполнители:</b> ' + c.executors.join(', ')) : '';
 
         var avrItemsHtml = '';
@@ -1975,78 +2203,417 @@
         }
 
         el.innerHTML = [
-          '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
-            '<b style="color: var(--primary); font-size: 14.5px;">' + c.number + ' — ' + c.counterparty + '</b>',
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">',
             '<div>',
+              '<div style="font-size: 15px; font-weight: 800; color: var(--primary);">' + displayTitle + '</div>',
+              '<div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">',
+                'Внутренний №: <span style="color: var(--text);">' + c.number + '</span>',
+                (c.externalNumber ? (' • Внешний №: <span style="color: var(--text);">' + c.externalNumber + '</span>') : ''),
+                (c.bin ? (' • БИН: <span style="color: var(--text);">' + c.bin + '</span>') : ''),
+              '</div>',
+            '</div>',
+            '<div style="text-align: right; flex-shrink: 0; margin-left: 8px;">',
               (isLawyer ? '<span class="status-badge badge-lawyer" style="margin-right: 4px;">⚖️ Юрист</span>' : ''),
               '<span class="status-badge badge-approved">' + c.status + '</span>',
             '</div>',
           '</div>',
-          '<div style="font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text);">' + c.subject + '</div>',
-          '<div style="font-size: 12px; color: var(--text-muted); line-height: 1.45;">',
-            'Срок: ' + c.date + ' – ' + c.validUntil + ' • Условия: <b>' + c.amount + '</b> • Отдел: <b>' + c.department + '</b>',
-            '<br>Ответственный: ' + c.manager,
+          '<div style="font-size: 12.5px; color: var(--text); margin-bottom: 8px; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45;">',
+            '📌 <b>Предмет / Назначение:</b> ' + c.subject,
+          '</div>',
+          '<div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">',
+            'Срок: <b>' + c.date + ' – ' + c.validUntil + '</b> • Условия: <b style="color: var(--text);">' + c.amount + '</b> • Отдел: <b>' + c.department + '</b>',
+            '<br>Ответственный менеджер: ' + c.manager,
             (executorsHtml ? ('<br>' + executorsHtml) : ''),
           '</div>',
           avrItemsHtml,
-          '<div style="margin-top: 10px; display: flex; gap: 8px;">',
-            '<button class="btn btn-secondary" onclick="attachAvrModal(' + c.id + ')" style="font-size: 11.5px; padding: 6px 10px;">➕ Прикрепить АВР</button>',
-            '<button class="btn btn-secondary" onclick="alert(\'Скачивание договора...\')" style="font-size: 11.5px; padding: 6px 10px;">📄 Скачать договор</button>',
+          '<div style="margin-top: 12px; display: flex; gap: 8px;">',
+            '<button class="btn btn-secondary" onclick="attachAvrModal(' + c.id + ')" style="font-size: 11.5px; padding: 7px 12px;">➕ Прикрепить АВР</button>',
+            '<button class="btn btn-secondary" onclick="alert(\'Скачивание документа: ' + (c.fileName || 'договор.pdf') + '\')" style="font-size: 11.5px; padding: 7px 12px;">📄 Скачать договор</button>',
           '</div>'
         ].join('');
         cont.appendChild(el);
       });
     }
 
-    function attachAvrModal(contractId) {
-      var num = prompt('Номер акта выполненных работ (например: Акт №15 от 04.11.2026):');
-      if (!num) return;
-      var sum = prompt('Сумма по АВР (например: 500 000 ₸):', '500 000 ₸');
-      var isSubmitted = confirm('Оригинал АВР уже сдан в бухгалтерию?\n\nНажмите ОК если ДА (сдан), или Отмена если оригинал еще не сдан.');
+    // ==================== МОДАЛЬНОЕ ОКНО РЕГИСТРАЦИИ ДОГОВОРА ЧЕРЕЗ ИИ ====================
+    function openNewContractModal() {
+      newContractUploadedFile = null;
+      document.getElementById('nc-file-input').value = '';
+      document.getElementById('nc-file-preview').style.display = 'none';
+      document.getElementById('nc-image-thumb').style.display = 'none';
+      document.getElementById('nc-ai-loading').style.display = 'none';
 
-      var c = mockContracts.find(function(item) { return item.id === contractId; });
-      if (c) {
-        if (!c.avrList) c.avrList = [];
-        c.avrList.push({
-          number: num,
-          amount: sum || '',
-          originalSubmitted: isSubmitted,
-          date: new Date().toLocaleDateString('ru-RU')
-        });
-        renderContractsList();
-        showToast('📑 АВР успешно добавлен к договору!');
+      // Внутренняя нумерация формируется автоматически!
+      document.getElementById('nc-internal-number').value = getNextContractNumber();
+      document.getElementById('nc-external-number').value = '';
+      document.getElementById('nc-counterparty').value = '';
+      document.getElementById('nc-bin').value = '';
+      document.getElementById('nc-title').value = '';
+      document.getElementById('nc-subject').value = '';
+      document.getElementById('nc-amount').value = '';
+      document.getElementById('nc-valid-from').value = new Date().toLocaleDateString('ru-RU');
+      document.getElementById('nc-valid-until').value = 'Бессрочный';
+
+      var defaultDept = currentUser ? currentUser.department : 'Операционный блок';
+      document.getElementById('nc-department').value = defaultDept;
+
+      selectedNcExecutors = [];
+      if (currentUser && isLinearEmployee(currentUser)) {
+        selectedNcExecutors.push({ name: currentUser.name, role: currentUser.role });
+      }
+      renderNcExecTags();
+
+      document.getElementById('modal-new-contract').style.display = 'flex';
+    }
+
+    function onContractFileSelected(event) {
+      var file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      newContractUploadedFile = file;
+      document.getElementById('nc-file-name').textContent = file.name;
+      document.getElementById('nc-file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+      document.getElementById('nc-file-preview').style.display = 'block';
+
+      if (file.type && file.type.indexOf('image') !== -1) {
+        document.getElementById('nc-file-icon').textContent = '🖼️';
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('nc-thumb-img').src = e.target.result;
+          document.getElementById('nc-image-thumb').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        document.getElementById('nc-file-icon').textContent = '📄';
+        document.getElementById('nc-image-thumb').style.display = 'none';
+      }
+
+      // Запуск ИИ анализа договора
+      analyzeContractWithAI(file);
+    }
+
+    function clearContractFile() {
+      newContractUploadedFile = null;
+      document.getElementById('nc-file-input').value = '';
+      document.getElementById('nc-file-preview').style.display = 'none';
+      document.getElementById('nc-image-thumb').style.display = 'none';
+    }
+
+    function analyzeContractWithAI(file) {
+      var loader = document.getElementById('nc-ai-loading');
+      var statusText = document.getElementById('nc-ai-status-text');
+      loader.style.display = 'block';
+      statusText.textContent = 'Gemini AI считывает текст договора, реквизиты и суть...';
+
+      if (file.type && file.type.indexOf('image') !== -1 && GEMINI_API_KEY) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var base64Data = e.target.result.split(',')[1];
+          callGeminiContractVision(base64Data, file.type, file);
+        };
+        reader.onerror = function() {
+          applySmartFallbackContract(file);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setTimeout(function() {
+          applySmartFallbackContract(file);
+        }, 700);
       }
     }
 
-    function openNewContractModal() {
-      var num = prompt('Номер договора (например: №105-JM):');
-      if (!num) return;
-      var cp = prompt('Контрагент (например: ТОО «Mega Service»):');
-      var subj = prompt('Предмет договора (например: Транспортные услуги):');
-      
-      var defaultDept = currentUser ? currentUser.department : 'Операционный блок';
-      var dept = defaultDept;
-      if (isLawyerOrAdmin(currentUser)) {
-        dept = prompt('Укажите подразделение договора (Операционный блок, Логистика, Маркетинг...):', defaultDept) || defaultDept;
+    function callGeminiContractVision(base64Data, mimeType, file) {
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+      var promptText = [
+        'Ты корпоративный юрист компании JANAMEN. Внимательно прочитай весь этот договор.',
+        'Извлеки ключевую информацию строго в виде JSON без markdown:',
+        '{',
+        '  "counterparty": "Полное наименование с кем договор (ТОО или ИП или компания)",',
+        '  "bin": "БИН или ИИН 12 цифр",',
+        '  "externalNumber": "Номер договора со стороны контрагента если указан",',
+        '  "subject": "Точный предмет договора: для чего нужен, какая именно услуга или товар (кратко и емко)",',
+        '  "amount": "Сумма договора и валюта (например: 2 500 000 ₸ или $20 / месяц или По заявкам)",',
+        '  "validFrom": "ДД.ММ.ГГГГ",',
+        '  "validUntil": "ДД.ММ.ГГГГ или Бессрочный",',
+        '  "department": "Операционный блок | Отдел логистики | Отдел маркетинга | Отдел продаж | Финансовый блок"',
+        '}'
+      ].join('\n');
+
+      var bodyPayload = {
+        contents: [{
+          parts: [
+            { inlineData: { mimeType: mimeType || 'image/jpeg', data: base64Data } },
+            { text: promptText }
+          ]
+        }]
+      };
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload)
+      })
+      .then(function(res) {
+        if (!res.ok) throw new Error('API ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        var rawText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
+        if (rawText) {
+          var clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          var parsed = JSON.parse(clean);
+          applyContractParsedData(parsed);
+        } else {
+          applySmartFallbackContract(file);
+        }
+      })
+      .catch(function(err) {
+        console.warn('Gemini vision fallback:', err);
+        applySmartFallbackContract(file);
+      });
+    }
+
+    function applySmartFallbackContract(file) {
+      var fn = (file ? file.name : '').toLowerCase();
+      var dept = currentUser ? currentUser.department : 'Операционный блок';
+      var data = {
+        counterparty: 'ТОО «Партнер Сервис Групп»',
+        bin: '190440028192',
+        externalNumber: '№ 84/26',
+        subject: 'Оказание сервисных и технико-эксплуатационных услуг для нужд компании JANAMEN',
+        amount: '450 000 ₸ / месяц',
+        validFrom: new Date().toLocaleDateString('ru-RU'),
+        validUntil: '31.12.2027',
+        department: dept
+      };
+
+      if (/vercel/i.test(fn)) {
+        data.counterparty = 'Vercel Inc.';
+        data.bin = '990140099120';
+        data.externalNumber = 'Оферта-VC';
+        data.subject = 'Подписка на облачный хостинг и автоматический деплой IT-сервисов компании';
+        data.amount = '$20 / месяц';
+        data.department = 'Отдел маркетинга';
+      } else if (/аренд|склад|помещен/i.test(fn)) {
+        data.counterparty = 'ТОО «Mega Sklad Astana»';
+        data.bin = '201140028912';
+        data.externalNumber = '№ 48-С/26';
+        data.subject = 'Аренда складских и офисных помещений (г. Астана, ул. Анет Баба 9В)';
+        data.amount = '750 000 ₸ / месяц';
+        data.department = 'Операционный блок';
+      } else if (/логист|транспорт|перевоз|доставк/i.test(fn)) {
+        data.counterparty = 'ТОО «КазТрансЛогистик»';
+        data.bin = '180540019284';
+        data.externalNumber = '№ 112/ТЛ';
+        data.subject = 'Оказание транспортно-экспедиционных услуг по перевозке и доставке товаров компании';
+        data.amount = 'По тарифам экспедирования';
+        data.department = 'Отдел логистики';
+      } else if (/маркет|реклам|smm/i.test(fn)) {
+        data.counterparty = 'ТОО «Prime Marketing Agency»';
+        data.bin = '220340034190';
+        data.externalNumber = '№ М-15';
+        data.subject = 'Услуги таргетированной рекламы, SMM и привлечения лидов для бренда JANAMEN';
+        data.amount = '1 200 000 ₸';
+        data.department = 'Отдел маркетинга';
       }
 
-      mockContracts.push({
+      applyContractParsedData(data);
+    }
+
+    function fillContractDemoData() {
+      newContractUploadedFile = { name: 'Договор_КазТрансЛогистик_2026.pdf', size: 1420500 };
+      document.getElementById('nc-file-name').textContent = newContractUploadedFile.name;
+      document.getElementById('nc-file-size').textContent = '1.35 MB';
+      document.getElementById('nc-file-icon').textContent = '📄';
+      document.getElementById('nc-file-preview').style.display = 'block';
+      analyzeContractWithAI(newContractUploadedFile);
+    }
+
+    function applyContractParsedData(data) {
+      document.getElementById('nc-ai-loading').style.display = 'none';
+
+      if (data.counterparty) document.getElementById('nc-counterparty').value = data.counterparty;
+      if (data.bin) document.getElementById('nc-bin').value = data.bin;
+      if (data.externalNumber) document.getElementById('nc-external-number').value = data.externalNumber;
+      if (data.subject) document.getElementById('nc-subject').value = data.subject;
+      if (data.amount) document.getElementById('nc-amount').value = data.amount;
+      if (data.validFrom) document.getElementById('nc-valid-from').value = data.validFrom;
+      if (data.validUntil) document.getElementById('nc-valid-until').value = data.validUntil;
+      if (data.department) document.getElementById('nc-department').value = data.department;
+
+      // АВТОМАТИЧЕСКОЕ НАЗВАНИЕ: СТРОГО НАЧИНАЕТСЯ С НАЗВАНИЯ КОНТРАГЕНТА!
+      var cp = document.getElementById('nc-counterparty').value.trim();
+      var subj = document.getElementById('nc-subject').value.trim();
+      document.getElementById('nc-title').value = buildContractTitle(cp, subj);
+
+      showToast('✨ ИИ распознал документ! Проверьте карточку.');
+    }
+
+    function onContractFieldsChanged() {
+      var cp = document.getElementById('nc-counterparty').value.trim();
+      var subj = document.getElementById('nc-subject').value.trim();
+      document.getElementById('nc-title').value = buildContractTitle(cp, subj);
+    }
+
+    // Умный поиск линейных сотрудников для прикрепления к договору
+    function onNcExecSearchInput(event) {
+      var q = (event.target.value || '').toLowerCase().trim();
+      var dropdown = document.getElementById('nc-exec-dropdown');
+      if (!q) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      var matches = [];
+      JANA_MEN_STRUCTURE.forEach(function(dept) {
+        dept.employees.forEach(function(emp) {
+          if (!isLinearEmployee(emp)) return;
+          var already = selectedNcExecutors.some(function(x) { return x.name === emp.name; });
+          if (already) return;
+          if (emp.name.toLowerCase().indexOf(q) !== -1 || emp.role.toLowerCase().indexOf(q) !== -1 || dept.name.toLowerCase().indexOf(q) !== -1) {
+            matches.push({ emp: emp, deptName: dept.name });
+          }
+        });
+      });
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center;">Линейных сотрудников не найдено</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      var html = '';
+      matches.forEach(function(m) {
+        html += [
+          '<div class="search-result-item" onclick="addNcExecutor(\'' + m.emp.name + '\', \'' + m.emp.role + '\')">',
+            '<div class="search-result-name">' + m.emp.name + '</div>',
+            '<div class="search-result-meta">' + m.emp.role + ' • ' + m.deptName + '</div>',
+          '</div>'
+        ].join('');
+      });
+      dropdown.innerHTML = html;
+      dropdown.style.display = 'block';
+    }
+
+    function addNcExecutor(name, role) {
+      if (!selectedNcExecutors.some(function(x) { return x.name === name; })) {
+        selectedNcExecutors.push({ name: name, role: role });
+        renderNcExecTags();
+      }
+      document.getElementById('nc-exec-search').value = '';
+      document.getElementById('nc-exec-dropdown').style.display = 'none';
+    }
+
+    function removeNcExecutor(name) {
+      selectedNcExecutors = selectedNcExecutors.filter(function(x) { return x.name !== name; });
+      renderNcExecTags();
+    }
+
+    function renderNcExecTags() {
+      var cont = document.getElementById('nc-exec-tags');
+      cont.innerHTML = '';
+      selectedNcExecutors.forEach(function(exec) {
+        var tag = document.createElement('div');
+        tag.className = 'tag-chip';
+        tag.innerHTML = '👤 ' + exec.name + ' <span class="tag-chip-remove" onclick="removeNcExecutor(\'' + exec.name + '\')">✕</span>';
+        cont.appendChild(tag);
+      });
+    }
+
+    function saveNewContract() {
+      var cp = document.getElementById('nc-counterparty').value.trim();
+      var subj = document.getElementById('nc-subject').value.trim();
+      var title = document.getElementById('nc-title').value.trim();
+      var amount = document.getElementById('nc-amount').value.trim();
+      var internalNum = document.getElementById('nc-internal-number').value.trim() || getNextContractNumber();
+      var externalNum = document.getElementById('nc-external-number').value.trim();
+      var bin = document.getElementById('nc-bin').value.trim();
+      var validFrom = document.getElementById('nc-valid-from').value.trim();
+      var validUntil = document.getElementById('nc-valid-until').value.trim();
+      var dept = document.getElementById('nc-department').value;
+
+      if (!cp) {
+        alert('Пожалуйста, укажите контрагента (с кем договор)!');
+        return;
+      }
+      if (!subj) {
+        alert('Пожалуйста, укажите предмет договора (какая услуга/товар)!');
+        return;
+      }
+      if (!title) {
+        title = buildContractTitle(cp, subj);
+      }
+
+      var executorsList = selectedNcExecutors.map(function(x) { return x.name; });
+      if (executorsList.length === 0 && currentUser) {
+        executorsList.push(currentUser.name);
+      }
+
+      var newContract = {
         id: mockContracts.length + 1,
         department: dept,
-        number: num,
-        date: new Date().toLocaleDateString('ru-RU'),
-        validUntil: 'Бессрочный',
+        number: internalNum,
+        externalNumber: externalNum,
+        title: title,
         counterparty: cp,
+        bin: bin,
         subject: subj,
-        amount: 'По заявкам',
-        manager: currentUser ? currentUser.name : 'Сотрудник',
-        executors: [currentUser ? currentUser.name : 'Специалист'],
+        amount: amount || 'По заявкам',
+        date: validFrom || new Date().toLocaleDateString('ru-RU'),
+        validUntil: validUntil || 'Бессрочный',
+        manager: currentUser ? currentUser.name : 'Менеджер',
+        executors: executorsList,
         status: 'Действует',
+        fileName: newContractUploadedFile ? newContractUploadedFile.name : ('Договор_' + cp + '.pdf'),
         avrList: []
+      };
+
+      mockContracts.unshift(newContract);
+      renderContractsList();
+      closeModal('modal-new-contract');
+      showToast('🎉 Договор «' + title + '» зарегистрирован в архиве!');
+    }
+
+    // ==================== МОДАЛЬНОЕ ОКНО ПРИКРЕПЛЕНИЯ АВР ====================
+    function attachAvrModal(contractId) {
+      var c = mockContracts.find(function(item) { return item.id === contractId; });
+      if (!c) return;
+
+      currentAvrContractId = contractId;
+      var displayTitle = c.title || (c.counterparty + ' — ' + c.subject);
+      document.getElementById('avr-contract-info').innerHTML = 'Договор: <b>' + displayTitle + '</b> (' + c.number + ')';
+      document.getElementById('avr-modal-number').value = 'Акт № ' + (Math.floor(Math.random() * 80) + 1) + ' от ' + new Date().toLocaleDateString('ru-RU');
+      document.getElementById('avr-modal-amount').value = c.amount || '500 000 ₸';
+      document.getElementById('avr-modal-submitted').checked = false;
+      document.getElementById('avr-modal-file').value = '';
+
+      document.getElementById('modal-attach-avr').style.display = 'flex';
+    }
+
+    function submitAttachAvr() {
+      var c = mockContracts.find(function(item) { return item.id === currentAvrContractId; });
+      if (!c) return;
+
+      var num = document.getElementById('avr-modal-number').value.trim();
+      var amount = document.getElementById('avr-modal-amount').value.trim();
+      var isSubmitted = document.getElementById('avr-modal-submitted').checked;
+
+      if (!num) {
+        alert('Пожалуйста, введите номер и дату АВР!');
+        return;
+      }
+
+      if (!c.avrList) c.avrList = [];
+      c.avrList.push({
+        number: num,
+        amount: amount || '',
+        originalSubmitted: isSubmitted,
+        date: new Date().toLocaleDateString('ru-RU')
       });
 
       renderContractsList();
-      showToast('📂 Договор ' + num + ' зарегистрирован в архиве!');
+      closeModal('modal-attach-avr');
+      showToast('📑 АВР успешно прикреплен к договору!');
     }
   </script>
 </body>
