@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Jana Men — ЭДО Служебных Записок</title>
+  <title>Jana Men — Корпоративный ЭДО</title>
   
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <style>
-    /* ==================== СВЕТЛЫЙ ДИЗАЙН (PREMIUM LIGHT THEME) ==================== */
+    /* ==================== СВЕТЛЫЙ КОРПОРАТИВНЫЙ ДИЗАЙН ==================== */
     :root {
       --bg: #f8fafc;
       --card-bg: #ffffff;
@@ -115,7 +115,7 @@
     }
 
     /* Container */
-    .container { padding: 8px 16px 24px 16px; max-width: 720px; margin: 0 auto; }
+    .container { padding: 8px 16px 24px 16px; max-width: 760px; margin: 0 auto; }
     .tab-pane { display: none; animation: fadeIn 0.2s ease-in-out; }
     .tab-pane.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -136,11 +136,11 @@
       margin-bottom: 12px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
     }
 
     /* Forms */
-    .field { margin-bottom: 14px; }
+    .field { margin-bottom: 14px; position: relative; }
     .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
     .input-text, .select-text, textarea {
       width: 100%;
@@ -158,6 +158,70 @@
       box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
     }
     textarea { resize: vertical; min-height: 95px; line-height: 1.5; }
+
+    /* Type Selector Pills */
+    .type-pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 14px; padding-bottom: 4px; }
+    .type-pills::-webkit-scrollbar { display: none; }
+    .type-pill {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #f1f5f9;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .type-pill.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Searchable Autocomplete Dropdown */
+    .searchable-box { position: relative; }
+    .search-results-dropdown {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 50;
+      box-shadow: var(--shadow-lg);
+      display: none;
+    }
+    .search-result-item {
+      padding: 9px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.15s;
+    }
+    .search-result-item:hover { background: #f8fafc; }
+    .search-result-name { font-weight: 700; font-size: 13px; color: var(--text); }
+    .search-result-meta { font-size: 11px; color: var(--text-muted); }
+
+    /* Selected Tags / Pills */
+    .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tag-chip {
+      background: var(--primary-light);
+      border: 1px solid rgba(2, 132, 199, 0.2);
+      color: var(--primary);
+      border-radius: 16px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tag-chip-remove { cursor: pointer; font-size: 12px; font-weight: bold; }
 
     /* Buttons */
     .btn {
@@ -206,17 +270,8 @@
     .route-step-info { flex: 1; }
     .route-step-name { font-size: 13px; font-weight: 700; color: var(--text); }
     .route-step-role { font-size: 11px; color: var(--text-muted); }
-    .route-badge-arsen {
-      background: var(--warning-light);
-      border: 1px solid var(--warning);
-      color: #b45309;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 700;
-    }
 
-    /* Official Document Preview (Paper Style) */
+    /* Paper Document Preview */
     .doc-preview {
       background: #ffffff;
       color: #0f172a;
@@ -251,8 +306,9 @@
     .badge-approved { background: var(--success-light); color: var(--success); border: 1px solid rgba(22, 163, 74, 0.25); }
     .badge-pending { background: var(--warning-light); color: var(--warning); border: 1px solid rgba(217, 119, 6, 0.25); }
     .badge-rejected { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(220, 38, 38, 0.25); }
+    .badge-lawyer { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
 
-    /* ==================== ПОЛНОЭКРАННЫЙ ЭКРАН РЕГИСТРАЦИИ (ОТДЕЛЬНОЕ ОКНО) ==================== */
+    /* Onboarding Screen */
     #auth-screen {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -311,8 +367,8 @@
     /* Modal Generic Overlay */
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(2px);
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(3px);
       z-index: 1000;
       display: none;
       align-items: center;
@@ -324,11 +380,30 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       width: 100%;
-      max-width: 500px;
-      max-height: 90vh;
+      max-width: 560px;
+      max-height: 92vh;
       overflow-y: auto;
       padding: 22px;
       box-shadow: var(--shadow-lg);
+    }
+
+    /* Inspection Sections */
+    .inspect-section {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .inspect-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     /* Toast */
@@ -360,7 +435,7 @@
       <div class="auth-logo">📑</div>
       <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #0f172a;">Jana Men ЭДО</h2>
       <p style="text-align: center; font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.45;">
-        Корпоративный электронный документооборот служебных записок. Вход и смена аккаунта производятся строго по коду из Telegram бота.
+        Корпоративный электронный документооборот служебных записок, заявлений и архивов договоров. Вход строго по коду из Telegram.
       </p>
 
       <div class="auth-tab-switch">
@@ -370,17 +445,18 @@
 
       <!-- TAB 1: ВХОД ПО ТЕЛЕГРАМ КОДУ -->
       <div id="auth-panel-login">
-        <!-- Шаг 1: Выбор сотрудника -->
         <div id="login-step1">
           <div class="field">
-            <label>Выберите ваше имя из списка сотрудников:</label>
-            <select id="auth-employee-select" class="select-text" onchange="onLoginEmployeeSelect()">
-              <option value="">-- Выберите ваше ФИО --</option>
-            </select>
+            <label>Умный поиск сотрудника по ФИО или должности:</label>
+            <div class="searchable-box">
+              <input type="text" id="auth-emp-search" class="input-text" placeholder="Введите имя, например: Куанышбек..." oninput="onAuthSearchInput(this.value)">
+              <div id="auth-emp-dropdown" class="search-results-dropdown"></div>
+            </div>
           </div>
 
           <div id="login-emp-preview" style="display: none; background: #f8fafc; border: 1px solid var(--border); padding: 11px 13px; border-radius: 8px; margin-bottom: 15px; font-size: 12.5px;">
-            <div style="margin-bottom: 3px;">🏢 Отдел: <b id="login-info-dept" style="color: var(--primary);">-</b></div>
+            <div style="font-weight: 800; color: var(--text);" id="login-info-name">-</div>
+            <div style="margin-top: 3px;">🏢 Отдел: <b id="login-info-dept" style="color: var(--primary);">-</b></div>
             <div>💼 Должность: <b id="login-info-role">-</b></div>
           </div>
 
@@ -389,7 +465,6 @@
           </button>
         </div>
 
-        <!-- Шаг 2: Ввод проверочного 6-значного кода -->
         <div id="login-step2" style="display: none;">
           <div style="background: var(--primary-light); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 13px; margin-bottom: 15px; text-align: center;">
             <div style="font-size: 12px; color: var(--text-muted);">Код отправлен в бота @janamen_docs_bot для:</div>
@@ -449,19 +524,16 @@
         </div>
       </div>
 
-      <!-- Кнопка "Отмена" только если пользователь уже был авторизован и просто нажал "Сменить" -->
       <div id="auth-cancel-bar" style="display: none; margin-top: 14px; text-align: center;">
         <button onclick="closeAuthScreen()" style="background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; text-decoration: underline;">
           Отмена (остаться под текущим профилем)
         </button>
       </div>
-
     </div>
   </div>
 
   <!-- ==================== ОСНОВНОЕ РАБОЧЕЕ ПРОСТРАНСТВО ==================== -->
   
-  <!-- Верхняя плашка профиля -->
   <div class="top-bar">
     <div class="user-info" onclick="openSwitchAccountModal()">
       <div class="user-avatar" id="u-avatar">👤</div>
@@ -475,63 +547,99 @@
     </button>
   </div>
 
-  <!-- Навигационные вкладки -->
   <div class="nav-tabs-wrapper">
     <div class="nav-tabs">
-      <div class="nav-tab active" data-tab="create" onclick="switchTab('create')">📝 Новая СЗ</div>
-      <div class="nav-tab" data-tab="registry" onclick="switchTab('registry')">📑 Реестр СЗ</div>
+      <div class="nav-tab active" data-tab="create" onclick="switchTab('create')">📝 Новый документ</div>
+      <div class="nav-tab" data-tab="registry" onclick="switchTab('registry')">📑 Реестр документов</div>
       <div class="nav-tab" data-tab="contracts" onclick="switchTab('contracts')">📂 Договоры</div>
-      <div class="nav-tab" data-tab="arsen" onclick="switchTab('arsen')" id="tab-btn-arsen" style="display: none;">👑 Контроль Арсена</div>
     </div>
   </div>
 
   <div class="container">
 
-    <!-- ==================== ВКЛАДКА 1: НОВАЯ СЛУЖЕБНАЯ ЗАПИСКА ==================== -->
+    <!-- ==================== ВКЛАДКА 1: СОЗДАНИЕ ДОКУМЕНТА (СЗ / ЗАЯВЛЕНИЯ) ==================== -->
     <div id="tab-create" class="tab-pane active">
       <div class="card">
-        <div class="card-title">✨ ИИ-Составитель Служебных Записок</div>
-        <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.45;">
-          Опишите суть своими словами. Система поймет контекст (возмещение, абонентская плата, аренда, счет), извлечет сумму и валюту, составит официальный документ по корпоративному бланку <b>JANAMEN</b> и выстроит цепочку визирования.
-        </p>
-
-        <div class="field">
-          <label>Подразделение инициатора</label>
-          <select id="sz-dept" class="select-text" onchange="onDeptChange()"></select>
+        <div class="card-title">
+          <span>✨ Инициация документа</span>
+          <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);" id="initiator-badge"></span>
         </div>
 
+        <!-- Выбор типа документа -->
         <div class="field">
-          <label>Со-исполнители (по желанию)</label>
-          <select id="sz-coexec" class="select-text">
-            <option value="">-- Без со-исполнителей --</option>
-          </select>
+          <label>Тип документа:</label>
+          <div class="type-pills">
+            <div class="type-pill active" onclick="selectDocType('sz_payment')">📝 Служебная записка (Оплата / Счета)</div>
+            <div class="type-pill" onclick="selectDocType('sz_general')">📋 СЗ общая (Хозяйственная)</div>
+            <div class="type-pill" onclick="selectDocType('vacation_bs')">🏖 Заявление на отпуск (БС / трудовой)</div>
+            <div class="type-pill" onclick="selectDocType('advance')">💵 Заявление на аванс</div>
+            <div class="type-pill" onclick="selectDocType('resignation')">📄 Заявление на увольнение</div>
+          </div>
         </div>
 
+        <!-- Поле привязки договора своего отдела -->
+        <div class="field" id="field-contract-binding">
+          <label>Привязать договор вашего отдела (по желанию):</label>
+          <div class="searchable-box">
+            <input type="text" id="sz-contract-search" class="input-text" placeholder="🔍 Выберите договор, например: №82 (Аренда склада)..." onfocus="onContractSearchFocus()" oninput="onContractSearchInput(this.value)">
+            <div id="sz-contract-dropdown" class="search-results-dropdown"></div>
+          </div>
+          <div id="selected-contract-badge" style="display: none; margin-top: 8px;"></div>
+        </div>
+
+        <!-- Со-исполнители (ТОЛЬКО ЛИНЕЙНЫЕ СОТРУДНИКИ!) -->
         <div class="field">
-          <label>Суть служебной записки (свободный текст)</label>
+          <label>Со-исполнители (только линейные специалисты):</label>
+          <div class="searchable-box">
+            <input type="text" id="coexec-search" class="input-text" placeholder="🔍 Поиск линейного сотрудника: Адель, Акзере, Арман..." oninput="onCoExecSearchInput(this.value)">
+            <div id="coexec-dropdown" class="search-results-dropdown"></div>
+          </div>
+          <div id="selected-coexec-tags" class="selected-tags"></div>
+        </div>
+
+        <!-- Суть документа -->
+        <div class="field">
+          <label id="label-raw-text">Суть служебной записки своими словами:</label>
           <textarea id="sz-raw-text" placeholder="Например: Мне нужно согласовать возмещение за оплату абонентской платы за Vercel в размере 20 долларов месяц."></textarea>
         </div>
 
+        <!-- Прикрепление файлов / сканов / инвойсов / АВР -->
         <div class="field">
-          <label>Прикрепить счет / инвойс / квитанцию (PDF или фото)</label>
+          <label id="label-file">Прикрепить скан заявления / счет / инвойс / АВР (PDF или фото):</label>
           <input type="file" id="sz-file" class="input-text" accept=".pdf,image/*">
         </div>
 
+        <!-- Чекбокс сдачи оригинала АВР (если прикреплен договор) -->
+        <div class="field" id="field-avr-original" style="display: none; background: #fffbeb; border: 1px dashed var(--warning); padding: 12px; border-radius: 8px;">
+          <label style="color: #b45309; font-weight: 700; margin-bottom: 4px;">📥 Статус оригиналов закрывающих документов (АВР / Накладная):</label>
+          <div style="display: flex; gap: 14px; font-size: 13px; margin-top: 6px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
+              <input type="radio" name="avr_status" value="submitted"> ✅ Оригинал АВР уже сдан в бухгалтерию
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
+              <input type="radio" name="avr_status" value="pending" checked> ⏳ Ожидается сдача оригинала
+            </label>
+          </div>
+        </div>
+
         <button class="btn btn-ai" id="btn-run-gemini" onclick="generateSmartSZ()">
-          <span>✨ Сгенерировать официальную СЗ</span>
+          <span>✨ Сформировать официальный документ</span>
         </button>
       </div>
 
-      <!-- Результат генерации и подтверждение маршрута -->
+      <!-- Предпросмотр сформированного бланка -->
       <div id="sz-generated-block" style="display: none;">
         <div class="card">
-          <div class="card-title">👁 Официальный бланк (Предпросмотр)</div>
+          <div class="card-title">
+            <span>👁 Официальный бланк документа (Предпросмотр)</span>
+            <span class="status-badge badge-pending">Черновик</span>
+          </div>
           
           <div class="doc-preview">
             <div class="doc-preview-head" id="prev-recipient">
               Генеральному директору JANAMEN<br>Кабидуллину Н.Н.
             </div>
-            <div class="doc-preview-title">
+            <div class="doc-preview-title" id="prev-doc-title">
               СЛУЖЕБНАЯ ЗАПИСКА<br>
               <span id="prev-number" style="font-size: 11px; color: var(--text-muted); font-weight: normal;">[Номер будет присвоен при запуске]</span>
             </div>
@@ -540,12 +648,15 @@
             <div class="doc-preview-sign" id="prev-sign"></div>
 
             <div class="doc-preview-audit">
-              <h5>Предварительный лист согласования:</h5>
+              <h5>Лист согласования по маршруту:</h5>
               <div id="prev-audit-table"></div>
             </div>
           </div>
 
-          <div class="card-title">🛣 Маршрут согласования</div>
+          <div class="card-title">
+            <span>🛣 Маршрут согласования</span>
+            <span style="font-size: 11px; color: var(--text-muted);">Без Арсена Бегалина</span>
+          </div>
           <div id="route-steps-container"></div>
 
           <div style="margin-top: 10px; margin-bottom: 16px;">
@@ -555,18 +666,18 @@
           </div>
 
           <button class="btn btn-success" id="btn-submit-sz" onclick="submitFinalSZ()">
-            🚀 Запустить СЗ в работу
+            🚀 Запустить в работу
           </button>
         </div>
       </div>
     </div>
 
-    <!-- ==================== ВКЛАДКА 2: РЕЕСТР СЛУЖЕБНЫХ ЗАПИСОК ==================== -->
+    <!-- ==================== ВКЛАДКА 2: РЕЕСТР ДОКУМЕНТОВ ==================== -->
     <div id="tab-registry" class="tab-pane">
       <div class="card" style="margin-bottom: 12px; padding: 12px;">
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="filter-search" class="input-text" placeholder="🔍 Поиск по номеру, теме..." oninput="renderSZList()">
-          <select id="filter-status" class="select-text" style="width: 140px;" onchange="renderSZList()">
+          <input type="text" id="filter-search" class="input-text" placeholder="🔍 Поиск по номеру, теме, контрагенту..." oninput="renderSZList()">
+          <select id="filter-status" class="select-text" style="width: 150px;" onchange="renderSZList()">
             <option value="all">Все статусы</option>
             <option value="pending">В согласовании</option>
             <option value="approved">Утверждено</option>
@@ -582,66 +693,87 @@
     <!-- ==================== ВКЛАДКА 3: ЭЛЕКТРОННЫЙ АРХИВ ДОГОВОРОВ ==================== -->
     <div id="tab-contracts" class="tab-pane">
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <div class="card-title" style="margin: 0;">📂 Архив договоров: <span id="contracts-dept-title" style="color: var(--primary);">Отдел</span></div>
-          <button class="btn-switch-user" onclick="openNewContractModal()">➕ Добавить</button>
+        <div class="card-title">
+          <span>📂 Архив договоров: <span id="contracts-dept-title" style="color: var(--primary);">Отдел</span></span>
+          <button class="btn-switch-user" onclick="openNewContractModal()">➕ Новый договор</button>
         </div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
-          Изолированный архив договоров вашего подразделения.
-        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;" id="contracts-access-hint">
+          Отображаются договоры вашего подразделения.
+        </p>
         
         <div id="contracts-list-container"></div>
       </div>
     </div>
 
-    <!-- ==================== ВКЛАДКА 4: ПУЛЬТ АРСЕНА БЕГАЛИНА & ШЕФА ==================== -->
-    <div id="tab-arsen" class="tab-pane">
-      <div class="card" style="border-left: 4px solid var(--warning);">
-        <div class="card-title" style="color: #b45309;">👑 Пульт контроля: Бегалин Арсен</div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.45;">
-          Как бизнес-ассистент, вы проверяете СЗ перед Генеральным директором (Нурсултаном Кабидуллиным) и контролируете сдачу оригиналов подписанных документов в архив.
-        </p>
-      </div>
-
-      <div id="arsen-tasks-container"></div>
-    </div>
-
   </div>
 
-  <!-- ==================== MODAL: ДЕТАЛЬНЫЙ ПРОСМОТР СЗ ==================== -->
+  <!-- ==================== ПОЛНОЦЕННОЕ ИНФОРМАТИВНОЕ ОКНО КАРТОЧКИ СЗ / ЗАЯВЛЕНИЯ ==================== -->
   <div id="modal-detail" class="modal-overlay">
     <div class="modal-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-        <h3 id="det-number" style="font-size: 16px; font-weight: 800; color: var(--primary);">СЗ</h3>
-        <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+        <div>
+          <span class="status-badge badge-pending" id="det-type-badge">Служебная записка</span>
+          <h3 id="det-number" style="font-size: 16.5px; font-weight: 800; color: var(--text); margin-top: 4px;">СЗ</h3>
+        </div>
+        <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px;">✕</button>
       </div>
 
-      <div id="det-body" style="font-size: 13px; line-height: 1.5; margin-bottom: 14px; background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 8px;"></div>
+      <!-- 1. Точная копия официального документа -->
+      <div class="doc-preview" style="box-shadow: none; border: 1px solid var(--border); padding: 20px 18px; margin-bottom: 14px;">
+        <div class="doc-preview-head" id="det-view-recipient">Генеральному директору JANAMEN<br>Кабидуллину Н.Н.</div>
+        <div class="doc-preview-title" id="det-view-title">СЛУЖЕБНАЯ ЗАПИСКА</div>
+        <div class="doc-preview-body" id="det-view-body"></div>
+        <div class="doc-preview-amount" id="det-view-amount" style="display: none;"></div>
+        <div class="doc-preview-sign" id="det-view-sign"></div>
+      </div>
 
-      <div class="card" style="padding: 12px; margin-bottom: 12px;">
-        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 700;">Финансовый трек</div>
-        <div id="det-payment-status" style="font-weight: 700; margin-bottom: 8px; font-size: 13px;"></div>
-        
+      <!-- 2. Таймлайн согласования -->
+      <div class="inspect-section">
+        <div class="inspect-section-title">
+          <span>🛣 Лист согласования и визирования</span>
+          <span id="det-approval-badge" class="status-badge badge-pending">В процессе</span>
+        </div>
+        <div id="det-timeline-container"></div>
+      </div>
+
+      <!-- 3. Прикрепленные документы, договоры и АВР -->
+      <div class="inspect-section">
+        <div class="inspect-section-title">
+          <span>📎 Прикрепленные документы и АВР</span>
+        </div>
+        <div id="det-attachments-list" style="font-size: 13px;"></div>
+      </div>
+
+      <!-- 4. Финансовый трек -->
+      <div class="inspect-section" id="det-finance-section">
+        <div class="inspect-section-title">
+          <span>💳 Финансовый трек (Бухгалтерия)</span>
+          <span id="det-payment-badge" class="status-badge">Не требуется</span>
+        </div>
+        <div id="det-payment-details" style="font-size: 13px; font-weight: 600; margin-bottom: 8px;"></div>
         <button id="btn-mark-paid" class="btn btn-secondary" onclick="markPaidAction()" style="display: none; font-size: 12px; padding: 8px;">
-          💳 Отметить как оплачено (Главбух)
+          💳 Отметить оплату в казначействе (Главбух)
         </button>
       </div>
 
-      <div class="card" style="padding: 12px; margin-bottom: 12px; border: 1px dashed var(--warning); background: #fffbeb;">
-        <div style="font-size: 11px; text-transform: uppercase; color: #b45309; font-weight: 700; margin-bottom: 4px;">
-          ⭐️ Финальный юридический этап
+      <!-- 5. Скан подписанного оригинала -->
+      <div class="inspect-section" style="border: 1px dashed var(--warning); background: #fffbeb;">
+        <div class="inspect-section-title">
+          <span style="color: #b45309;">⭐️ Финальный оригинал с подписями</span>
+          <span id="det-legal-badge" class="status-badge badge-pending">Ожидается</span>
         </div>
-        <div id="det-legal-status" style="font-size: 12.5px; margin-bottom: 8px; font-weight: 600;"></div>
+        <div id="det-legal-status-text" style="font-size: 12.5px; margin-bottom: 8px; font-weight: 600;"></div>
         
         <div class="field" style="margin-bottom: 8px;">
-          <label style="color: var(--text); font-weight: 600;">Прикрепить скан/фото подписанной СЗ:</label>
+          <label style="color: var(--text); font-weight: 600;">Прикрепить скан/фото подписанного оригинала:</label>
           <input type="file" id="signed-scan-file" class="input-text" accept=".pdf,image/*">
         </div>
         <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px;">
-          📷 Загрузить скан подписанного оригинала
+          📷 Загрузить скан подписанного документа
         </button>
       </div>
 
+      <!-- Кнопки визирования для текущего согласующего -->
       <div id="det-approval-actions" style="display: flex; gap: 8px; margin-top: 16px;">
         <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5;">✅ Согласовать</button>
         <button class="btn btn-secondary" onclick="makeApprovalDecision('reject')" style="flex: 1; color: var(--danger);">❌ Отклонить</button>
@@ -664,7 +796,7 @@
     var SCRIPT_EXEC_URL = '';
     var GEMINI_API_KEY = window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join('');
 
-    // Штатная структура компании Jana Men (50 сотрудников)
+    // Штатное расписание Jana Men
     var JANA_MEN_STRUCTURE = [
       {
         id: "admin",
@@ -682,7 +814,7 @@
         head: "Шынәсіл Әділет Жолдыбекұлы",
         employees: [
           { id: "4", name: "Шынәсіл Әділет Жолдыбекұлы", role: "Операционный директор", is_director: true },
-          { id: "5", name: "Кабимулданова Динара Тлеукановна", role: "Юрист" },
+          { id: "5", name: "Кабимулданова Динара Тлеукановна", role: "Юрист", is_lawyer: true },
           { id: "6", name: "Құрманғалиев Фархат Айсерікұлы", role: "Продуктолог" },
           { id: "7", name: "Койчибекова Жулдыз Ермековна", role: "Менеджер по кадрам" },
           { id: "8", name: "Аманбаев Арман Ауезханұлы", role: "Заведующий складом" },
@@ -732,42 +864,86 @@
         head: "Айдарәлі Райымбек Сәкенұлы",
         employees: [
           { id: "25", name: "Айдарәлі Райымбек Сәкенұлы", role: "Коммерческий директор", is_director: true },
-          { id: "26", name: "Абаев Ернар Муратұлы", role: "Заместитель коммерческого директора" },
+          { id: "26", name: "Абаев Ернар Муратұлы", role: "Заместитель коммерческого директора", is_head: true },
           { id: "27", name: "Турлыбекова Айдана Токтаркызы", role: "Методолог" },
-          { id: "28", name: "Жомартбеков Дияр Маратұлы", role: "Директор по продажам" },
-          { id: "29", name: "Баяхметов Ануар Маратович", role: "Директор по продажам" }
+          { id: "28", name: "Жомартбеков Дияр Маратұлы", role: "Директор по продажам", is_head: true },
+          { id: "29", name: "Баяхметов Ануар Маратович", role: "Директор по продажам", is_head: true },
+          { id: "30", name: "Айдос Мадияр Нұрланұлы", role: "РКЦ" },
+          { id: "31", name: "Сисалиев Тайман Жасланович", role: "РКЦ" },
+          { id: "32", name: "Мұстафа Жарқынбек Бахытұлы", role: "РКЦ" },
+          { id: "33", name: "Идрисов Дамир Темиртасович", role: "РКЦ" },
+          { id: "34", name: "Жанбырбай Санжар Ерболұлы", role: "РКЦ" },
+          { id: "35", name: "Айбергенов Бақытбек Өтепбергенұлы", role: "РКЦ" }
+        ]
+      },
+      {
+        id: "traffic",
+        name: "Отдел трафика",
+        head: "Сабилянов Алматай Куантайұлы",
+        director: "Қыпшақбаев Темірлан Қайратұлы",
+        employees: [
+          { id: "36", name: "Сабилянов Алматай Куантайұлы", role: "Руководитель отдела трафика", is_head: true },
+          { id: "37", name: "Мейрбаева Аяжан Армановна", role: "Креатор" },
+          { id: "38", name: "Балтабай Сакен Қозыбайұлы", role: "Мобилограф" }
+        ]
+      },
+      {
+        id: "hr",
+        name: "Отдел HR",
+        head: "Мукушева Карина Асхатовна",
+        director: "Шынәсіл Әділет Жолдыбекұлы",
+        employees: [
+          { id: "39", name: "Мукушева Карина Асхатовна", role: "Руководитель отдела рекрутинга", is_head: true },
+          { id: "40", name: "Зияхмет Оразбек Жахангерұлы", role: "Тренер по обучению" },
+          { id: "41", name: "Калелова Дильназ Дамировна", role: "Рекрутер" },
+          { id: "42", name: "Арын Алина Бахытбаевна", role: "Рекрутер" },
+          { id: "43", name: "Есенжан Ақбота Мейрамбекқызы", role: "Рекрутер" }
+        ]
+      },
+      {
+        id: "ozk",
+        name: "Отдел заботы о клиентах (ОЗК)",
+        head: "Касимова Макпал Жупаровна",
+        director: "Айдарәлі Райымбек Сәкенұлы",
+        employees: [
+          { id: "44", name: "Касимова Макпал Жупаровна", role: "Руководитель отдела заботы", is_head: true },
+          { id: "45", name: "Ермагамбетов Ернур Ерболович", role: "Специалист ОЗК" },
+          { id: "46", name: "Серікбаева Айжан Ануарбекқызы", role: "Специалист ОЗК" },
+          { id: "47", name: "Түсіпова Анель Какимовна", role: "Специалист ОЗК" },
+          { id: "48", name: "Есенгулова Арайлым Жанатовна", role: "Специалист ОЗК" }
         ]
       }
     ];
 
+    // Функция проверки: является ли сотрудник ЛИНЕЙНЫМ специалистом (исключаем директоров, руководителей, главбуха)
+    function isLinearEmployee(emp) {
+      if (!emp) return false;
+      if (emp.is_boss || emp.is_director || emp.is_head || emp.is_chief_accountant || emp.is_assistant) return false;
+      var role = (emp.role || '').toLowerCase();
+      if (/генеральный|директор|руководитель|главный бухгалтер|ассистент/i.test(role)) return false;
+      return true;
+    }
+
+    // Функция проверки роли ЮРИСТА (видит абсолютно все договоры)
+    function isLawyerOrAdmin(user) {
+      if (!user) return false;
+      var role = (user.role || '').toLowerCase();
+      var name = (user.name || '').toLowerCase();
+      if (/юрист/i.test(role) || /кабимулданова/i.test(name)) return true;
+      if (/генеральный|главный бухгалтер/i.test(role)) return true;
+      return false;
+    }
+
     var currentUser = null;
     var currentGeneratedSZ = null;
     var currentRoute = [];
+    var selectedCoExecutors = [];
+    var selectedContract = null;
+    var currentDocType = 'sz_payment';
     var pendingAuthTargetEmp = null;
     var pendingAuthCode = null;
 
-    var mockSZList = [
-      {
-        number: "СЗ-2026-0001",
-        date: "02.11.2026 10:15",
-        department: "Операционный блок",
-        initiator: "Аманбаев Арман Ауезханұлы",
-        coExecutors: "Байсейтов Рамазан",
-        type: "Оплата",
-        title: "Аренда помещения склада за ноябрь (ул. Анет Баба 9В)",
-        amount: 500000,
-        amountInWords: "пятьсот тысяч тенге 00 тиын",
-        counterparty: "ИП «Алдажуманова А.Т.»",
-        contract: "№82 от 01.09.2026 г.",
-        statusApproval: "Утверждено Шефом",
-        statusPayment: "Оплачено (п/п №812 от 02.11)",
-        statusLegal: "Сдан в архив (Скан прикреплен)",
-        currentApprover: "Завершено",
-        route: "Аманбаев А. ➡️ Шынәсіл Ә. ➡️ Смагулова А. ➡️ Бегалин А. ➡️ Кабидуллин Н.",
-        body: "Прошу провести оплату по счету № 3 от 01.11.2026 г., выставленному от ИП «Алдажуманова А.Т.», за аренду помещения по адресу: ул. Анет Баба 9В, бизнес-центр «Өнер», 82 кабинет, которое используется в качестве основного склада компании в г. Астана."
-      }
-    ];
-
+    // Реестр договоров с закрепленными исполнителями и сканами АВР
     var mockContracts = [
       {
         id: 1,
@@ -779,7 +955,12 @@
         subject: "Аренда основного склада Астана (Анет Баба 9В)",
         amount: "500 000 ₸ / месяц",
         manager: "Аманбаев Арман",
-        status: "Действует"
+        executors: ["Аманбаев Арман Ауезханұлы", "Байсейтов Рамазан Алтымбаевич"],
+        status: "Действует",
+        avrList: [
+          { number: "Акт №82/10 за октябрь", amount: "500 000 ₸", originalSubmitted: true, date: "01.11.2026" },
+          { number: "Акт №82/11 за ноябрь", amount: "500 000 ₸", originalSubmitted: false, date: "01.12.2026" }
+        ]
       },
       {
         id: 2,
@@ -791,7 +972,11 @@
         subject: "Курьерские услуги и межгород доставка",
         amount: "По тарифам экспедирования",
         manager: "Абенова Дана",
-        status: "Действует"
+        executors: ["Курбангалиева Акзере Раильевна", "Каримова Адель", "Сейлханова Алия Төлегенқызы"],
+        status: "Действует",
+        avrList: [
+          { number: "Акт №14-9 за сентябрь", amount: "1 250 000 ₸", originalSubmitted: true, date: "05.10.2026" }
+        ]
       },
       {
         id: 3,
@@ -803,35 +988,122 @@
         subject: "Подписка на облачный хостинг и деплой",
         amount: "$20 / месяц",
         manager: "Сайдуллаев Куанышбек",
-        status: "Действует"
+        executors: ["Сайдуллаев Куанышбек Галымович"],
+        status: "Действует",
+        avrList: [
+          { number: "Инвойс Vercel за октябрь", amount: "$20", originalSubmitted: true, date: "02.11.2026" }
+        ]
       }
     ];
 
-    // ==================== ИНИЦИАЛИЗАЦИЯ И РЕГИСТРАЦИЯ ====================
-    window.addEventListener('DOMContentLoaded', function() {
-      populateAuthEmployeeSelect();
-      populateDepartmentSelects();
+    var mockSZList = [
+      {
+        number: "СЗ-2026-0001",
+        date: "02.11.2026 10:15",
+        department: "Операционный блок",
+        initiator: "Аманбаев Арман Ауезханұлы",
+        coExecutors: ["Байсейтов Рамазан Алтымбаевич"],
+        type: "Оплата",
+        title: "Аренда помещения склада за ноябрь (ул. Анет Баба 9В)",
+        amount: 500000,
+        amountInWords: "пятьсот тысяч тенге 00 тиын",
+        counterparty: "ИП «Алдажуманова А.Т.»",
+        contract: "№82 от 01.09.2026 г.",
+        avrStatus: "✅ Оригинал АВР сдан в бухгалтерию (02.11.2026)",
+        statusApproval: "Утверждено Шефом",
+        statusPayment: "Оплачено (п/п №812 от 02.11)",
+        statusLegal: "Сдан в архив (Скан прикреплен)",
+        currentApprover: "Завершено",
+        routeList: [
+          { name: "Аманбаев Арман Ауезханұлы", role: "Заведующий складом", status: "✅ Создано", time: "02.11 10:15" },
+          { name: "Шынәсіл Әділет Жолдыбекұлы", role: "Операционный директор", status: "✅ Согласовано", time: "02.11 11:30" },
+          { name: "Смагулова Алия Сагинтаевна", role: "Главный бухгалтер", status: "✅ Одобрено в оплату", time: "02.11 14:00" },
+          { name: "Кабидуллин Нурсултан Нурланович", role: "Генеральный директор", status: "✅ Утверждено", time: "02.11 18:00" }
+        ],
+        body: "Прошу провести оплату по счету № 3 от 01.11.2026 г., выставленному от ИП «Алдажуманова А.Т.», за аренду помещения по адресу: ул. Анет Баба 9В, бизнес-центр «Өнер», 82 кабинет, которое используется в качестве основного склада компании в г. Астана."
+      }
+    ];
 
+    // ==================== ИНИЦИАЛИЗАЦИЯ И ВХОД ПО КОДУ ====================
+    window.addEventListener('DOMContentLoaded', function() {
       try {
         var saved = localStorage.getItem('jm_edo_user');
-        if (saved) {
-          currentUser = JSON.parse(saved);
-        }
+        if (saved) currentUser = JSON.parse(saved);
       } catch(e) {}
 
       if (currentUser && currentUser.name) {
-        // Пользователь уже авторизован
         closeAuthScreen();
         updateUserUI();
         renderSZList();
         renderContractsList();
       } else {
-        // ПРИ ПЕРВОМ ЗАПУСКЕ: Сначала показываем отдельное окно регистрации!
         openAuthScreen(false);
       }
+
+      // Закрытие выпадающих списков при клике вне
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.searchable-box')) {
+          closeAllDropdowns();
+        }
+      });
     });
 
-    // ==================== АВТОРИЗАЦИЯ И СМЕНА ТОЛЬКО ПО КОДУ ====================
+    function closeAllDropdowns() {
+      document.querySelectorAll('.search-results-dropdown').forEach(function(el) {
+        el.style.display = 'none';
+      });
+    }
+
+    // ==================== УМНЫЙ ПОИСК СОТРУДНИКОВ ====================
+    function onAuthSearchInput(query) {
+      var dropdown = document.getElementById('auth-emp-dropdown');
+      if (!query || query.trim().length === 0) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      var q = query.toLowerCase().trim();
+      var matches = [];
+
+      JANA_MEN_STRUCTURE.forEach(function(dept) {
+        dept.employees.forEach(function(emp) {
+          if (emp.name.toLowerCase().indexOf(q) !== -1 || emp.role.toLowerCase().indexOf(q) !== -1 || dept.name.toLowerCase().indexOf(q) !== -1) {
+            matches.push({ emp: emp, deptName: dept.name });
+          }
+        });
+      });
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center;">Сотрудник не найден</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      var html = '';
+      matches.slice(0, 8).forEach(function(m) {
+        html += [
+          '<div class="search-result-item" onclick="selectAuthEmp(\'' + m.emp.id + '\', \'' + m.emp.name + '\', \'' + m.emp.role + '\', \'' + m.deptName + '\')">',
+            '<div class="search-result-name">' + m.emp.name + '</div>',
+            '<div class="search-result-meta">' + m.emp.role + ' • ' + m.deptName + '</div>',
+          '</div>'
+        ].join('');
+      });
+
+      dropdown.innerHTML = html;
+      dropdown.style.display = 'block';
+    }
+
+    function selectAuthEmp(id, name, role, dept) {
+      pendingAuthTargetEmp = { id: id, name: name, role: role, department: dept };
+      document.getElementById('auth-emp-search').value = name;
+      document.getElementById('auth-emp-dropdown').style.display = 'none';
+
+      document.getElementById('login-info-name').textContent = name;
+      document.getElementById('login-info-dept').textContent = dept;
+      document.getElementById('login-info-role').textContent = role;
+      document.getElementById('login-emp-preview').style.display = 'block';
+    }
+
     function openAuthScreen(allowCancel) {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('auth-cancel-bar').style.display = allowCancel ? 'block' : 'none';
@@ -844,7 +1116,7 @@
     }
 
     function openSwitchAccountModal() {
-      // Смена аккаунта ТОЛЬКО по коду регистрации!
+      // Смена аккаунта строго через проверочный код!
       openAuthScreen(true);
     }
 
@@ -855,64 +1127,11 @@
       document.getElementById('auth-panel-reg').style.display = (tab === 'reg') ? 'block' : 'none';
     }
 
-    function populateAuthEmployeeSelect() {
-      var sel = document.getElementById('auth-employee-select');
-      sel.innerHTML = '<option value="">-- Выберите ваше ФИО --</option>';
-
-      JANA_MEN_STRUCTURE.forEach(function(d) {
-        var optGroup = document.createElement('optgroup');
-        optGroup.label = d.name;
-        d.employees.forEach(function(e) {
-          var opt = document.createElement('option');
-          opt.value = e.id;
-          opt.textContent = e.name + ' (' + e.role + ')';
-          opt.dataset.name = e.name;
-          opt.dataset.dept = d.name;
-          opt.dataset.role = e.role;
-          optGroup.appendChild(opt);
-        });
-        sel.appendChild(optGroup);
-      });
-
-      var regDept = document.getElementById('reg-input-dept');
-      if (regDept) {
-        regDept.innerHTML = '';
-        JANA_MEN_STRUCTURE.forEach(function(d) {
-          var opt = document.createElement('option');
-          opt.value = d.name;
-          opt.textContent = d.name;
-          regDept.appendChild(opt);
-        });
-      }
-    }
-
-    function onLoginEmployeeSelect() {
-      var sel = document.getElementById('auth-employee-select');
-      var opt = sel.options[sel.selectedIndex];
-      var prev = document.getElementById('login-emp-preview');
-      if (opt && opt.value) {
-        document.getElementById('login-info-dept').textContent = opt.dataset.dept || '-';
-        document.getElementById('login-info-role').textContent = opt.dataset.role || '-';
-        prev.style.display = 'block';
-      } else {
-        prev.style.display = 'none';
-      }
-    }
-
     function submitRequestLoginCode() {
-      var sel = document.getElementById('auth-employee-select');
-      var opt = sel.options[sel.selectedIndex];
-      if (!opt || !opt.value) {
-        alert('Пожалуйста, выберите ваше имя из списка!');
+      if (!pendingAuthTargetEmp || !pendingAuthTargetEmp.name) {
+        alert('Пожалуйста, найдите и выберите сотрудника из списка!');
         return;
       }
-
-      pendingAuthTargetEmp = {
-        id: opt.value,
-        name: opt.dataset.name,
-        department: opt.dataset.dept,
-        role: opt.dataset.role
-      };
 
       var btn = document.getElementById('btn-request-login-code');
       btn.disabled = true;
@@ -920,37 +1139,18 @@
 
       pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      if (SCRIPT_EXEC_URL) {
-        fetch(SCRIPT_EXEC_URL + '?action=request_login_code&id=' + encodeURIComponent(pendingAuthTargetEmp.id) + '&name=' + encodeURIComponent(pendingAuthTargetEmp.name))
-          .then(function(r) { return r.json(); })
-          .then(function(res) {
-            btn.disabled = false;
-            btn.textContent = '📲 Получить код в Telegram';
-            showStep2CodeInput(pendingAuthTargetEmp.name);
-          })
-          .catch(function() {
-            btn.disabled = false;
-            btn.textContent = '📲 Получить код в Telegram';
-            showStep2CodeInput(pendingAuthTargetEmp.name);
-          });
-      } else {
-        setTimeout(function() {
-          btn.disabled = false;
-          btn.textContent = '📲 Получить код в Telegram';
-          showStep2CodeInput(pendingAuthTargetEmp.name);
-          showToast('🔐 Проверочный код отправлен: ' + pendingAuthCode);
-        }, 500);
-      }
-    }
-
-    function showStep2CodeInput(name) {
-      document.getElementById('login-step1').style.display = 'none';
-      document.getElementById('login-step2').style.display = 'block';
-      document.getElementById('auth-code-target-name').textContent = name;
-      var inp = document.getElementById('auth-login-code');
-      inp.value = '';
-      setTimeout(function() { inp.focus(); }, 150);
-      showToast('📲 Код отправлен в бота @janamen_docs_bot');
+      setTimeout(function() {
+        btn.disabled = false;
+        btn.textContent = '📲 Получить код в Telegram';
+        document.getElementById('login-step1').style.display = 'none';
+        document.getElementById('login-step2').style.display = 'block';
+        document.getElementById('auth-code-target-name').textContent = pendingAuthTargetEmp.name;
+        
+        var inp = document.getElementById('auth-login-code');
+        inp.value = '';
+        setTimeout(function() { inp.focus(); }, 150);
+        showToast('🔐 Код отправлен: ' + pendingAuthCode);
+      }, 500);
     }
 
     function onAuthCodeInput(el) {
@@ -961,59 +1161,6 @@
 
     function submitVerifyLoginCode() {
       var code = document.getElementById('auth-login-code').value.trim();
-      if (!code || code.length < 4) {
-        alert('Введите 6-значный проверочный код!');
-        return;
-      }
-
-      if (pendingAuthCode && code !== pendingAuthCode && code !== '123456') {
-        alert('Неверный проверочный код! Попробуйте снова.');
-        return;
-      }
-
-      currentUser = pendingAuthTargetEmp;
-      try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
-
-      closeAuthScreen();
-      updateUserUI();
-      renderSZList();
-      renderContractsList();
-      showToast('✅ Добро пожаловать, ' + currentUser.name + '!');
-      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    }
-
-    function backToLoginStep1() {
-      document.getElementById('login-step1').style.display = 'block';
-      document.getElementById('login-step2').style.display = 'none';
-    }
-
-    function submitRequestRegCode() {
-      var fio = document.getElementById('reg-input-fio').value.trim();
-      var dept = document.getElementById('reg-input-dept').value;
-      var role = document.getElementById('reg-input-role').value.trim();
-      var tgUser = document.getElementById('reg-input-tg').value.trim();
-
-      if (!fio || !role) {
-        alert('Пожалуйста, заполните ФИО и должность!');
-        return;
-      }
-
-      pendingAuthTargetEmp = {
-        id: String(Date.now()),
-        name: fio,
-        department: dept,
-        role: role,
-        username: tgUser
-      };
-
-      pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
-      document.getElementById('reg-step1').style.display = 'none';
-      document.getElementById('reg-step2').style.display = 'block';
-      showToast('🔐 Проверочный код: ' + pendingAuthCode);
-    }
-
-    function submitVerifyRegCode() {
-      var code = document.getElementById('auth-reg-code').value.trim();
       if (!code || (code !== pendingAuthCode && code !== '123456')) {
         alert('Неверный проверочный код!');
         return;
@@ -1026,7 +1173,45 @@
       updateUserUI();
       renderSZList();
       renderContractsList();
-      showToast('🎉 Регистрация завершена! Добро пожаловать!');
+      showToast('✅ Авторизован: ' + currentUser.name);
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    }
+
+    function backToLoginStep1() {
+      document.getElementById('login-step1').style.display = 'block';
+      document.getElementById('login-step2').style.display = 'none';
+    }
+
+    function submitRequestRegCode() {
+      var fio = document.getElementById('reg-input-fio').value.trim();
+      var dept = document.getElementById('reg-input-dept').value;
+      var role = document.getElementById('reg-input-role').value.trim();
+      if (!fio || !role) {
+        alert('Заполните ФИО и должность!');
+        return;
+      }
+
+      pendingAuthTargetEmp = { id: String(Date.now()), name: fio, department: dept, role: role };
+      pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      document.getElementById('reg-step1').style.display = 'none';
+      document.getElementById('reg-step2').style.display = 'block';
+      showToast('🔐 Код подтверждения: ' + pendingAuthCode);
+    }
+
+    function submitVerifyRegCode() {
+      var code = document.getElementById('auth-reg-code').value.trim();
+      if (!code || (code !== pendingAuthCode && code !== '123456')) {
+        alert('Неверный код!');
+        return;
+      }
+      currentUser = pendingAuthTargetEmp;
+      try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
+      closeAuthScreen();
+      updateUserUI();
+      renderSZList();
+      renderContractsList();
+      showToast('🎉 Добро пожаловать!');
     }
 
     function backToRegStep1() {
@@ -1034,23 +1219,21 @@
       document.getElementById('reg-step2').style.display = 'none';
     }
 
-    // ==================== ОБНОВЛЕНИЕ UI ====================
+    // ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
     function updateUserUI() {
       if (!currentUser) return;
       document.getElementById('u-name').textContent = currentUser.name;
-      document.getElementById('u-role').textContent = currentUser.role + ' • ' + currentUser.department;
-      document.getElementById('u-avatar').textContent = currentUser.name.charAt(0);
-
-      var isArsen = currentUser.name.indexOf('Бегалин') !== -1 || /ассистент/i.test(currentUser.role);
-      var isBoss = currentUser.name.indexOf('Кабидуллин') !== -1 || /генеральный/i.test(currentUser.role);
       
-      var arsenTab = document.getElementById('tab-btn-arsen');
-      if (arsenTab) {
-        arsenTab.style.display = (isArsen || isBoss) ? 'block' : 'none';
-        if (isBoss) arsenTab.textContent = '👑 Кабинет Шефа';
-      }
+      var isLawyer = isLawyerOrAdmin(currentUser);
+      document.getElementById('u-role').textContent = currentUser.role + ' • ' + currentUser.department + (isLawyer ? ' (Доступ юриста)' : '');
+      document.getElementById('u-avatar').textContent = currentUser.name.charAt(0);
+      document.getElementById('initiator-badge').textContent = 'Инициатор: ' + currentUser.name;
 
-      document.getElementById('contracts-dept-title').textContent = currentUser.department;
+      document.getElementById('contracts-dept-title').textContent = isLawyer ? 'Все отделы компании (Режим Юриста)' : currentUser.department;
+      document.getElementById('contracts-access-hint').textContent = isLawyer 
+        ? '⚖️ Вам предоставлен полный сквозной доступ ко всем договорам компании Jana Men.' 
+        : 'Отображаются договоры только вашего подразделения.';
+
       populateDepartmentSelects();
     }
 
@@ -1071,7 +1254,6 @@
       var target = document.getElementById('tab-' + tabId);
       if (target) target.classList.add('active');
 
-      if (tabId === 'arsen') renderArsenTasks();
       if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
     }
 
@@ -1087,32 +1269,198 @@
         if (currentUser && d.name === currentUser.department) opt.selected = true;
         selDept.appendChild(opt);
       });
-
-      onDeptChange();
     }
 
-    function onDeptChange() {
-      var selCo = document.getElementById('sz-coexec');
-      if (!selCo) return;
-      selCo.innerHTML = '<option value="">-- Без со-исполнителей --</option>';
+    // ==================== ВЫБОР ТИПА ДОКУМЕНТА (СЗ / ЗАЯВЛЕНИЯ) ====================
+    function selectDocType(type) {
+      currentDocType = type;
+      document.querySelectorAll('.type-pill').forEach(function(el) { el.classList.remove('active'); });
+      if (event && event.target) event.target.classList.add('active');
 
-      JANA_MEN_STRUCTURE.forEach(function(d) {
-        d.employees.forEach(function(e) {
-          if (!currentUser || e.name !== currentUser.name) {
-            var opt = document.createElement('option');
-            opt.value = e.name;
-            opt.textContent = e.name + ' (' + e.role + ')';
-            selCo.appendChild(opt);
+      var contractField = document.getElementById('field-contract-binding');
+      var avrField = document.getElementById('field-avr-original');
+      var labelText = document.getElementById('label-raw-text');
+      var labelFile = document.getElementById('label-file');
+      var textarea = document.getElementById('sz-raw-text');
+
+      if (type === 'sz_payment') {
+        contractField.style.display = 'block';
+        labelText.textContent = 'Суть служебной записки на оплату своими словами:';
+        labelFile.textContent = 'Прикрепить счет / инвойс / квитанцию / скан договора:';
+        textarea.placeholder = 'Например: Мне нужно согласовать возмещение за оплату абонентской платы за Vercel в размере 20 долларов месяц.';
+      } else if (type === 'sz_general') {
+        contractField.style.display = 'block';
+        labelText.textContent = 'Суть служебной записки (хозяйственная / внутренняя):';
+        labelFile.textContent = 'Прикрепить документы / КП / смету:';
+        textarea.placeholder = 'Например: Прошу согласовать закупку упаковочных материалов для склада Астана.';
+      } else if (type === 'vacation_bs') {
+        contractField.style.display = 'none';
+        avrField.style.display = 'none';
+        labelText.textContent = 'Детали отпуска (даты, причина, вид отпуска):';
+        labelFile.textContent = '📷 Прикрепить фото/скан заявления на отпуск БС (без сохранения з/п):';
+        textarea.placeholder = 'Например: Прошу предоставить отпуск без сохранения заработной платы с 10 по 14 ноября по семейным обстоятельствам.';
+      } else if (type === 'advance') {
+        contractField.style.display = 'none';
+        avrField.style.display = 'none';
+        labelText.textContent = 'Заявление на аванс (сумма, срок выплаты):';
+        labelFile.textContent = '📷 Прикрепить скан заявления на аванс:';
+        textarea.placeholder = 'Например: Прошу выплатить аванс в счет заработной платы в размере 100 000 тенге 10 ноября.';
+      } else if (type === 'resignation') {
+        contractField.style.display = 'none';
+        avrField.style.display = 'none';
+        labelText.textContent = 'Заявление на увольнение / перевод (дата, основание):';
+        labelFile.textContent = '📷 Прикрепить скан заявления на увольнение (обязательно):';
+        textarea.placeholder = 'Например: Прошу уволить по собственному желанию с 20 ноября 2026 года.';
+      }
+    }
+
+    // ==================== ВЫБОР ДОГОВОРА СВОЕГО ОТДЕЛА ====================
+    function onContractSearchFocus() {
+      onContractSearchInput(document.getElementById('sz-contract-search').value);
+    }
+
+    function onContractSearchInput(query) {
+      var dropdown = document.getElementById('sz-contract-dropdown');
+      var q = (query || '').toLowerCase().trim();
+
+      var userDept = currentUser ? currentUser.department : '';
+      var isLawyer = isLawyerOrAdmin(currentUser);
+
+      // Фильтруем договоры: только своего отдела (или все для юриста)
+      var available = mockContracts.filter(function(c) {
+        if (!isLawyer && c.department !== userDept) return false;
+        if (q) {
+          return c.number.toLowerCase().indexOf(q) !== -1 || c.counterparty.toLowerCase().indexOf(q) !== -1 || c.subject.toLowerCase().indexOf(q) !== -1;
+        }
+        return true;
+      });
+
+      if (available.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center;">Договоров не найдено. Нажмите «➕ Новый договор» во вкладке Договоры.</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      var html = '';
+      available.forEach(function(c) {
+        html += [
+          '<div class="search-result-item" onclick="selectContractForSZ(' + c.id + ')">',
+            '<div class="search-result-name" style="color: var(--primary);">' + c.number + ' — ' + c.counterparty + '</div>',
+            '<div class="search-result-meta">' + c.subject + ' (' + c.amount + ') • ' + c.department + '</div>',
+          '</div>'
+        ].join('');
+      });
+
+      dropdown.innerHTML = html;
+      dropdown.style.display = 'block';
+    }
+
+    function selectContractForSZ(contractId) {
+      var contract = mockContracts.find(function(c) { return c.id === contractId; });
+      if (!contract) return;
+
+      selectedContract = contract;
+      document.getElementById('sz-contract-search').value = contract.number + ' — ' + contract.counterparty;
+      document.getElementById('sz-contract-dropdown').style.display = 'none';
+
+      // Показываем бейдж выбранного договора
+      var badge = document.getElementById('selected-contract-badge');
+      badge.innerHTML = [
+        '<div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">',
+          '<div>',
+            '<b style="color: var(--success);">' + contract.number + ' (' + contract.counterparty + ')</b>',
+            '<div style="color: var(--text-muted); font-size: 11px;">Предмет: ' + contract.subject + ' • Срок: до ' + contract.validUntil + '</div>',
+          '</div>',
+          '<button type="button" onclick="clearSelectedContract()" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;">✕</button>',
+        '</div>'
+      ].join('');
+      badge.style.display = 'block';
+
+      // Показываем поле статуса АВР
+      document.getElementById('field-avr-original').style.display = 'block';
+    }
+
+    function clearSelectedContract() {
+      selectedContract = null;
+      document.getElementById('sz-contract-search').value = '';
+      document.getElementById('selected-contract-badge').style.display = 'none';
+      document.getElementById('field-avr-original').style.display = 'none';
+    }
+
+    // ==================== УМНЫЙ ПОИСК СО-ИСПОЛНИТЕЛЕЙ (ТОЛЬКО ЛИНЕЙНЫЕ!) ====================
+    function onCoExecSearchInput(query) {
+      var dropdown = document.getElementById('coexec-dropdown');
+      if (!query || query.trim().length === 0) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      var q = query.toLowerCase().trim();
+      var matches = [];
+
+      JANA_MEN_STRUCTURE.forEach(function(dept) {
+        dept.employees.forEach(function(emp) {
+          // ФИЛЬТР: ТОЛЬКО ЛИНЕЙНЫЕ СОТРУДНИКИ! Руководителей, директоров и гендира не показываем!
+          if (!isLinearEmployee(emp)) return;
+          if (currentUser && emp.name === currentUser.name) return;
+          if (selectedCoExecutors.indexOf(emp.name) !== -1) return;
+
+          if (emp.name.toLowerCase().indexOf(q) !== -1 || emp.role.toLowerCase().indexOf(q) !== -1 || dept.name.toLowerCase().indexOf(q) !== -1) {
+            matches.push({ emp: emp, deptName: dept.name });
           }
         });
       });
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center;">Линейных сотрудников не найдено</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      var html = '';
+      matches.slice(0, 8).forEach(function(m) {
+        html += [
+          '<div class="search-result-item" onclick="addCoExecutor(\'' + m.emp.name + '\')">',
+            '<div class="search-result-name">' + m.emp.name + '</div>',
+            '<div class="search-result-meta">' + m.emp.role + ' • ' + m.deptName + '</div>',
+          '</div>'
+        ].join('');
+      });
+
+      dropdown.innerHTML = html;
+      dropdown.style.display = 'block';
     }
 
-    // ==================== УМНЫЙ СЕМАНТИЧЕСКИЙ ГЕНЕРАТОР ТЕКСТА СЗ ====================
+    function addCoExecutor(name) {
+      if (selectedCoExecutors.indexOf(name) === -1) {
+        selectedCoExecutors.push(name);
+        renderCoExecTags();
+      }
+      document.getElementById('coexec-search').value = '';
+      document.getElementById('coexec-dropdown').style.display = 'none';
+    }
+
+    function removeCoExecutor(name) {
+      selectedCoExecutors = selectedCoExecutors.filter(function(n) { return n !== name; });
+      renderCoExecTags();
+    }
+
+    function renderCoExecTags() {
+      var cont = document.getElementById('selected-coexec-tags');
+      cont.innerHTML = '';
+      selectedCoExecutors.forEach(function(name) {
+        var el = document.createElement('div');
+        el.className = 'tag-chip';
+        el.innerHTML = '👤 ' + name + ' <span class="tag-chip-remove" onclick="removeCoExecutor(\'' + name + '\')">✕</span>';
+        cont.appendChild(el);
+      });
+    }
+
+    // ==================== УМНЫЙ ГЕНЕРАТОР ТЕКСТА ДОКУМЕНТА ====================
     function generateSmartSZ() {
       var raw = document.getElementById('sz-raw-text').value.trim();
       if (!raw) {
-        alert('Пожалуйста, опишите суть служебной записки!');
+        alert('Пожалуйста, опишите суть документа!');
         return;
       }
 
@@ -1120,67 +1468,30 @@
       btn.disabled = true;
       btn.innerHTML = '<span>⏳ Составляю официальный документ...</span>';
 
-      // Попытка прямого вызова Gemini API v1beta
-      var prompt = [
-        'Ты — старший юридический и финансовый референт компании JANAMEN.',
-        'Сформируй официальную служебную записку из описания сотрудника: "' + raw + '".',
-        'Автор: ' + (currentUser ? currentUser.name : 'Сотрудник') + ' (' + (currentUser ? currentUser.role : 'Специалист') + ', ' + (currentUser ? currentUser.department : 'Отдел') + ').',
-        'Верни ТОЛЬКО валидный JSON следующей структуры:',
-        '{"title": "...", "body": "...", "amount": 20, "amountInWords": "двадцать долларов США", "currency": "USD", "counterparty": "Vercel Inc.", "requiresPayment": true}'
-      ].join('\n');
-
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + GEMINI_API_KEY;
-      var payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
-      };
-
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
+      setTimeout(function() {
         btn.disabled = false;
-        btn.innerHTML = '<span>✨ Сгенерировать официальную СЗ</span>';
-
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-          var clean = data.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim();
-          displayGeneratedSZ(JSON.parse(clean));
-          showToast('📄 Документ составлен Gemini AI!');
-        } else {
-          // Вызываем умный локальный контекстный генератор
-          generateContextualSZ(raw);
-        }
-      })
-      .catch(function() {
-        btn.disabled = false;
-        btn.innerHTML = '<span>✨ Сгенерировать официальную СЗ</span>';
-        generateContextualSZ(raw);
-      });
+        btn.innerHTML = '<span>✨ Сформировать официальный документ</span>';
+        generateContextualDoc(raw);
+      }, 350);
     }
 
-    /**
-     * Контекстный семантический генератор: понимает Vercel, аренду, любые суммы, валюты и возмещения
-     */
-    function generateContextualSZ(raw) {
+    function generateContextualDoc(raw) {
       var low = raw.toLowerCase();
-      var dept = currentUser ? currentUser.department : 'Отдел маркетинга';
+      var dept = currentUser ? currentUser.department : 'Отдел';
+      var role = currentUser ? currentUser.role : 'Специалист';
+      var authorName = currentUser ? currentUser.name : 'Сотрудник';
 
-      // 1. Извлечение суммы и валюты
       var amount = 0;
       var amountInWords = '';
       var currency = '₸';
 
-      // Поиск долларов ($ / USD / долларов)
+      // Поиск валют и сумм
       var dollarMatch = raw.match(/(\d+[\s\d]*)\s*(доллар|usd|\$)/i) || raw.match(/\$\s*(\d+[\s\d]*)/);
       if (dollarMatch) {
         amount = parseInt((dollarMatch[1] || dollarMatch[0]).replace(/[^\d]/g, ''), 10);
         currency = 'USD ($)';
         amountInWords = numberToRussianWords(amount) + ' долларов США';
       } else {
-        // Поиск тенге
         var tengeMatch = raw.match(/(\d+[\s\d]*)\s*(тенге|тг|kzt)/i) || raw.match(/(\d+[\s\d]*)/);
         if (tengeMatch) {
           amount = parseInt((tengeMatch[1] || tengeMatch[0]).replace(/\s+/g, ''), 10);
@@ -1189,19 +1500,57 @@
         }
       }
 
-      // 2. Определение предмета и контекста
       var isVercel = /vercel/i.test(low);
       var isReimbursement = /возмещ|компенсир|своих денег|с карты|личной/i.test(low);
       var isSubscription = /абонент|подписк|тариф|в месяц|ежемесяч/i.test(low);
-      var isWarehouse = /склад|аренд.*склад|анет баба/i.test(low);
 
-      var title = "Служебная записка";
+      var title = "СЛУЖЕБНАЯ ЗАПИСКА";
+      var subTitle = "";
       var body = "";
-      var counterparty = "";
+      var counterparty = selectedContract ? selectedContract.counterparty : "";
+      var contractNum = selectedContract ? (selectedContract.number + ' от ' + selectedContract.date) : "";
 
-      if (isVercel) {
+      // 1. ЗАЯВЛЕНИЕ НА ОТПУСК БС
+      if (currentDocType === 'vacation_bs') {
+        title = "ЗАЯВЛЕНИЕ";
+        subTitle = "О предоставлении отпуска без сохранения заработной платы";
+        body = [
+          "Прошу предоставить мне, " + role + " (" + dept + ") " + authorName + ", отпуск без сохранения заработной платы (БС).",
+          "",
+          "Основание и детали: " + raw + ".",
+          "",
+          "Обязуюсь к моменту выхода приступить к выполнению служебных обязанностей в полном объеме."
+        ].join('\n');
+      }
+      // 2. ЗАЯВЛЕНИЕ НА АВАНС
+      else if (currentDocType === 'advance') {
+        title = "ЗАЯВЛЕНИЕ";
+        subTitle = "О выплате аванса в счет заработной платы";
+        body = [
+          "Прошу согласовать выплату аванса в счет заработной платы за текущий месяц в размере " + (amount ? amount + " " + currency : "100 000 ₸") + " (" + (amountInWords || "сто тысяч тенге") + ").",
+          "",
+          "Причина обращения: " + raw + ".",
+          "",
+          "Прошу бухгалтерию удержать данную сумму при окончательном расчете заработной платы."
+        ].join('\n');
+      }
+      // 3. ЗАЯВЛЕНИЕ НА УВОЛЬНЕНИЕ
+      else if (currentDocType === 'resignation') {
+        title = "ЗАЯВЛЕНИЕ";
+        subTitle = "О расторжении трудового договора";
+        body = [
+          "Прошу расторгнуть трудовой договор по соглашению сторон / собственному желанию в соответствии с трудовым законодательством Республики Казахстан.",
+          "",
+          "Основание: " + raw + ".",
+          "",
+          "Скан собственноручно подписанного заявления прикреплен к настоящему электронному документу."
+        ].join('\n');
+      }
+      // 4. СЛУЖЕБНАЯ ЗАПИСКА НА VERCEL / ВОЗМЕЩЕНИЕ
+      else if (isVercel) {
         counterparty = "Vercel Inc.";
-        title = isReimbursement 
+        title = "СЛУЖЕБНАЯ ЗАПИСКА";
+        subTitle = isReimbursement 
           ? "Возмещение расходов по оплате абонентской платы за сервис Vercel" 
           : "Согласование оплаты абонентской платы за сервис Vercel";
 
@@ -1214,49 +1563,40 @@
             ? "Оплата произведена с личной банковской карты сотрудника ввиду отсутствия прямого корпоративного биллинга с иностранным сервисом. Квитанция об оплате и инвойс прилагаются к настоящей служебной записке." 
             : "Инвойс на оплату прилагается к настоящей служебной записке."
         ].join('\n');
-
-      } else if (isWarehouse) {
-        counterparty = "ИП «Алдажуманова А.Т.»";
-        title = "Оплата аренды помещения основного склада компании в г. Астана";
+      }
+      // 5. ОБЩАЯ СЗ С ДОГОВОРОМ И АВР
+      else {
+        title = "СЛУЖЕБНАЯ ЗАПИСКА";
+        subTitle = "Согласование платежа и расходов";
         body = [
-          "Прошу провести оплату за аренду помещения по адресу: ул. Анет Баба 9В, бизнес-центр «Өнер», кабинет 82, используемого в качестве основного склада компании JANAMEN в г. Астана.",
-          "",
-          "Расходы осуществляются в рамках договора аренды №82 от 01.09.2026 г. Счет на оплату и акт сверки прикреплены к служебной записке."
-        ].join('\n');
-
-      } else if (isReimbursement) {
-        title = "Возмещение производственных расходов";
-        body = [
-          "Прошу согласовать возмещение расходов, понесенных в производственных целях компании JANAMEN (" + dept + ").",
+          "Прошу согласовать проведение платежа для обеспечения текущей операционной деятельности компании JANAMEN (" + dept + ").",
           "",
           "Обоснование: " + raw + ".",
-          "",
-          "Подтверждающие документы (квитанции, чеки, выписки) прилагаются к служебной записке."
-        ].join('\n');
-
-      } else {
-        title = "Согласование проведения платежа";
-        body = [
-          "Прошу согласовать проведение платежа для нужд компании JANAMEN (" + dept + ").",
-          "",
-          "Обоснование: " + raw + ".",
-          "",
-          "Документы-основания (счета, акты, договоры) прилагаются к настоящей служебной записке."
+          contractNum ? ("\nРасходы осуществляются в рамках договора " + contractNum + " (" + counterparty + ").") : "",
+          "\nСоответствующие подтверждающие документы (счета, акты выполненных работ, накладные) прикреплены к документу."
         ].join('\n');
       }
 
+      var avrChecked = document.querySelector('input[name="avr_status"]:checked');
+      var avrText = (avrChecked && avrChecked.value === 'submitted') 
+        ? "✅ Оригинал АВР сдан в бухгалтерию" 
+        : (selectedContract ? "⏳ Ожидается сдача оригинала АВР" : "Не требуется");
+
       var result = {
+        docTypeCategory: currentDocType,
         title: title,
+        subTitle: subTitle,
         body: body,
         amount: amount,
         amountInWords: amountInWords,
         currency: currency,
         counterparty: counterparty,
-        requiresPayment: (amount > 0 || /оплат|возмещ|счет/i.test(low))
+        contract: contractNum,
+        avrStatus: avrText,
+        requiresPayment: (amount > 0 || currentDocType === 'advance' || currentDocType === 'sz_payment')
       };
 
       displayGeneratedSZ(result);
-      showToast('📄 Официальная СЗ сформирована!');
     }
 
     function numberToRussianWords(num) {
@@ -1272,45 +1612,50 @@
       currentGeneratedSZ = data;
       document.getElementById('sz-generated-block').style.display = 'block';
 
+      document.getElementById('prev-doc-title').innerHTML = data.title + '<br><span style="font-size:12px;color:var(--text-muted);font-weight:600;">' + data.subTitle + '</span>';
       document.getElementById('prev-body').textContent = data.body;
+
       if (data.amount && Number(data.amount) > 0) {
-        var prefix = /возмещ/i.test(data.title) ? 'Итого к возмещению: ' : 'Итого к оплате: ';
-        document.getElementById('prev-amount').textContent = prefix + Number(data.amount).toLocaleString('ru-RU') + ' (' + (data.amountInWords || '') + ').';
+        document.getElementById('prev-amount').textContent = 'Итого к оплате / возмещению: ' + Number(data.amount).toLocaleString('ru-RU') + ' (' + (data.amountInWords || '') + ').';
         document.getElementById('prev-amount').style.display = 'block';
       } else {
         document.getElementById('prev-amount').style.display = 'none';
       }
 
-      var coExec = document.getElementById('sz-coexec').value;
-      document.getElementById('prev-sign').textContent = 'Исп: ' + (currentUser ? currentUser.name : 'Сотрудник') + (coExec ? (', ' + coExec) : '') + '\nДата: ' + new Date().toLocaleDateString('ru-RU');
+      var coExecText = selectedCoExecutors.length > 0 ? (', ' + selectedCoExecutors.join(', ')) : '';
+      document.getElementById('prev-sign').textContent = 'Исп: ' + (currentUser ? currentUser.name : 'Сотрудник') + coExecText + '\nДата: ' + new Date().toLocaleDateString('ru-RU');
 
-      buildDefaultRoute(data.requiresPayment);
+      // МАРШРУТ СОГЛАСОВАНИЯ: БЕЗ АРСЕНА БЕГАЛИНА!
+      buildDefaultRoute(data);
       renderRouteUI();
       document.getElementById('sz-generated-block').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function buildDefaultRoute(requiresPayment) {
+    // МАРШРУТ: БЕЗ АРСЕНА БЕГАЛИНА! Исполнитель -> Руководитель -> Директор блока -> [Главбух/HR] -> Шеф!
+    function buildDefaultRoute(data) {
       currentRoute = [];
       var deptObj = JANA_MEN_STRUCTURE.find(function(d) { return currentUser && d.name === currentUser.department; });
       var headName = deptObj ? deptObj.head : "Шынәсіл Әділет Жолдыбекұлы";
-      
+
+      // 1. Руководитель отдела
       if (!currentUser || headName !== currentUser.name) {
         currentRoute.push({ name: headName, role: "Руководитель отдела", stepName: "Согласование руководителя" });
       }
 
+      // 2. Директор блока
       var dirName = deptObj && deptObj.director ? deptObj.director : headName;
       if (dirName !== headName && (!currentUser || dirName !== currentUser.name)) {
         currentRoute.push({ name: dirName, role: "Директор блока", stepName: "Виза директора блока" });
       }
 
-      if (requiresPayment) {
+      // 3. Кадры / Главбух в зависимости от типа
+      if (data.docTypeCategory === 'vacation_bs' || data.docTypeCategory === 'resignation') {
+        currentRoute.push({ name: "Койчибекова Жулдыз Ермековна", role: "Менеджер по кадрам", stepName: "Проверка отдела кадров (HR)" });
+      } else if (data.requiresPayment) {
         currentRoute.push({ name: "Смагулова Алия Сагинтаевна", role: "Главный бухгалтер", stepName: "Финансовый контроль и оплата" });
       }
 
-      // АРСЕН БЕГАЛИН ВСЕГДА ПЕРЕД ШЕФОМ!
-      currentRoute.push({ name: "Бегалин Арсен Кайратович", role: "Бизнес-ассистент", stepName: "Проверка ассистентом перед шефом", isArsen: true });
-
-      // ШЕФ
+      // 4. ФИНАЛ: ГЕНЕРАЛЬНЫЙ ДИРЕКТОР (ШЕФ)! БЕЗ АРСЕНА!
       currentRoute.push({ name: "Кабидуллин Нурсултан Нурланович", role: "Генеральный директор", stepName: "Утверждение шефом", isBoss: true });
     }
 
@@ -1325,7 +1670,7 @@
         el.innerHTML = [
           '<div class="route-step-num">' + (idx + 1) + '</div>',
           '<div class="route-step-info">',
-            '<div class="route-step-name">' + step.name + (step.isArsen ? ' <span class="route-badge-arsen">⭐️ До шефа (Реестр)</span>' : '') + '</div>',
+            '<div class="route-step-name">' + step.name + '</div>',
             '<div class="route-step-role">' + step.stepName + ' (' + step.role + ')</div>',
           '</div>',
           '<button type="button" onclick="removeRouteStep(' + idx + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">✕</button>'
@@ -1351,7 +1696,7 @@
     function addCustomApproverPrompt() {
       var name = prompt('Введите ФИО согласующего сотрудника (например: Кабимулданова Динара Тлеукановна - Юрист):');
       if (name && name.trim()) {
-        currentRoute.splice(currentRoute.length - 2, 0, {
+        currentRoute.splice(currentRoute.length - 1, 0, {
           name: name.trim(),
           role: "Согласующий",
           stepName: "Дополнительное согласование"
@@ -1363,36 +1708,48 @@
     function submitFinalSZ() {
       if (!currentGeneratedSZ) return;
       var year = new Date().getFullYear();
-      var nextNum = 'СЗ-' + year + '-' + ('0000' + (mockSZList.length + 1)).slice(-4);
-      var coExec = document.getElementById('sz-coexec').value;
+      var prefix = (currentDocType === 'vacation_bs' || currentDocType === 'resignation' || currentDocType === 'advance') ? 'ЗАЯВ-' : 'СЗ-';
+      var nextNum = prefix + year + '-' + ('0000' + (mockSZList.length + 1)).slice(-4);
 
       var newSZ = {
         number: nextNum,
         date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
-        department: document.getElementById('sz-dept').value,
+        department: currentUser ? currentUser.department : 'Отдел',
         initiator: currentUser ? currentUser.name : 'Сотрудник',
-        coExecutors: coExec,
-        type: currentGeneratedSZ.requiresPayment ? 'Оплата' : 'Хозяйственная',
-        title: currentGeneratedSZ.title,
+        coExecutors: selectedCoExecutors.slice(),
+        type: currentGeneratedSZ.docTypeCategory === 'sz_payment' ? 'Оплата' : 'Кадровое / Общее',
+        title: currentGeneratedSZ.subTitle || currentGeneratedSZ.title,
         amount: currentGeneratedSZ.amount || 0,
         amountInWords: currentGeneratedSZ.amountInWords || '',
         counterparty: currentGeneratedSZ.counterparty || '',
         contract: currentGeneratedSZ.contract || '',
-        statusApproval: 'На согласовании: ' + (currentRoute[0] ? currentRoute[0].name : 'Арсен Бегалин'),
+        avrStatus: currentGeneratedSZ.avrStatus || 'Не требуется',
+        statusApproval: 'На согласовании: ' + (currentRoute[0] ? currentRoute[0].name : 'Руководитель'),
         statusPayment: currentGeneratedSZ.requiresPayment ? 'Ожидает визы' : 'Не требуется',
         statusLegal: 'Ожидает подписанный скан',
-        currentApprover: currentRoute[0] ? currentRoute[0].name : 'Арсен Бегалин',
-        route: currentRoute.map(function(r) { return r.name; }).join(' ➡️ '),
+        currentApprover: currentRoute[0] ? currentRoute[0].name : 'Руководитель',
+        routeList: currentRoute.map(function(r, idx) {
+          return {
+            name: r.name,
+            role: r.role,
+            status: idx === 0 ? '⏳ На рассмотрении' : 'В очереди',
+            time: ''
+          };
+        }),
         body: currentGeneratedSZ.body
       };
 
       mockSZList.unshift(newSZ);
       renderSZList();
-      showToast('🚀 Служебная записка ' + nextNum + ' успешно запущена в работу!');
+      showToast('🚀 Документ ' + nextNum + ' запущен в работу!');
       switchTab('registry');
 
+      // Сброс
       document.getElementById('sz-raw-text').value = '';
       document.getElementById('sz-generated-block').style.display = 'none';
+      selectedCoExecutors = [];
+      clearSelectedContract();
+      renderCoExecTags();
       currentGeneratedSZ = null;
     }
 
@@ -1403,12 +1760,10 @@
 
       var filterText = document.getElementById('filter-search').value.toLowerCase();
       var filterStatus = document.getElementById('filter-status').value;
+      var isLawyer = isLawyerOrAdmin(currentUser);
 
       var filtered = mockSZList.filter(function(item) {
-        var isSuper = currentUser && (currentUser.name.indexOf('Бегалин') !== -1 || currentUser.name.indexOf('Кабидуллин') !== -1 || /ассистент|генеральный|главный бухгалтер/i.test(currentUser.role));
-        if (!isSuper && currentUser && item.department !== currentUser.department) {
-          return false;
-        }
+        if (!isLawyer && currentUser && item.department !== currentUser.department) return false;
 
         if (filterText) {
           var matchText = (item.number + ' ' + item.title + ' ' + item.counterparty + ' ' + item.initiator).toLowerCase();
@@ -1424,7 +1779,7 @@
       });
 
       if (filtered.length === 0) {
-        cont.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">Служебных записок не найдено</div>';
+        cont.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">Документов не найдено</div>';
         return;
       }
 
@@ -1438,6 +1793,8 @@
         if (item.statusApproval.indexOf('Утверждено') !== -1) badgeClass = 'badge-approved';
         if (item.statusApproval.indexOf('Отклонено') !== -1) badgeClass = 'badge-rejected';
 
+        var coExecHtml = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 Со-исполнители: ' + item.coExecutors.join(', ')) : '';
+
         card.innerHTML = [
           '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">',
             '<div>',
@@ -1447,12 +1804,15 @@
             '<span class="status-badge ' + badgeClass + '">' + item.statusApproval + '</span>',
           '</div>',
           '<div style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text);">' + item.title + '</div>',
-          '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">',
-            '👤 Исп: <b>' + item.initiator + '</b> (' + item.department + ')',
+          '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.45;">',
+            '👤 Инициатор: <b>' + item.initiator + '</b> (' + item.department + ')',
+            coExecHtml,
+            item.contract ? ('<br>📄 Договор: ' + item.contract) : '',
             item.amount > 0 ? ('<br>💰 Сумма: <b style="color: var(--success);">' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</b>' + (item.counterparty ? ' (' + item.counterparty + ')' : '')) : '',
           '</div>',
           '<div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px;">',
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">💳 ' + item.statusPayment + '</span>',
+            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📑 ' + item.avrStatus + '</span>',
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📎 ' + item.statusLegal + '</span>',
           '</div>'
         ].join('');
@@ -1461,18 +1821,68 @@
       });
     }
 
+    // ==================== ИНФОРМАТИВНЫЙ ДЕТАЛЬНЫЙ ПРОСМОТР ====================
     var activeDetailItem = null;
 
     function openSZDetail(item) {
       activeDetailItem = item;
+
+      document.getElementById('det-type-badge').textContent = item.number.indexOf('ЗАЯВ-') !== -1 ? 'Кадровое заявление' : 'Служебная записка';
       document.getElementById('det-number').textContent = item.number + ' — ' + item.title;
-      document.getElementById('det-body').textContent = item.body;
-      document.getElementById('det-payment-status').textContent = item.statusPayment;
-      document.getElementById('det-legal-status').textContent = item.statusLegal;
 
+      // Отрисовка бланка
+      document.getElementById('det-view-title').textContent = item.title;
+      document.getElementById('det-view-body').textContent = item.body;
+      if (item.amount && item.amount > 0) {
+        document.getElementById('det-view-amount').textContent = 'Итого к оплате / возмещению: ' + Number(item.amount).toLocaleString('ru-RU') + ' (' + (item.amountInWords || '') + ').';
+        document.getElementById('det-view-amount').style.display = 'block';
+      } else {
+        document.getElementById('det-view-amount').style.display = 'none';
+      }
+
+      var coSign = (item.coExecutors && item.coExecutors.length > 0) ? (', ' + item.coExecutors.join(', ')) : '';
+      document.getElementById('det-view-sign').textContent = 'Исп: ' + item.initiator + coSign + '\nДата регистрации: ' + item.date;
+
+      // Таймлайн
+      var tl = document.getElementById('det-timeline-container');
+      tl.innerHTML = '';
+      if (item.routeList && item.routeList.length > 0) {
+        item.routeList.forEach(function(step) {
+          var isDone = step.status.indexOf('✅') !== -1;
+          var row = document.createElement('div');
+          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #f1f5f9; font-size:12.5px;';
+          row.innerHTML = [
+            '<div>',
+              '<b>' + step.name + '</b> <span style="color:var(--text-muted); font-size:11px;">(' + step.role + ')</span>',
+            '</div>',
+            '<div>',
+              '<span class="status-badge ' + (isDone ? 'badge-approved' : 'badge-pending') + '">' + step.status + '</span>',
+              (step.time ? ' <span style="font-size:10.5px;color:var(--text-muted);margin-left:4px;">' + step.time + '</span>' : ''),
+            '</div>'
+          ].join('');
+          tl.appendChild(row);
+        });
+      }
+
+      // Приложения
+      var attList = document.getElementById('det-attachments-list');
+      attList.innerHTML = [
+        '<div style="margin-bottom:6px;">📄 <b>Договор-основание:</b> ' + (item.contract || 'Не привязан к договору') + '</div>',
+        '<div style="margin-bottom:6px;">📑 <b>Статус оригинала АВР:</b> <span style="color:#b45309;font-weight:700;">' + item.avrStatus + '</span></div>',
+        '<div>📎 <b>Скан счета/квитанции:</b> <a href="#" onclick="alert(\'Открытие скана приложения...\'); return false;" style="color:var(--primary);font-weight:600;">Schet_Invoice.pdf (1.2 MB)</a></div>'
+      ].join('');
+
+      // Финансы
+      document.getElementById('det-payment-badge').textContent = item.statusPayment;
+      document.getElementById('det-payment-details').textContent = item.statusPayment;
       var isAccountant = currentUser && (currentUser.name.indexOf('Смагулова') !== -1 || /бухгалтер/i.test(currentUser.role));
-      document.getElementById('btn-mark-paid').style.display = isAccountant ? 'block' : 'none';
+      document.getElementById('btn-mark-paid').style.display = (isAccountant && item.statusPayment.indexOf('Оплачено') === -1) ? 'block' : 'none';
 
+      // Юр. статус
+      document.getElementById('det-legal-badge').textContent = item.statusLegal;
+      document.getElementById('det-legal-status-text').textContent = item.statusLegal;
+
+      // Кнопки согласования
       var isMyTurn = currentUser && (item.currentApprover.indexOf(currentUser.name) !== -1);
       document.getElementById('det-approval-actions').style.display = isMyTurn ? 'flex' : 'none';
 
@@ -1482,30 +1892,25 @@
     function makeApprovalDecision(decision) {
       if (!activeDetailItem) return;
       if (decision === 'approve') {
-        if (currentUser && currentUser.name.indexOf('Бегалин') !== -1) {
-          activeDetailItem.statusApproval = 'На утверждении у Шефа';
-          activeDetailItem.currentApprover = 'Кабидуллин Нурсултан Нурланович';
-          showToast('✅ Проверено! Передано Генеральному директору');
-        } else if (currentUser && currentUser.name.indexOf('Кабидуллин') !== -1) {
+        if (currentUser && currentUser.name.indexOf('Кабидуллин') !== -1) {
           activeDetailItem.statusApproval = 'Утверждено Шефом';
-          activeDetailItem.statusLegal = 'Ожидает подписанный скан (Арсен Бегалин)';
+          activeDetailItem.statusLegal = 'Ожидает подписанный скан оригинала';
           activeDetailItem.currentApprover = 'Завершено';
-          showToast('🎉 СЗ утверждена! Ожидается сдача подписанного оригинала');
+          showToast('🎉 Утверждено Генеральным директором!');
         } else {
-          activeDetailItem.statusApproval = 'На проверке: Бегалин Арсен';
-          activeDetailItem.currentApprover = 'Бегалин Арсен Кайратович';
-          showToast('✅ Согласовано! Передано Арсену Бегалину');
+          activeDetailItem.statusApproval = 'На согласовании: Кабидуллин Нурсултан';
+          activeDetailItem.currentApprover = 'Кабидуллин Нурсултан Нурланович';
+          showToast('✅ Согласовано! Передано Шефу');
         }
       } else {
         var reason = prompt('Укажите причину отклонения:');
         activeDetailItem.statusApproval = 'Отклонено (' + (currentUser ? currentUser.name : 'Руководитель') + ')';
         activeDetailItem.currentApprover = '-';
-        showToast('❌ СЗ отклонена');
+        showToast('❌ Документ отклонен');
       }
 
       closeModal('modal-detail');
       renderSZList();
-      renderArsenTasks();
     }
 
     function markPaidAction() {
@@ -1513,9 +1918,9 @@
       var pp = prompt('Введите номер платежного поручения:', '№' + Math.floor(100 + Math.random() * 900));
       if (pp) {
         activeDetailItem.statusPayment = 'Оплачено (п/п ' + pp + ' от ' + new Date().toLocaleDateString('ru-RU') + ')';
-        document.getElementById('det-payment-status').textContent = activeDetailItem.statusPayment;
         renderSZList();
         showToast('💳 Оплата зафиксирована!');
+        closeModal('modal-detail');
       }
     }
 
@@ -1526,58 +1931,108 @@
         return;
       }
       activeDetailItem.statusLegal = 'Сдан в архив (Скан прикреплен)';
-      document.getElementById('det-legal-status').textContent = activeDetailItem.statusLegal;
       renderSZList();
-      renderArsenTasks();
-      showToast('⭐️ Подписанный оригинал успешно прикреплен в архив!');
+      showToast('⭐️ Подписанный оригинал принят в архив!');
       setTimeout(function() { closeModal('modal-detail'); }, 1000);
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // ==================== АРХИВ ДОГОВОРОВ ====================
+    // ==================== РАЗДЕЛ ДОГОВОРОВ (С АВР И РОЛЬЮ ЮРИСТА) ====================
     function renderContractsList() {
       var cont = document.getElementById('contracts-list-container');
       cont.innerHTML = '';
 
-      var deptContracts = mockContracts.filter(function(c) {
-        var isSuper = currentUser && (currentUser.name.indexOf('Бегалин') !== -1 || currentUser.name.indexOf('Кабидуллин') !== -1);
-        return isSuper || (currentUser && c.department === currentUser.department);
+      var isLawyer = isLawyerOrAdmin(currentUser);
+
+      // Юрист видит ВСЕ договоры! Обычный сотрудник — только своего отдела!
+      var visibleContracts = mockContracts.filter(function(c) {
+        return isLawyer || (currentUser && c.department === currentUser.department);
       });
 
-      if (deptContracts.length === 0) {
-        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">В архиве вашего отдела пока нет договоров</div>';
+      if (visibleContracts.length === 0) {
+        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">В архиве пока нет договоров</div>';
         return;
       }
 
-      deptContracts.forEach(function(c) {
+      visibleContracts.forEach(function(c) {
         var el = document.createElement('div');
         el.className = 'card';
         el.style.background = '#ffffff';
+
+        var executorsHtml = (c.executors && c.executors.length > 0) ? ('👥 <b>Закрепленные исполнители:</b> ' + c.executors.join(', ')) : '';
+
+        var avrItemsHtml = '';
+        if (c.avrList && c.avrList.length > 0) {
+          avrItemsHtml = '<div style="margin-top: 10px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px;"><div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">📑 Закрывающие документы (АВР):</div>';
+          c.avrList.forEach(function(avr) {
+            var avrBadge = avr.originalSubmitted 
+              ? '<span class="status-badge badge-approved">✅ Оригинал сдан в бухгалтерию</span>' 
+              : '<span class="status-badge badge-pending">⏳ Ожидается сдача оригинала</span>';
+            avrItemsHtml += '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #f1f5f9;"><span>' + avr.number + ' (' + avr.amount + ')</span>' + avrBadge + '</div>';
+          });
+          avrItemsHtml += '</div>';
+        }
+
         el.innerHTML = [
-          '<div style="display: flex; justify-content: space-between; margin-bottom: 6px;">',
-            '<b style="color: var(--primary); font-size: 14px;">' + c.number + ' — ' + c.counterparty + '</b>',
-            '<span class="status-badge badge-approved">' + c.status + '</span>',
+          '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
+            '<b style="color: var(--primary); font-size: 14.5px;">' + c.number + ' — ' + c.counterparty + '</b>',
+            '<div>',
+              (isLawyer ? '<span class="status-badge badge-lawyer" style="margin-right: 4px;">⚖️ Юрист</span>' : ''),
+              '<span class="status-badge badge-approved">' + c.status + '</span>',
+            '</div>',
           '</div>',
-          '<div style="font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text);">' + c.subject + '</div>',
-          '<div style="font-size: 11.5px; color: var(--text-muted);">',
-            'Срок: ' + c.date + ' – ' + c.validUntil + ' • Условия: ' + c.amount,
-            '<br>Ответственный: ' + c.manager + ' (' + c.department + ')',
+          '<div style="font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text);">' + c.subject + '</div>',
+          '<div style="font-size: 12px; color: var(--text-muted); line-height: 1.45;">',
+            'Срок: ' + c.date + ' – ' + c.validUntil + ' • Условия: <b>' + c.amount + '</b> • Отдел: <b>' + c.department + '</b>',
+            '<br>Ответственный: ' + c.manager,
+            (executorsHtml ? ('<br>' + executorsHtml) : ''),
+          '</div>',
+          avrItemsHtml,
+          '<div style="margin-top: 10px; display: flex; gap: 8px;">',
+            '<button class="btn btn-secondary" onclick="attachAvrModal(' + c.id + ')" style="font-size: 11.5px; padding: 6px 10px;">➕ Прикрепить АВР</button>',
+            '<button class="btn btn-secondary" onclick="alert(\'Скачивание договора...\')" style="font-size: 11.5px; padding: 6px 10px;">📄 Скачать договор</button>',
           '</div>'
         ].join('');
         cont.appendChild(el);
       });
     }
 
+    function attachAvrModal(contractId) {
+      var num = prompt('Номер акта выполненных работ (например: Акт №15 от 04.11.2026):');
+      if (!num) return;
+      var sum = prompt('Сумма по АВР (например: 500 000 ₸):', '500 000 ₸');
+      var isSubmitted = confirm('Оригинал АВР уже сдан в бухгалтерию?\n\nНажмите ОК если ДА (сдан), или Отмена если оригинал еще не сдан.');
+
+      var c = mockContracts.find(function(item) { return item.id === contractId; });
+      if (c) {
+        if (!c.avrList) c.avrList = [];
+        c.avrList.push({
+          number: num,
+          amount: sum || '',
+          originalSubmitted: isSubmitted,
+          date: new Date().toLocaleDateString('ru-RU')
+        });
+        renderContractsList();
+        showToast('📑 АВР успешно добавлен к договору!');
+      }
+    }
+
     function openNewContractModal() {
-      var num = prompt('Номер договора (например: №102-JM):');
+      var num = prompt('Номер договора (например: №105-JM):');
       if (!num) return;
       var cp = prompt('Контрагент (например: ТОО «Mega Service»):');
       var subj = prompt('Предмет договора (например: Транспортные услуги):');
       
+      var defaultDept = currentUser ? currentUser.department : 'Операционный блок';
+      var dept = defaultDept;
+      if (isLawyerOrAdmin(currentUser)) {
+        dept = prompt('Укажите подразделение договора (Операционный блок, Логистика, Маркетинг...):', defaultDept) || defaultDept;
+      }
+
       mockContracts.push({
         id: mockContracts.length + 1,
-        department: currentUser ? currentUser.department : 'Операционный блок',
+        department: dept,
         number: num,
         date: new Date().toLocaleDateString('ru-RU'),
         validUntil: 'Бессрочный',
@@ -1585,48 +2040,13 @@
         subject: subj,
         amount: 'По заявкам',
         manager: currentUser ? currentUser.name : 'Сотрудник',
-        status: 'Действует'
+        executors: [currentUser ? currentUser.name : 'Специалист'],
+        status: 'Действует',
+        avrList: []
       });
 
       renderContractsList();
-      showToast('📂 Договор ' + num + ' добавлен в архив отдела!');
-    }
-
-    // ==================== ПУЛЬТ АРСЕНА БЕГАЛИНА ====================
-    function renderArsenTasks() {
-      var cont = document.getElementById('arsen-tasks-container');
-      cont.innerHTML = '';
-
-      var pendingForArsen = mockSZList.filter(function(item) {
-        return item.currentApprover.indexOf('Бегалин') !== -1 || item.statusLegal.indexOf('Ожидает подписанный скан') !== -1;
-      });
-
-      if (pendingForArsen.length === 0) {
-        cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">Все СЗ проверены, задолженностей по оригиналам нет! 🎉</div>';
-        return;
-      }
-
-      pendingForArsen.forEach(function(item) {
-        var card = document.createElement('div');
-        card.className = 'card';
-        card.style.borderLeft = '4px solid var(--warning)';
-        card.onclick = function() { openSZDetail(item); };
-
-        card.innerHTML = [
-          '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">',
-            '<b style="color:#b45309;">' + item.number + '</b>',
-            '<span class="status-badge badge-pending">Требует внимания</span>',
-          '</div>',
-          '<div style="font-weight:700;font-size:13.5px;margin-bottom:4px;color:var(--text);">' + item.title + '</div>',
-          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">',
-            'Инициатор: ' + item.initiator + ' (' + item.department + ')',
-            '<br>Статус: <b>' + item.statusApproval + '</b>',
-            '<br>Юридический статус: <b style="color:#b45309;">' + item.statusLegal + '</b>',
-          '</div>',
-          '<button class="btn btn-secondary" style="font-size:11.5px;padding:6px;">🔍 Открыть для контроля</button>'
-        ].join('');
-        cont.appendChild(card);
-      });
+      showToast('📂 Договор ' + num + ' зарегистрирован в архиве!');
     }
   </script>
 </body>

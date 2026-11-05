@@ -91,7 +91,9 @@ function doGet(e) {
       result = getSZDetail(szNumber);
     } else if (action === 'get_contracts') {
       var cDept = e.parameter.department || '';
-      result = getContractsList(cDept);
+      var userFio = e.parameter.userFio || '';
+      var userRole = e.parameter.userRole || '';
+      result = getContractsList(cDept, userFio, userRole);
     } else if (action === 'request_login_code') {
       var empId = e.parameter.id || '';
       var empName = e.parameter.name || '';
@@ -207,27 +209,26 @@ function generateSZWithGemini(rawText, attachmentsInfo, authorData) {
     '5. Сформируй рекомендуемый маршрут согласования с обязательным включением:',
     '   - Непосредственный руководитель сотрудника',
     '   - Директор блока',
-    '   - Главный бухгалтер (Смагулова Алия) — ВСЕГДА, если тип "Оплата"!',
-    '   - Бизнес-ассистент (Бегалин Арсен) — ВСЕГДА ПЕРЕД ГЕНЕРАЛЬНЫМ ДИРЕКТОРОМ!',
+    '   - Главный бухгалтер (Смагулова Алия) — если тип "Оплата"!',
     '   - Генеральный директор (Кабидуллин Нурсултан) — финальное утверждение.',
     '',
     'Верни ТОЛЬКО валидный JSON без markdown-разметки следующей структуры:',
     '{',
     '  "type": "Оплата" | "Хозяйственная" | "Кадровая" | "Административная",',
-    '  "title": "Краткая тема служебки (например: Оплата аренды склада Астана за ноябрь)",',
+    '  "title": "Краткая тема служебки (например: Оплата подписки Vercel за ноябрь)",',
     '  "recipient": "Генеральному директору JANAMEN Кабидуллину Н.Н.",',
     '  "body": "Официальный текст тела служебной записки в деловом стиле...",',
-    '  "amount": 500000,',
-    '  "amountInWords": "пятьсот тысяч тенге 00 тиын",',
-    '  "counterparty": "ИП/ТОО или наименование контрагента",',
-    '  "contract": "№82 от 01.09.2026 г.",',
-    '  "invoice": "№ 3 от 01.11.2026 г.",',
+    '  "amount": 20,',
+    '  "currency": "USD",',
+    '  "amountInWords": "двадцать долларов США 00 центов",',
+    '  "counterparty": "Vercel Inc. / ИП / ТОО",',
+    '  "contract": "Оферта / № договора",',
+    '  "invoice": "Invoice",',
     '  "requiresPayment": true,',
     '  "suggestedRoute": [',
     '    {"role": "Непосредственный руководитель", "stepName": "Согласование руководителя"},',
     '    {"role": "Директор блока", "stepName": "Согласование директора блока"},',
     '    {"name": "Смагулова Алия Сагинтаевна", "role": "Главный бухгалтер", "stepName": "Финансовый контроль и оплата", "isPaymentStep": true},',
-    '    {"name": "Бегалин Арсен Кайратович", "role": "Бизнес-ассистент", "stepName": "Проверка ассистентом перед шефом"},',
     '    {"name": "Кабидуллин Нурсултан Нурланович", "role": "Генеральный директор", "stepName": "Утверждение шефом"}',
     '  ]',
     '}'
@@ -550,35 +551,37 @@ function approveSZ(szNumber, approverFio, comment, decision) {
   // Проверяем: если согласовал Главный бухгалтер — одобряем статус оплаты
   if (approverFio.indexOf('Смагулова') !== -1 || approverFio === CONFIG.CHIEF_ACCOUNTANT) {
     sheet.getRange(targetRow, 12).setValue('Одобрено к оплате');
-  }
-
-  // Если согласовал Арсен Бегалин — СЗ переходит к Шефу
-  if (approverFio.indexOf('Бегалин') !== -1 || approverFio === CONFIG.BUSINESS_ASSISTANT) {
     sheet.getRange(targetRow, 11).setValue('На утверждении у Шефа');
     sheet.getRange(targetRow, 14).setValue(CONFIG.GENERAL_DIRECTOR);
     notifyApproverInTelegram(CONFIG.GENERAL_DIRECTOR, szNumber, szData[3], szData[6], szData[7]);
-    return { ok: true, message: 'СЗ проверена ассистентом и передана Генеральному директору!' };
+    return { ok: true, message: 'Бухгалтерия согласовала оплату. СЗ передана на утверждение Генеральному директору.' };
   }
 
   // Если утвердил Шеф (Кабидуллин Нурсултан) — СЗ УТВЕРЖДЕНА!
   if (approverFio.indexOf('Кабидуллин') !== -1 || approverFio === CONFIG.GENERAL_DIRECTOR) {
     sheet.getRange(targetRow, 11).setValue('Утверждено Шефом');
-    sheet.getRange(targetRow, 13).setValue('Ожидает подписанный скан (Арсен Бегалин)');
+    sheet.getRange(targetRow, 13).setValue('Ожидает подписанный скан');
     sheet.getRange(targetRow, 14).setValue('Завершено (Ожидание скана)');
     
-    // Уведомляем Арсена (он контролирует сбор подписанных оригиналов) и инициатора
-    notifyApproverInTelegram(CONFIG.BUSINESS_ASSISTANT, szNumber, szData[3], 'Шеф утвердил СЗ! Ожидается сдача подписанного оригинала в реестр.', szData[7]);
-    notifyInitiatorSZStatus(szData[3], szNumber, '🎉 СЗ утверждена Генеральным директором! Пожалуйста, подпишите бумажный оригинал и передайте Арсену Бегалину (или загрузите скан в Mini App).');
+    notifyInitiatorSZStatus(szData[3], szNumber, '🎉 СЗ утверждена Генеральным директором! Пожалуйста, подпишите бумажный оригинал и загрузите скан в Mini App для передачи в архив.');
     
     return { ok: true, message: 'СЗ ' + szNumber + ' успешно утверждена Генеральным директором!' };
   }
 
-  // Обычный согласующий (руководитель / директор) — передаем Арсену Бегалину перед Шефом
-  sheet.getRange(targetRow, 11).setValue('На проверке: ' + CONFIG.BUSINESS_ASSISTANT);
-  sheet.getRange(targetRow, 14).setValue(CONFIG.BUSINESS_ASSISTANT);
-  notifyApproverInTelegram(CONFIG.BUSINESS_ASSISTANT, szNumber, szData[3], szData[6], szData[7]);
+  // Обычный согласующий (руководитель / директор) — передаем Генеральному директору (или Главбуху, если требуется оплата)
+  var requiresPayment = (szData[5] === 'Оплата' || (szData[7] && Number(szData[7]) > 0));
+  if (requiresPayment && approverFio.indexOf('Смагулова') === -1) {
+    sheet.getRange(targetRow, 11).setValue('На согласовании: ' + CONFIG.CHIEF_ACCOUNTANT);
+    sheet.getRange(targetRow, 14).setValue(CONFIG.CHIEF_ACCOUNTANT);
+    notifyApproverInTelegram(CONFIG.CHIEF_ACCOUNTANT, szNumber, szData[3], szData[6], szData[7]);
+    return { ok: true, message: 'Согласовано руководителем. СЗ передана Главному бухгалтеру на проверку оплаты.' };
+  }
 
-  return { ok: true, message: 'Согласование принято. СЗ передана бизнес-ассистенту Арсену Бегалину.' };
+  sheet.getRange(targetRow, 11).setValue('На утверждении у Шефа');
+  sheet.getRange(targetRow, 14).setValue(CONFIG.GENERAL_DIRECTOR);
+  notifyApproverInTelegram(CONFIG.GENERAL_DIRECTOR, szNumber, szData[3], szData[6], szData[7]);
+
+  return { ok: true, message: 'Согласовано. СЗ передана на утверждение Генеральному директору.' };
 }
 
 /**
@@ -717,7 +720,7 @@ function getSZList(department, userFio, userRole) {
   return { ok: true, list: list.reverse() }; // свежие первыми
 }
 
-function getContractsList(department) {
+function getContractsList(department, userFio, userRole) {
   var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACTS);
   if (!sheet) return { ok: true, contracts: [] };
@@ -725,11 +728,15 @@ function getContractsList(department) {
   var rows = sheet.getDataRange().getValues();
   if (rows.length <= 1) return { ok: true, contracts: [] };
 
+  // Юрист (Кабимулданова Динара) или руководство видят ВСЕ договоры компании
+  var isLawyer = (userRole && String(userRole).toLowerCase().indexOf('юрист') !== -1) ||
+                 (userFio && String(userFio).indexOf('Кабимулданова') !== -1);
+
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     var r = rows[i];
     var cDept = String(r[1]).trim();
-    if (department && department !== 'Все' && cDept.toLowerCase() !== department.toLowerCase()) {
+    if (!isLawyer && department && department !== 'Все' && cDept.toLowerCase() !== department.toLowerCase()) {
       continue;
     }
     list.push({
