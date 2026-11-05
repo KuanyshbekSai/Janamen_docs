@@ -1003,6 +1003,10 @@ function bindTelegramAccount(fio, telegramId, username) {
     if (rFio.toLowerCase() === String(fio).toLowerCase().trim() || rFio.indexOf(fio) !== -1 || fio.indexOf(rFio) !== -1) {
       if (telegramId) sheet.getRange(i + 1, 2).setValue(String(telegramId));
       if (username) sheet.getRange(i + 1, 8).setValue(String(username));
+      if (/сайдуллаев/i.test(rFio)) {
+        sheet.getRange(i + 1, 5).setValue('IT-специалист (Администратор)');
+        sheet.getRange(i + 1, 10).setValue('Администратор');
+      }
 
       if (telegramId) {
         sendTelegramMessage(telegramId, '👋 *Здравствуйте, ' + rFio + '!*\n\nВаш Telegram успешно привязан к системе ЭДО Jana Men.\nСюда будут поступать персональные уведомления о смене статусов ваших СЗ, визировании документов, договорах и закрывающих АВР.');

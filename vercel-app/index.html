@@ -5,45 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Jana Men — Корпоративный ЭДО</title>
   
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <!-- jsPDF for genuine multi-page PDF compilation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Confetti library for gamification celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   
   <style>
-    /* ==================== СВЕТЛЫЙ КОРПОРАТИВНЫЙ ДИЗАЙН ==================== */
+    /* ==================== ЭКСКЛЮЗИВНЫЙ ДИЗАЙН JANA MEN & ГЕЙМИФИКАЦИЯ ==================== */
     :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --card-sub: #f1f5f9;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --primary: #0284c7;
-      --primary-hover: #0369a1;
-      --primary-light: #e0f2fe;
-      --success: #16a34a;
-      --success-light: #dcfce7;
-      --warning: #d97706;
-      --warning-light: #fef3c7;
-      --danger: #dc2626;
-      --danger-light: #fee2e2;
-      --border: #e2e8f0;
-      --border-focus: #0284c7;
-      --radius: 12px;
-      --radius-sm: 8px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-      --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
-      --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.05);
+      color-scheme: light !important;
+      --bg: #F7F8F5;
+      --card-bg: #FFFFFF;
+      --card-sub: #F1F3EE;
+      --text: #111713;
+      --text-muted: #5F6E65;
+      --ink: #111713;
+      --ink-secondary: #4A564E;
+      --muted: #728076;
+      --primary: #1E462B; /* Deep Emerald Forest */
+      --primary-hover: #163620;
+      --primary-light: #E8EFEA;
+      --gold: #967438; /* Jana Men Warm Gold */
+      --gold-hover: #7E602E;
+      --gold-light: #F5EFE3;
+      --slate: #244C5E;
+      --slate-light: #E6EFF2;
+      --rose: #824153;
+      --rose-light: #F4EAEF;
+      --success: #1E462B;
+      --success-light: #E8EFEA;
+      --warning: #B45309;
+      --warning-light: #FEF3C7;
+      --danger: #991B1B;
+      --danger-light: #FEE2E2;
+      --border: #E1E6DF;
+      --border-strong: #C8D1C6;
+      --border-focus: #1E462B;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-lg: 22px;
+      --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --shadow-sm: 0 2px 6px rgba(17, 23, 19, 0.03);
+      --shadow: 0 4px 18px rgba(17, 23, 19, 0.05);
+      --shadow-lg: 0 12px 36px rgba(17, 23, 19, 0.08);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 90px; font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding-bottom: 95px;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      letter-spacing: -0.015em;
+    }
 
-    /* Top User Bar */
-    .top-bar {
-      background: var(--card-bg);
+    /* Top Brand Bar */
+    .brand-bar {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      padding: 12px 16px;
+      padding: 10px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -52,75 +84,266 @@
       z-index: 100;
       box-shadow: var(--shadow-sm);
     }
-    .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-    .user-avatar {
-      width: 42px; height: 42px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), #2563eb);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 16px; color: #fff;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
     }
-    .user-details h4 { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-    .user-details p { font-size: 11.5px; color: var(--text-muted); }
-    .btn-switch-user {
-      background: var(--primary-light);
-      border: 1px solid rgba(2, 132, 199, 0.2);
-      color: var(--primary);
-      padding: 7px 12px;
-      border-radius: 8px;
+    .brand-logo-img {
+      height: 28px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+    .brand-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: var(--gold-light);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(150, 116, 56, 0.2);
+    }
+    .brand-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-streak-pill {
+      background: linear-gradient(135deg, #FFF7ED, #FFEDD5);
+      border: 1px solid #FDBA74;
+      color: #C2410C;
+      padding: 5px 10px;
+      border-radius: 20px;
       font-size: 11.5px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
+      box-shadow: 0 2px 5px rgba(194, 65, 12, 0.15);
       transition: all 0.2s;
     }
-    .btn-switch-user:active { transform: scale(0.96); }
+    .btn-streak-pill:active { transform: scale(0.95); }
+    .btn-icon-action {
+      background: var(--card-sub);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-icon-action:active { transform: scale(0.94); background: var(--border); }
+
+    /* Gamified User XP Banner */
+    .game-banner {
+      background: linear-gradient(135deg, #1E462B 0%, #163620 60%, #112818 100%);
+      color: #FFFFFF;
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin: 12px 16px 14px 16px;
+      box-shadow: 0 8px 24px rgba(30, 70, 43, 0.28);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .game-banner:active { transform: scale(0.985); }
+    .game-banner::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 140px; height: 140px;
+      background: radial-gradient(circle, rgba(150, 116, 56, 0.4) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .game-banner-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 2;
+    }
+    .game-user-col {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .game-avatar-ring {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #967438, #C4984F);
+      border: 2px solid #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFFFFF;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+      flex-shrink: 0;
+    }
+    .game-user-meta {
+      min-width: 0;
+    }
+    .game-user-name {
+      font-size: 14.5px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #FFFFFF;
+    }
+    .game-user-role {
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .game-xp-pill {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(6px);
+      padding: 6px 12px;
+      border-radius: 12px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .game-level-tag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #FCD34D;
+    }
+    .game-xp-count {
+      font-size: 15px;
+      font-weight: 800;
+      color: #FFFFFF;
+      line-height: 1.2;
+    }
+    .game-xp-count small {
+      font-size: 10.5px;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    /* Progress bar */
+    .game-progress-wrapper {
+      position: relative;
+      z-index: 2;
+      margin-bottom: 10px;
+    }
+    .game-progress-bar {
+      height: 7px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .game-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FCD34D, #F59E0B);
+      border-radius: 999px;
+      box-shadow: 0 0 8px rgba(252, 211, 77, 0.7);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .game-progress-labels {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 600;
+    }
+
+    /* Quests pills row */
+    .game-quests-row {
+      display: flex;
+      gap: 6px;
+      position: relative;
+      z-index: 2;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-top: 2px;
+    }
+    .game-quests-row::-webkit-scrollbar { display: none; }
+    .quest-pill {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 20px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .quest-pill.done {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: #86EFAC;
+    }
 
     /* Navigation Tabs */
     .nav-tabs-wrapper {
       position: sticky;
-      top: 66px;
+      top: 49px;
       z-index: 90;
       background: var(--bg);
       padding: 8px 16px;
     }
     .nav-tabs {
       display: flex;
-      background: #e2e8f0;
+      background: var(--card-sub);
+      border: 1px solid var(--border);
       padding: 4px;
-      border-radius: 12px;
-      gap: 4px;
-      overflow-x: auto;
-      scrollbar-width: none;
+      border-radius: var(--radius);
+      gap: 5px;
+      box-shadow: var(--shadow-sm);
     }
-    .nav-tabs::-webkit-scrollbar { display: none; }
     .nav-tab {
       flex: 1;
-      min-width: 90px;
-      padding: 9px 8px;
+      padding: 10px 8px;
       text-align: center;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 600;
       color: var(--text-muted);
       cursor: pointer;
-      border-radius: 8px;
+      border-radius: 11px;
       white-space: nowrap;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .nav-tab.active {
-      color: var(--primary);
-      background: #ffffff;
-      box-shadow: var(--shadow-sm);
-      font-weight: 700;
+      color: #FFFFFF;
+      background: var(--primary);
+      box-shadow: 0 3px 10px rgba(30, 70, 43, 0.35);
+      font-weight: 800;
     }
 
     /* Container */
-    .container { padding: 8px 16px 24px 16px; max-width: 760px; margin: 0 auto; }
-    .tab-pane { display: none; animation: fadeIn 0.2s ease-in-out; }
+    .container { padding: 4px 16px 28px 16px; max-width: 760px; margin: 0 auto; }
+    .tab-pane { display: none; animation: fadeIn 0.25s ease-in-out; }
     .tab-pane.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
     /* Cards */
     .card {
@@ -337,68 +560,89 @@
       padding: 12px 18px;
       border-radius: var(--radius-sm);
       font-size: 13.5px;
-      font-weight: 700;
+      font-weight: 800;
+      letter-spacing: -0.01em;
       border: none;
       cursor: pointer;
       width: 100%;
       transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
     }
     .btn:active { transform: scale(0.98); }
-    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25); }
+    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(30, 70, 43, 0.28); }
     .btn-primary:hover { background: var(--primary-hover); }
-    .btn-success { background: var(--success); color: #fff; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25); }
-    .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-success { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(30, 70, 43, 0.28); }
+    .btn-secondary { background: var(--card-sub); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #E1E6DF; }
     .btn-ai {
-      background: linear-gradient(135deg, #0284c7, #2563eb);
+      background: linear-gradient(135deg, #1E462B, #967438);
       color: #fff;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 4px 16px rgba(150, 116, 56, 0.3);
     }
 
-    /* Route Steps Builder */
+    /* Gamified Route Steps Builder */
     .route-step {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 11px 12px;
-      background: var(--card-sub);
+      gap: 12px;
+      padding: 12px 14px;
+      background: #FFFFFF;
       border: 1px solid var(--border);
-      border-radius: 9px;
-      margin-bottom: 8px;
+      border-radius: 12px;
+      margin-bottom: 9px;
+      box-shadow: 0 2px 6px rgba(17, 23, 19, 0.03);
+      position: relative;
+      transition: all 0.2s;
+    }
+    .route-step:hover {
+      border-color: var(--border-strong);
+      transform: translateX(2px);
     }
     .route-step-num {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--primary); color: #fff;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #163620);
+      color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800;
+      font-size: 12px; font-weight: 800;
+      box-shadow: 0 2px 6px rgba(30, 70, 43, 0.25);
+      flex-shrink: 0;
     }
     .route-step-info { flex: 1; }
-    .route-step-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .route-step-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
     .route-step-role { font-size: 11px; color: var(--text-muted); }
+    .route-step-xp {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--gold);
+      background: var(--gold-light);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(150, 116, 56, 0.2);
+      flex-shrink: 0;
+    }
 
     /* Paper Document Preview */
     .doc-preview {
       background: #ffffff;
       color: #0f172a;
       padding: 28px 24px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      border: 1px solid var(--border);
       font-family: Arial, "Times New Roman", serif;
       line-height: 1.6;
       font-size: 13.5px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      box-shadow: var(--shadow);
       margin-bottom: 16px;
     }
     .doc-preview-head { text-align: right; font-weight: bold; margin-bottom: 24px; font-size: 12.5px; line-height: 1.45; }
     .doc-preview-title { text-align: center; font-size: 16px; font-weight: 800; margin-bottom: 18px; letter-spacing: 0.5px; }
-    .doc-preview-body { text-align: justify; margin-bottom: 16px; white-space: pre-wrap; font-family: -apple-system, sans-serif; font-size: 13.5px; }
-    .doc-preview-amount { font-weight: bold; margin-bottom: 18px; font-size: 13.5px; color: #0f172a; border-left: 3px solid var(--primary); padding-left: 10px; font-family: -apple-system, sans-serif; }
-    .doc-preview-sign { font-style: italic; font-size: 12px; color: #475569; margin-bottom: 22px; font-family: -apple-system, sans-serif; }
-    .doc-preview-audit { border-top: 1px solid #cbd5e1; padding-top: 14px; font-family: -apple-system, sans-serif; }
+    .doc-preview-body { text-align: justify; margin-bottom: 16px; white-space: pre-wrap; font-family: var(--font-body); font-size: 13.5px; }
+    .doc-preview-amount { font-weight: bold; margin-bottom: 18px; font-size: 13.5px; color: #0f172a; border-left: 3px solid var(--primary); padding-left: 10px; font-family: var(--font-body); }
+    .doc-preview-sign { font-style: italic; font-size: 12px; color: #475569; margin-bottom: 22px; font-family: var(--font-body); }
+    .doc-preview-audit { border-top: 1px solid var(--border); padding-top: 14px; font-family: var(--font-body); }
     .doc-preview-audit h5 { font-size: 11px; text-transform: uppercase; color: #64748b; margin-bottom: 8px; }
     .audit-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-    .audit-table th, .audit-table td { border: 1px solid #cbd5e1; padding: 7px 8px; text-align: left; }
-    .audit-table th { background: #f8fafc; font-weight: bold; color: #334155; }
+    .audit-table th, .audit-table td { border: 1px solid var(--border); padding: 7px 8px; text-align: left; }
+    .audit-table th { background: var(--card-sub); font-weight: bold; color: var(--text); }
 
     /* Badges */
     .status-badge {
@@ -408,10 +652,61 @@
       font-size: 11px;
       font-weight: 700;
     }
-    .badge-approved { background: var(--success-light); color: var(--success); border: 1px solid rgba(22, 163, 74, 0.25); }
-    .badge-pending { background: var(--warning-light); color: var(--warning); border: 1px solid rgba(217, 119, 6, 0.25); }
-    .badge-rejected { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(220, 38, 38, 0.25); }
-    .badge-lawyer { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
+    .badge-approved { background: var(--success-light); color: var(--success); border: 1px solid rgba(30, 70, 43, 0.25); }
+    .badge-pending { background: var(--warning-light); color: var(--warning); border: 1px solid rgba(180, 83, 9, 0.25); }
+    .badge-rejected { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(153, 27, 27, 0.25); }
+    .badge-lawyer { background: var(--gold-light); color: var(--gold); border: 1px solid rgba(150, 116, 56, 0.25); }
+
+    /* Achievements Grid in Modal */
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .achievement-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--card-sub);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+    .achievement-item.unlocked {
+      background: #FFFFFF;
+      border-color: #86EFAC;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.12);
+    }
+    .achievement-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .achievement-item.unlocked .achievement-icon-box {
+      background: linear-gradient(135deg, #1E462B, #967438);
+      color: #FFFFFF;
+      box-shadow: 0 4px 10px rgba(30, 70, 43, 0.25);
+    }
+    .achievement-meta { flex: 1; min-width: 0; }
+    .achievement-title { font-size: 13.5px; font-weight: 800; color: var(--text); }
+    .achievement-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+    .achievement-reward {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--gold);
+      background: var(--gold-light);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(150, 116, 56, 0.2);
+    }
 
     /* Onboarding Screen */
     #auth-screen {
@@ -645,8 +940,10 @@
   <!-- ==================== ОТДЕЛЬНОЕ ОКНО РЕГИСТРАЦИИ И ВХОДА ПО КОДУ ==================== -->
   <div id="auth-screen">
     <div class="auth-card">
-      <div class="auth-logo">📑</div>
-      <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #0f172a;">Jana Men ЭДО</h2>
+      <div style="text-align: center; margin-bottom: 14px;">
+        <img src="logo.png" alt="Jana Men" style="height: 36px; margin: 0 auto; display: block; object-fit: contain;">
+      </div>
+      <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 4px; color: var(--text);">Jana Men ЭДО</h2>
       <p style="text-align: center; font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.45;" id="auth-device-hint">
         Корпоративный электронный документооборот Jana Men.
       </p>
@@ -747,21 +1044,62 @@
 
   <!-- ==================== ОСНОВНОЕ РАБОЧЕЕ ПРОСТРАНСТВО ==================== -->
   
-  <div class="top-bar">
-    <div class="user-info" onclick="openSwitchAccountModal()">
-      <div class="user-avatar" id="u-avatar">👤</div>
-      <div class="user-details">
-        <h4 id="u-name">Загрузка профиля...</h4>
-        <p id="u-role">Определение отдела...</p>
+  <!-- Верхняя бренд-панель с официальным логотипом Jana Men -->
+  <div class="brand-bar">
+    <div class="brand-left" onclick="openAchievementsModal()">
+      <img src="logo.png" alt="Jana Men Logo" class="brand-logo-img" onerror="this.style.display='none'; document.getElementById('brand-fallback-text').style.display='inline-block';">
+      <span id="brand-fallback-text" style="display:none; font-weight:900; font-size:16px; color:var(--primary); letter-spacing:-0.03em;">JANA MEN</span>
+      <span class="brand-badge">ЭДО ПРОТОКОЛ</span>
+    </div>
+    <div class="brand-actions">
+      <button class="btn-streak-pill" onclick="openAchievementsModal()" title="Серия дней без задержек">
+        <span>🔥</span> <span id="u-streak-num">5</span> дн
+      </button>
+      <button class="btn-icon-action" onclick="testMyTelegramBotConnection()" title="Проверить уведомления в Telegram">
+        <span>🔔</span>
+      </button>
+      <button class="btn-icon-action" onclick="openSwitchAccountModal()" title="Сменить профиль">
+        <span>🔄</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Карточка геймификации: XP, уровень и квесты сотрудника -->
+  <div class="game-banner" onclick="openAchievementsModal()">
+    <div class="game-banner-top">
+      <div class="game-user-col">
+        <div class="game-avatar-ring" id="u-avatar">👤</div>
+        <div class="game-user-meta">
+          <div class="game-user-name" id="u-name">Загрузка профиля...</div>
+          <div class="game-user-role" id="u-role">Определение отдела...</div>
+        </div>
+      </div>
+      <div class="game-xp-pill">
+        <div class="game-level-tag" id="game-level-num">LVL 4</div>
+        <div class="game-xp-count"><span id="game-xp-val">1 250</span> <small>XP</small></div>
       </div>
     </div>
-    <div style="display: flex; gap: 6px; align-items: center;">
-      <button class="btn-switch-user" onclick="testMyTelegramBotConnection()" title="Проверить доставку уведомлений в Telegram" style="background: #f0fdf4; border-color: #86efac; color: #166534;">
-        <span>🔔</span> <span>Тест бота</span>
-      </button>
-      <button class="btn-switch-user" onclick="openSwitchAccountModal()">
-        <span>🔄</span> <span>Сменить</span>
-      </button>
+    
+    <div class="game-progress-wrapper">
+      <div class="game-progress-bar">
+        <div class="game-progress-fill" id="game-xp-bar" style="width: 65%;"></div>
+      </div>
+      <div class="game-progress-labels">
+        <span id="game-rank-name">👑 Ранг: Мастер документооборота</span>
+        <span id="game-xp-next">65% до LVL 5</span>
+      </div>
+    </div>
+
+    <div class="game-quests-row">
+      <div class="quest-pill done">
+        <span>⚡</span> <span>0 просрочек</span>
+      </div>
+      <div class="quest-pill" id="quest-pill-sz">
+        <span>📝</span> <span id="quest-sz-text">СЗ под контролем</span>
+      </div>
+      <div class="quest-pill" id="quest-pill-avr">
+        <span>📑</span> <span id="quest-avr-text">Оригиналы в архиве</span>
+      </div>
     </div>
   </div>
 
@@ -1116,18 +1454,18 @@
       </div>
 
       <!-- Индикатор работы ИИ: Интерактивный Progress Bar со стадиями -->
-      <div id="nc-ai-loading" style="display: none; background: #ffffff; border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);">
+      <div id="nc-ai-loading" style="display: none; background: #ffffff; border: 1.5px solid var(--primary); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(30, 70, 43, 0.12);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 18px; height: 18px; border: 2.5px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-            <span style="font-size: 13px; font-weight: 800; color: #1e3a8a;" id="nc-ai-status-text">Оптимизация страниц договора...</span>
+            <div style="width: 18px; height: 18px; border: 2.5px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <span style="font-size: 13px; font-weight: 800; color: var(--primary);" id="nc-ai-status-text">Оптимизация страниц договора...</span>
           </div>
-          <span id="nc-ai-percent" style="font-size: 12px; font-weight: 800; color: #2563eb;">25%</span>
+          <span id="nc-ai-percent" style="font-size: 12px; font-weight: 800; color: var(--gold);">25%</span>
         </div>
         
         <!-- Анимированная полоса прогресса -->
         <div style="width: 100%; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-          <div id="nc-ai-progress-bar" style="width: 25%; height: 100%; background: linear-gradient(90deg, #2563eb, #38bdf8); border-radius: 4px; transition: width 0.3s ease;"></div>
+          <div id="nc-ai-progress-bar" style="width: 25%; height: 100%; background: linear-gradient(90deg, #1E462B, #967438); border-radius: 4px; transition: width 0.3s ease;"></div>
         </div>
 
         <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;" id="nc-ai-step-desc">
@@ -2167,6 +2505,75 @@
         : 'Отображаются договоры только вашего подразделения.';
 
       populateDepartmentSelects();
+
+      // Геймификация: расчет уровня, ранга и прогресса
+      var storedXp = parseInt(localStorage.getItem('jm_user_xp_' + currentUser.name) || (isAdmin ? '1450' : '850'), 10);
+      var level = Math.floor(storedXp / 300) + 1;
+      var currentLevelFloor = (level - 1) * 300;
+      var xpInLevel = storedXp - currentLevelFloor;
+      var percent = Math.min(100, Math.max(12, Math.round((xpInLevel / 300) * 100)));
+
+      var rankName = isAdmin ? '👑 Главный Архитектор ЭДО' : (isSuper ? '⚖️ Верховный Юрист' : '🚀 Специалист документооборота');
+      
+      var elRank = document.getElementById('game-rank-name');
+      if (elRank) elRank.textContent = rankName;
+      var elLvl = document.getElementById('game-level-num');
+      if (elLvl) elLvl.textContent = 'LVL ' + level;
+      var elVal = document.getElementById('game-xp-val');
+      if (elVal) elVal.textContent = storedXp.toLocaleString('ru-RU');
+      var elBar = document.getElementById('game-xp-bar');
+      if (elBar) elBar.style.width = percent + '%';
+      var elNext = document.getElementById('game-xp-next');
+      if (elNext) elNext.textContent = percent + '% до LVL ' + (level + 1);
+
+      var modalRank = document.getElementById('modal-user-rank-display');
+      if (modalRank) modalRank.textContent = rankName;
+      var modalXp = document.getElementById('modal-user-xp-details');
+      if (modalXp) modalXp.textContent = storedXp.toLocaleString('ru-RU') + ' XP • Уровень ' + level;
+    }
+
+    function celebrateAction(message, xpAdded) {
+      xpAdded = xpAdded || 50;
+      if (currentUser && currentUser.name) {
+        var key = 'jm_user_xp_' + currentUser.name;
+        var currentXp = parseInt(localStorage.getItem(key) || (currentUser.isAdmin ? '1450' : '850'), 10);
+        var newXp = currentXp + xpAdded;
+        localStorage.setItem(key, newXp.toString());
+        updateUserUI();
+      }
+
+      if (window.confetti) {
+        try {
+          window.confetti({
+            particleCount: 65,
+            spread: 60,
+            origin: { y: 0.65 },
+            colors: ['#1E462B', '#967438', '#FCD34D', '#FFFFFF']
+          });
+        } catch(e) {}
+      }
+
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        try {
+          window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        } catch(e) {}
+      }
+
+      showToast('🎉 +' + xpAdded + ' XP! ' + message);
+    }
+
+    function openAchievementsModal() {
+      document.getElementById('modal-achievements').style.display = 'flex';
+      if (window.confetti) {
+        try {
+          window.confetti({
+            particleCount: 40,
+            spread: 45,
+            origin: { y: 0.5 },
+            colors: ['#967438', '#FCD34D', '#1E462B']
+          });
+        } catch(e) {}
+      }
     }
 
     function testMyTelegramBotConnection() {
@@ -2981,15 +3388,20 @@
       var auditHtml = '<table class="audit-table"><tr><th>Этап</th><th>Согласующий</th><th>Статус</th></tr>';
 
       currentRoute.forEach(function(step, idx) {
+        var isBoss = step.isBoss || /генеральный/i.test(step.role);
+        var xpReward = isBoss ? '+200 XP' : (step.isPaymentStep || /бухгалтер/i.test(step.role) ? '+100 XP' : '+50 XP');
+        var stepIcon = isBoss ? '👑' : (idx === 0 ? '🟢' : '⚡');
+
         var el = document.createElement('div');
         el.className = 'route-step';
         el.innerHTML = [
           '<div class="route-step-num">' + (idx + 1) + '</div>',
           '<div class="route-step-info">',
-            '<div class="route-step-name">' + step.name + '</div>',
-            '<div class="route-step-role">' + step.stepName + ' (' + step.role + ')</div>',
+            '<div class="route-step-name">' + stepIcon + ' ' + step.name + (isBoss ? ' <span style="color:var(--gold); font-size:11px; font-weight:800;">(Финальный Шеф)</span>' : '') + '</div>',
+            '<div class="route-step-role">' + step.stepName + ' • ' + step.role + '</div>',
           '</div>',
-          '<button type="button" onclick="removeRouteStep(' + idx + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">✕</button>'
+          '<div class="route-step-xp">' + xpReward + '</div>',
+          '<button type="button" onclick="removeRouteStep(' + idx + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px 6px;">✕</button>'
         ].join('');
         cont.appendChild(el);
 
@@ -3103,7 +3515,7 @@
           localItem.number = data.szNumber;
           localItem.docUrl = data.docUrl;
           localItem.folderUrl = data.folderUrl;
-          showToast('🚀 ' + data.szNumber + ' запущен! Создан Google Doc и папка на Диске.');
+          celebrateAction('СЗ ' + data.szNumber + ' запущена по маршруту!', 100);
         } else {
           showToast('🚀 Документ сохранен: ' + fallbackNum);
         }
@@ -3303,11 +3715,11 @@
           activeDetailItem.statusApproval = 'Утверждено Шефом';
           activeDetailItem.statusLegal = 'Ожидает подписанный скан оригинала';
           activeDetailItem.currentApprover = 'Завершено';
-          showToast('🎉 Утверждено Генеральным директором!');
+          celebrateAction('СЗ утверждена Генеральным директором!', 120);
         } else {
           activeDetailItem.statusApproval = 'На согласовании: Кабидуллин Нурсултан';
           activeDetailItem.currentApprover = 'Кабидуллин Нурсултан Нурланович';
-          showToast('✅ Согласовано! Передано Шефу');
+          celebrateAction('Согласование принято! Передано Шефу', 75);
         }
       } else {
         var reason = prompt('Укажите причину отклонения:');
@@ -3339,7 +3751,7 @@
       }
       activeDetailItem.statusLegal = 'Сдан в архив (Скан прикреплен)';
       renderSZList();
-      showToast('⭐️ Подписанный оригинал принят в архив!');
+      celebrateAction('Подписанный оригинал СЗ принят в архив!', 120);
       setTimeout(function() { closeModal('modal-detail'); }, 1000);
     }
 
@@ -4075,7 +4487,7 @@
       mockContracts.unshift(newContract);
       renderContractsList();
       closeModal('modal-new-contract');
-      showToast('🎉 Договор «' + title + '» зарегистрирован в архиве!');
+      celebrateAction('Договор «' + title + '» зарегистрирован в архиве!', 150);
 
       // Отправка в Google Таблицу и папку Договоры на Диске
       if (SCRIPT_EXEC_URL) {
@@ -4270,7 +4682,7 @@
 
       renderContractsList();
       closeModal('modal-attach-avr');
-      showToast('📑 ' + num + ' успешно прикреплен к договору!');
+      celebrateAction('Закрывающий документ «' + num + '» прикреплен к договору!', 80);
     }
   </script>
 
@@ -4307,6 +4719,91 @@
         </button>
         <button type="button" class="btn btn-primary" onclick="saveGeminiApiKey()" style="padding: 9px 18px; font-size: 12px;">
           💾 Сохранить ключ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: ЗАЛ СЛАВЫ И ДОСТИЖЕНИЯ ==================== -->
+  <div id="modal-achievements" class="modal-overlay">
+    <div class="modal-content" style="max-width: 520px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">🏆</span>
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--text);">Зал славы & Достижения</h3>
+            <div style="font-size: 11.5px; color: var(--text-muted);">Профиль мастерства и ранг в ЭДО Jana Men</div>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-achievements')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">✕</button>
+      </div>
+
+      <div style="background: linear-gradient(135deg, #1E462B, #163620); color: #fff; border-radius: 14px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 16px rgba(30, 70, 43, 0.25);">
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #FCD34D; font-weight: 800;">Текущий статус</div>
+          <div style="font-size: 17px; font-weight: 800; margin-top: 2px;" id="modal-user-rank-display">👑 Главный Архитектор</div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 2px;" id="modal-user-xp-details">1 450 XP • Уровень 5</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 26px; line-height: 1;">🔥 5</div>
+          <div style="font-size: 10.5px; color: #FCD34D; font-weight: 700; margin-top: 4px;">дней без задержек</div>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">
+        Награды и бейджи:
+      </div>
+
+      <div class="achievements-grid">
+        <div class="achievement-item unlocked">
+          <div class="achievement-icon-box">👑</div>
+          <div class="achievement-meta">
+            <div class="achievement-title">Главный Архитектор</div>
+            <div class="achievement-desc">Полный сквозной доступ ко всей документации и архивам</div>
+          </div>
+          <div class="achievement-reward">Разблокировано</div>
+        </div>
+
+        <div class="achievement-item unlocked">
+          <div class="achievement-icon-box">⚡</div>
+          <div class="achievement-meta">
+            <div class="achievement-title">Турбо-визирование</div>
+            <div class="achievement-desc">Быстрое рассмотрение входящих служебных записок</div>
+          </div>
+          <div class="achievement-reward">+100 XP</div>
+        </div>
+
+        <div class="achievement-item unlocked">
+          <div class="achievement-icon-box">🧠</div>
+          <div class="achievement-meta">
+            <div class="achievement-title">Синтез Gemini Vision</div>
+            <div class="achievement-desc">Мгновенный OCR анализ сканов договоров и закрывающих АВР</div>
+          </div>
+          <div class="achievement-reward">+150 XP</div>
+        </div>
+
+        <div class="achievement-item unlocked">
+          <div class="achievement-icon-box">🛡</div>
+          <div class="achievement-meta">
+            <div class="achievement-title">Оригинал в архиве</div>
+            <div class="achievement-desc">100% сдача подписанных оригиналов с живой подписью</div>
+          </div>
+          <div class="achievement-reward">+200 XP</div>
+        </div>
+
+        <div class="achievement-item">
+          <div class="achievement-icon-box">📑</div>
+          <div class="achievement-meta">
+            <div class="achievement-title">Магистр контрактов</div>
+            <div class="achievement-desc">Зарегистрируйте 10 договоров с полным комплектом закрывающих актов</div>
+          </div>
+          <div class="achievement-reward">В процессе</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; text-align: center;">
+        <button class="btn btn-primary" onclick="closeModal('modal-achievements')" style="padding: 11px 20px;">
+          Отлично! Продолжить работу
         </button>
       </div>
     </div>
