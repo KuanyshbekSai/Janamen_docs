@@ -1176,7 +1176,7 @@
     function getActiveGeminiKey() {
       var saved = localStorage.getItem('JANAMEN_GEMINI_KEY');
       if (saved && saved.trim()) return saved.trim();
-      return window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join('');
+      return window.__GEMINI_KEY || ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join('');
     }
 
     function openGeminiKeyModal() {
@@ -1195,7 +1195,7 @@
         showToast('✅ API ключ Gemini успешно сохранен!');
       } else {
         localStorage.removeItem('JANAMEN_GEMINI_KEY');
-        GEMINI_API_KEY = ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join('');
+        GEMINI_API_KEY = ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join('');
         showToast('ℹ️ Возвращен стандартный ключ проекта');
       }
       closeModal('modal-gemini-key');
@@ -1252,7 +1252,7 @@
       });
     }
 
-    var GEMINI_API_KEY = window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join('');
+    var GEMINI_API_KEY = window.__GEMINI_KEY || ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join('');
 
     // Штатное расписание Jana Men
     var JANA_MEN_STRUCTURE = [

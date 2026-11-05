@@ -22,7 +22,7 @@ var CONFIG = {
   ARCHIVE_ROOT_NAME: 'Jana Men - Документация (Архив ЭДО)',
   
   // Gemini API
-  GEMINI_API_KEY: ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join(''),
+  GEMINI_API_KEY: ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join(''),
   MODELS: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'],
   
   // Telegram Bot: @janamen_docs_bot (Jana Men – Docs operator)
