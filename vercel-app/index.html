@@ -647,20 +647,20 @@
     <div class="auth-card">
       <div class="auth-logo">📑</div>
       <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #0f172a;">Jana Men ЭДО</h2>
-      <p style="text-align: center; font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.45;">
-        Корпоративный электронный документооборот служебных записок, заявлений и архивов договоров. Вход строго по коду из Telegram.
+      <p style="text-align: center; font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.45;" id="auth-device-hint">
+        Корпоративный электронный документооборот Jana Men.
       </p>
 
       <div class="auth-tab-switch">
-        <div id="btn-tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">🔑 Вход по коду</div>
+        <div id="btn-tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">🔑 Авторизация</div>
         <div id="btn-tab-reg" class="auth-tab-btn" onclick="switchAuthTab('reg')">📝 Регистрация</div>
       </div>
 
-      <!-- TAB 1: ВХОД ПО ТЕЛЕГРАМ КОДУ -->
+      <!-- TAB 1: ВХОД -->
       <div id="auth-panel-login">
         <div id="login-step1">
           <div class="field">
-            <label>Умный поиск сотрудника по ФИО или должности:</label>
+            <label>Выберите сотрудника из штатного расписания:</label>
             <div class="searchable-box">
               <input type="text" id="auth-emp-search" class="input-text" placeholder="Введите имя, например: Куанышбек..." oninput="onAuthSearchInput(this.value)">
               <div id="auth-emp-dropdown" class="search-results-dropdown"></div>
@@ -674,7 +674,7 @@
           </div>
 
           <button id="btn-request-login-code" class="btn btn-primary" onclick="submitRequestLoginCode()">
-            📲 Получить код в Telegram
+            🚀 Войти в систему
           </button>
         </div>
 
@@ -756,6 +756,9 @@
       </div>
     </div>
     <div style="display: flex; gap: 6px; align-items: center;">
+      <button class="btn-switch-user" onclick="testMyTelegramBotConnection()" title="Проверить доставку уведомлений в Telegram" style="background: #f0fdf4; border-color: #86efac; color: #166534;">
+        <span>🔔</span> <span>Тест бота</span>
+      </button>
       <button class="btn-switch-user" onclick="openSwitchAccountModal()">
         <span>🔄</span> <span>Сменить</span>
       </button>
@@ -1447,7 +1450,7 @@
           { id: "21", name: "Ахметов Мирас Еликович", role: "Графический дизайнер" },
           { id: "22", name: "Нурашева Алуа Маратовна", role: "Инфлюенс-менеджер" },
           { id: "23", name: "Асылбекова Алина Мухаммедовна", role: "SMM-специалист" },
-          { id: "24", name: "Сайдуллаев Куанышбек Галымович", role: "IT-специалист" }
+          { id: "24", name: "Сайдуллаев Куанышбек Галымович", role: "IT-специалист (Администратор)", isAdmin: true }
         ]
       },
       {
@@ -1516,11 +1519,13 @@
       return true;
     }
 
-    // Функция проверки роли ЮРИСТА (видит абсолютно все договоры)
+    // Функция проверки прав АДМИНИСТРАТОРА И ЮРИСТА (видит абсолютно все документы компании)
     function isLawyerOrAdmin(user) {
       if (!user) return false;
       var role = (user.role || '').toLowerCase();
       var name = (user.name || '').toLowerCase();
+      if (/сайдуллаев куанышбек/i.test(name)) return true; // Главный администратор системы!
+      if (user.isAdmin === true || /администратор|админ|admin/i.test(role)) return true;
       if (/юрист/i.test(role) || /кабимулданова/i.test(name)) return true;
       if (/генеральный|главный бухгалтер/i.test(role)) return true;
       return false;
@@ -1607,9 +1612,10 @@
     // ==================== СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ (РЕЕСТР СЗ) ====================
     function loadSZListFromBackend() {
       if (!SCRIPT_EXEC_URL) return;
-      var dept = currentUser ? currentUser.department : '';
+      var isSuper = isLawyerOrAdmin(currentUser);
+      var dept = isSuper ? '' : (currentUser ? currentUser.department : '');
       var userFio = currentUser ? currentUser.name : '';
-      var userRole = currentUser ? currentUser.role : '';
+      var userRole = (isSuper || (currentUser && currentUser.isAdmin)) ? 'Администратор' : (currentUser ? currentUser.role : '');
       var url = SCRIPT_EXEC_URL + '?action=get_sz_list&department=' + encodeURIComponent(dept) + '&userFio=' + encodeURIComponent(userFio) + '&userRole=' + encodeURIComponent(userRole);
 
       fetch(url)
@@ -1749,7 +1755,12 @@
     window.addEventListener('DOMContentLoaded', function() {
       try {
         var saved = localStorage.getItem('jm_edo_user');
-        if (saved) currentUser = JSON.parse(saved);
+        if (saved) {
+          currentUser = JSON.parse(saved);
+          if (currentUser && currentUser.name && /сайдуллаев/i.test(currentUser.name)) {
+            currentUser.isAdmin = true;
+          }
+        }
       } catch(e) {}
 
       if (currentUser && currentUser.name) {
@@ -1760,6 +1771,21 @@
         // Реальная синхронизация с Google Таблицей и Архивом Диска
         loadSZListFromBackend();
         loadContractsFromBackend();
+
+        // Авто-синхронизация Telegram ID, если запущено внутри Telegram
+        var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+        if (tgUser && tgUser.id && SCRIPT_EXEC_URL) {
+          fetch(SCRIPT_EXEC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'bind_telegram',
+              fio: currentUser.name,
+              telegramId: String(tgUser.id),
+              username: tgUser.username ? ('@' + tgUser.username) : ''
+            })
+          }).catch(function() {});
+        }
       } else {
         openAuthScreen(false);
       }
@@ -1828,9 +1854,34 @@
       document.getElementById('login-emp-preview').style.display = 'block';
     }
 
+    function isMobileOrTelegramDevice() {
+      var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      if (tgUser && tgUser.id) return true;
+      if (window.Telegram && window.Telegram.WebApp && (window.Telegram.WebApp.platform === 'ios' || window.Telegram.WebApp.platform === 'android')) return true;
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    function updateAuthScreenUIForDevice() {
+      var isMobile = isMobileOrTelegramDevice();
+      var hintEl = document.getElementById('auth-device-hint');
+      var btnLogin = document.getElementById('btn-request-login-code');
+      var btnReg = document.getElementById('btn-request-reg-code');
+
+      if (isMobile) {
+        if (hintEl) hintEl.innerHTML = '📱 <b>Вход со смартфона:</b> простая авторизация в 1 клик без проверочных кодов.';
+        if (btnLogin) btnLogin.innerHTML = '🚀 Войти в систему';
+        if (btnReg) btnReg.innerHTML = '🚀 Зарегистрироваться';
+      } else {
+        if (hintEl) hintEl.innerHTML = '💻 <b>Вход с компьютера:</b> проверочный код поступит в личные сообщения бота <a href="https://t.me/janamen_docs_bot" target="_blank" style="color:var(--primary);font-weight:700;">@janamen_docs_bot</a>.';
+        if (btnLogin) btnLogin.innerHTML = '📲 Отправить код в Telegram';
+        if (btnReg) btnReg.innerHTML = '📲 Отправить код в Telegram';
+      }
+    }
+
     function openAuthScreen(allowCancel) {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('auth-cancel-bar').style.display = allowCancel ? 'block' : 'none';
+      updateAuthScreenUIForDevice();
       backToLoginStep1();
       backToRegStep1();
     }
@@ -1840,7 +1891,6 @@
     }
 
     function openSwitchAccountModal() {
-      // Смена аккаунта строго через проверочный код!
       openAuthScreen(true);
     }
 
@@ -1849,6 +1899,7 @@
       document.getElementById('btn-tab-reg').classList.toggle('active', tab === 'reg');
       document.getElementById('auth-panel-login').style.display = (tab === 'login') ? 'block' : 'none';
       document.getElementById('auth-panel-reg').style.display = (tab === 'reg') ? 'block' : 'none';
+      updateAuthScreenUIForDevice();
     }
 
     function submitRequestLoginCode() {
@@ -1857,24 +1908,87 @@
         return;
       }
 
+      // 1. НА СМАРТФОНЕ / В TELEGRAM: ВХОД СРАЗУ В 1 КЛИК БЕЗ КОДА!
+      if (isMobileOrTelegramDevice()) {
+        currentUser = pendingAuthTargetEmp;
+        try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
+        closeAuthScreen();
+        updateUserUI();
+        renderSZList();
+        renderContractsList();
+        loadSZListFromBackend();
+        loadContractsFromBackend();
+        showToast('✅ Авторизован через смартфон: ' + currentUser.name);
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+        // Авто-привязка Telegram Chat ID в Google Таблице для уведомлений
+        var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+        if (tgUser && tgUser.id && SCRIPT_EXEC_URL) {
+          fetch(SCRIPT_EXEC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'bind_telegram',
+              fio: currentUser.name,
+              telegramId: String(tgUser.id),
+              username: tgUser.username ? ('@' + tgUser.username) : ''
+            })
+          }).catch(function(err) { console.warn('Bind telegram error:', err); });
+        }
+        return;
+      }
+
+      // 2. НА КОМПЬЮТЕРЕ: КОД ВЫСЫЛАЕТСЯ В ЛИЧКУ TELEGRAM
       var btn = document.getElementById('btn-request-login-code');
       btn.disabled = true;
-      btn.textContent = '⏳ Отправка кода в Telegram...';
+      btn.innerHTML = '⏳ Отправка кода в Telegram...';
 
       pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      setTimeout(function() {
+      if (SCRIPT_EXEC_URL) {
+        fetch(SCRIPT_EXEC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'send_pc_login_code',
+            fio: pendingAuthTargetEmp.name
+          })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          btn.disabled = false;
+          btn.innerHTML = '📲 Отправить код в Telegram';
+          document.getElementById('login-step1').style.display = 'none';
+          document.getElementById('login-step2').style.display = 'block';
+          document.getElementById('auth-code-target-name').textContent = pendingAuthTargetEmp.name;
+
+          if (data && data.fallbackCode) {
+            pendingAuthCode = data.fallbackCode;
+            showToast('🔐 Код для входа: ' + pendingAuthCode);
+          } else {
+            showToast('📲 Код отправлен в личные сообщения бота @janamen_docs_bot');
+          }
+
+          var inp = document.getElementById('auth-login-code');
+          inp.value = '';
+          setTimeout(function() { inp.focus(); }, 150);
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '📲 Отправить код в Telegram';
+          document.getElementById('login-step1').style.display = 'none';
+          document.getElementById('login-step2').style.display = 'block';
+          document.getElementById('auth-code-target-name').textContent = pendingAuthTargetEmp.name;
+          showToast('🔐 Проверочный код: ' + pendingAuthCode);
+        });
+      } else {
         btn.disabled = false;
-        btn.textContent = '📲 Получить код в Telegram';
+        btn.innerHTML = '📲 Отправить код в Telegram';
         document.getElementById('login-step1').style.display = 'none';
         document.getElementById('login-step2').style.display = 'block';
         document.getElementById('auth-code-target-name').textContent = pendingAuthTargetEmp.name;
-        
-        var inp = document.getElementById('auth-login-code');
-        inp.value = '';
-        setTimeout(function() { inp.focus(); }, 150);
         showToast('🔐 Код отправлен: ' + pendingAuthCode);
-      }, 500);
+      }
     }
 
     function onAuthCodeInput(el) {
@@ -1885,41 +1999,123 @@
 
     function submitVerifyLoginCode() {
       var code = document.getElementById('auth-login-code').value.trim();
-      if (!code || (code !== pendingAuthCode && code !== '123456')) {
-        alert('Неверный проверочный код!');
+      if (!code) {
+        alert('Пожалуйста, введите 6-значный код!');
         return;
       }
 
-      currentUser = pendingAuthTargetEmp;
-      try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
+      var btn = document.getElementById('btn-verify-login-code');
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Проверка кода...';
 
-      closeAuthScreen();
-      updateUserUI();
-      renderSZList();
-      renderContractsList();
-      loadSZListFromBackend();
-      loadContractsFromBackend();
-      showToast('✅ Авторизован: ' + currentUser.name);
-      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      function onLoginSuccess() {
+        currentUser = pendingAuthTargetEmp;
+        try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
+        closeAuthScreen();
+        updateUserUI();
+        renderSZList();
+        renderContractsList();
+        loadSZListFromBackend();
+        loadContractsFromBackend();
+        showToast('✅ Успешный вход на компьютере: ' + currentUser.name);
+        btn.disabled = false;
+        btn.innerHTML = '✅ Подтвердить и войти';
+      }
+
+      if (code === pendingAuthCode || code === '123456') {
+        onLoginSuccess();
+        return;
+      }
+
+      if (SCRIPT_EXEC_URL) {
+        fetch(SCRIPT_EXEC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'verify_pc_login_code',
+            fio: pendingAuthTargetEmp.name,
+            code: code
+          })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resData) {
+          if (resData && resData.ok) {
+            onLoginSuccess();
+          } else {
+            btn.disabled = false;
+            btn.innerHTML = '✅ Подтвердить и войти';
+            alert('Неверный проверочный код из Telegram!');
+          }
+        })
+        .catch(function(e) {
+          btn.disabled = false;
+          btn.innerHTML = '✅ Подтвердить и войти';
+          alert('Ошибка проверки кода: ' + e.message);
+        });
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '✅ Подтвердить и войти';
+        alert('Неверный проверочный код!');
+      }
     }
 
     function backToLoginStep1() {
       document.getElementById('login-step1').style.display = 'block';
       document.getElementById('login-step2').style.display = 'none';
+      updateAuthScreenUIForDevice();
     }
 
     function submitRequestRegCode() {
       var fio = document.getElementById('reg-input-fio').value.trim();
       var dept = document.getElementById('reg-input-dept').value;
       var role = document.getElementById('reg-input-role').value.trim();
+      var tgInput = (document.getElementById('reg-input-tg').value || '').trim();
+
       if (!fio || !role) {
         alert('Заполните ФИО и должность!');
         return;
       }
 
       pendingAuthTargetEmp = { id: String(Date.now()), name: fio, department: dept, role: role };
-      pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+      // НА СМАРТФОНЕ / В TELEGRAM: РЕГИСТРАЦИЯ В 1 КЛИК БЕЗ КОДА!
+      if (isMobileOrTelegramDevice()) {
+        var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+        var finalTgId = (tgUser && tgUser.id) ? String(tgUser.id) : (tgInput.replace(/[^0-9]/g, '') || '');
+        var finalUname = (tgUser && tgUser.username) ? ('@' + tgUser.username) : (tgInput.indexOf('@') !== -1 ? tgInput : '');
+
+        currentUser = pendingAuthTargetEmp;
+        try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
+        closeAuthScreen();
+        updateUserUI();
+        renderSZList();
+        renderContractsList();
+        showToast('🎉 Добро пожаловать, ' + fio + '!');
+
+        if (SCRIPT_EXEC_URL) {
+          fetch(SCRIPT_EXEC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'register_employee',
+              fio: fio,
+              department: dept,
+              role: role,
+              telegramId: finalTgId,
+              username: finalUname
+            })
+          })
+          .then(function() {
+            loadSZListFromBackend();
+            loadContractsFromBackend();
+          })
+          .catch(function(e) { console.warn('Reg error:', e); });
+        }
+        return;
+      }
+
+      // НА КОМПЬЮТЕРЕ: КОД ПОДТВЕРЖДЕНИЯ
+      pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
       document.getElementById('reg-step1').style.display = 'none';
       document.getElementById('reg-step2').style.display = 'block';
       showToast('🔐 Код подтверждения: ' + pendingAuthCode);
@@ -1928,7 +2124,7 @@
     function submitVerifyRegCode() {
       var code = document.getElementById('auth-reg-code').value.trim();
       if (!code || (code !== pendingAuthCode && code !== '123456')) {
-        alert('Неверный код!');
+        alert('Неверный проверочный код!');
         return;
       }
       currentUser = pendingAuthTargetEmp;
@@ -1939,12 +2135,13 @@
       renderContractsList();
       loadSZListFromBackend();
       loadContractsFromBackend();
-      showToast('🎉 Добро пожаловать!');
+      showToast('🎉 Добро пожаловать, ' + currentUser.name + '!');
     }
 
     function backToRegStep1() {
       document.getElementById('reg-step1').style.display = 'block';
       document.getElementById('reg-step2').style.display = 'none';
+      updateAuthScreenUIForDevice();
     }
 
     // ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
@@ -1952,17 +2149,68 @@
       if (!currentUser) return;
       document.getElementById('u-name').textContent = currentUser.name;
       
-      var isLawyer = isLawyerOrAdmin(currentUser);
-      document.getElementById('u-role').textContent = currentUser.role + ' • ' + currentUser.department + (isLawyer ? ' (Доступ юриста)' : '');
+      var isSuper = isLawyerOrAdmin(currentUser);
+      var isAdmin = (/сайдуллаев куанышбек/i.test(currentUser.name) || currentUser.isAdmin === true || /администратор|админ/i.test(currentUser.role));
+      
+      var accessBadge = isAdmin ? ' 👑 Администратор (Полный доступ)' : (isSuper ? ' ⚖️ Юрист (Полный доступ)' : '');
+      document.getElementById('u-role').textContent = currentUser.role + ' • ' + currentUser.department + accessBadge;
       document.getElementById('u-avatar').textContent = currentUser.name.charAt(0);
       document.getElementById('initiator-badge').textContent = 'Инициатор: ' + currentUser.name;
 
-      document.getElementById('contracts-dept-title').textContent = isLawyer ? 'Все отделы компании (Режим Юриста)' : currentUser.department;
-      document.getElementById('contracts-access-hint').textContent = isLawyer 
-        ? '⚖️ Вам предоставлен полный сквозной доступ ко всем договорам компании Jana Men.' 
+      document.getElementById('contracts-dept-title').textContent = isSuper 
+        ? (isAdmin ? 'Все отделы компании (Режим Администратора)' : 'Все отделы компании (Режим Юриста)') 
+        : currentUser.department;
+      document.getElementById('contracts-access-hint').textContent = isSuper 
+        ? (isAdmin 
+            ? '👑 Режим Администратора: вам открыт сквозной просмотр всех договоров и СЗ по всей компании Jana Men.' 
+            : '⚖️ Вам предоставлен полный сквозной доступ ко всем договорам компании Jana Men.') 
         : 'Отображаются договоры только вашего подразделения.';
 
       populateDepartmentSelects();
+    }
+
+    function testMyTelegramBotConnection() {
+      if (!currentUser || !currentUser.name) {
+        alert('Сначала войдите в систему!');
+        return;
+      }
+      showToast('⏳ Проверка связи с Telegram-ботом...');
+      if (!SCRIPT_EXEC_URL) return;
+
+      var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      var tgId = tgUser ? String(tgUser.id) : '';
+
+      fetch(SCRIPT_EXEC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'bind_telegram',
+          fio: currentUser.name,
+          telegramId: tgId,
+          username: tgUser && tgUser.username ? ('@' + tgUser.username) : ''
+        })
+      })
+      .then(function() {
+        return fetch(SCRIPT_EXEC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'send_test_tg_message',
+            fio: currentUser.name
+          })
+        });
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.ok) {
+          showToast('✅ Сообщение доставлено в @janamen_docs_bot!');
+        } else {
+          alert((data && data.error) ? data.error : 'Telegram ID еще не привязан. Нажмите /start в боте @janamen_docs_bot или откройте приложение с мобильного Telegram.');
+        }
+      })
+      .catch(function(err) {
+        showToast('⚠️ Ошибка соединения с сервером');
+      });
     }
 
     function showToast(msg) {
