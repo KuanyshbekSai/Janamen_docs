@@ -630,9 +630,45 @@
       <!-- Предпросмотр сформированного бланка -->
       <div id="sz-generated-block" style="display: none;">
         <div class="card">
-          <div class="card-title">
+          <div class="card-title" style="flex-wrap: wrap; gap: 8px;">
             <span>👁 Официальный бланк документа (Предпросмотр)</span>
-            <span class="status-badge badge-pending">Черновик</span>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" id="btn-toggle-sz-edit" onclick="toggleEditGeneratedSZ()" style="font-size: 11.5px; padding: 5px 10px;">
+                ✏️ Редактировать текст
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="scrollToRawInput()" style="font-size: 11.5px; padding: 5px 10px;">
+                🔄 Изменить запрос
+              </button>
+              <span class="status-badge badge-pending">Черновик</span>
+            </div>
+          </div>
+
+          <!-- Блок ручного редактирования текста менеджером -->
+          <div id="sz-inline-edit-box" style="display: none; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+              ✏️ Редактирование текста документа:
+            </div>
+            <div class="field" style="margin-bottom: 8px;">
+              <label style="font-size: 11px; font-weight: 700;">Тема / Подзаголовок:</label>
+              <input type="text" id="edit-sz-subtitle" class="input-text" oninput="onEditedSZInput()">
+            </div>
+            <div class="field" style="margin-bottom: 8px;">
+              <label style="font-size: 11px; font-weight: 700;">Текст документа (тело):</label>
+              <textarea id="edit-sz-body" class="input-text" rows="7" style="font-size: 12.5px; line-height: 1.45;" oninput="onEditedSZInput()"></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div class="field" style="margin-bottom: 0;">
+                <label style="font-size: 11px; font-weight: 700;">Сумма цифрами:</label>
+                <input type="number" id="edit-sz-amount" class="input-text" oninput="onEditedSZAmountInput()">
+              </div>
+              <div class="field" style="margin-bottom: 0;">
+                <label style="font-size: 11px; font-weight: 700;">Сумма прописью:</label>
+                <input type="text" id="edit-sz-amount-words" class="input-text" oninput="onEditedSZInput()">
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="toggleEditGeneratedSZ()" style="width: 100%; padding: 8px; font-size: 12px;">
+              ✅ Применить изменения в бланк
+            </button>
           </div>
           
           <div class="doc-preview">
@@ -1869,33 +1905,29 @@
           : "В целях обеспечения текущей производственной и операционной деятельности компании JANAMEN (" + dept + "),";
 
         subTitle = hasSpeedAssembly
-          ? "О согласовании закупа расходных материалов и канцелярии для ускорения сборки готовой продукции"
-          : "О согласовании закупа расходных материалов и хозяйственных принадлежностей";
+          ? "Закуп канцелярии для сборки продукции"
+          : "Закуп расходных материалов";
 
         var tableLines = purchase.items.map(function(it, idx) {
           return (idx + 1) + '. ' + it.name + ' — ' + it.qty + ' шт. × ' + it.price.toLocaleString('ru-RU') + ' ₸ = ' + it.subtotal.toLocaleString('ru-RU') + ' ₸;';
         }).join('\n');
 
         body = [
-          purposeText + " прошу согласовать приобретение следующих материалов и принадлежностей:",
+          "Для обеспечения сборки готовой продукции прошу согласовать закуп следующих принадлежностей:",
           "",
           tableLines,
           "",
-          "Итого общая стоимость закупа составляет: " + amount.toLocaleString('ru-RU') + " (" + amountInWords + ").",
-          "",
-          "Приобретенные принадлежности будут переданы сотрудникам сборочно-упаковочной линии для бесперебойного выполнения задач. Оплату / возмещение расходов прошу произвести на основании предоставленных фискальных чеков и товарных накладных."
+          "Итого к оплате: " + amount.toLocaleString('ru-RU') + " (" + amountInWords + ").",
+          "Подтверждающие чеки и накладные прилагаются."
         ].join('\n');
       }
       // Б) ЗАЯВЛЕНИЕ НА ОТПУСК БС
       else if (currentDocType === 'vacation_bs') {
         title = "ЗАЯВЛЕНИЕ";
-        subTitle = "О предоставлении отпуска без сохранения заработной платы";
+        subTitle = "О предоставлении отпуска без сохранения з/п";
         body = [
-          "Прошу предоставить мне, " + role + " (" + dept + ") " + authorName + ", отпуск без сохранения заработной платы (БС).",
-          "",
-          "Основание: " + raw.replace(/итого[\s\S]*/i, '').trim() + ".",
-          "",
-          "Обязуюсь к моменту выхода приступить к выполнению служебных обязанностей в полном объеме."
+          "Прошу предоставить мне, " + role + " (" + dept + ") " + authorName + ", отпуск без сохранения заработной платы.",
+          "Период и основание: " + raw.replace(/итого[\s\S]*/i, '').trim() + "."
         ].join('\n');
       }
       // В) ЗАЯВЛЕНИЕ НА АВАНС
@@ -1906,13 +1938,10 @@
         amountInWords = numberToRussianWords(amount) + ' тенге 00 тиын';
 
         title = "ЗАЯВЛЕНИЕ";
-        subTitle = "О выплате аванса в счет заработной платы";
+        subTitle = "О выплате аванса";
         body = [
-          "Прошу согласовать выплату аванса в счет заработной платы за текущий месяц в размере " + amount.toLocaleString('ru-RU') + " тенге (" + amountInWords + ").",
-          "",
-          "Обоснование: " + raw.replace(/итого[\s\S]*/i, '').trim() + ".",
-          "",
-          "Прошу бухгалтерию удержать указанную сумму при окончательном расчете заработной платы."
+          "Прошу согласовать выплату аванса в размере " + amount.toLocaleString('ru-RU') + " ₸ (" + amountInWords + ").",
+          "Основание: " + raw.replace(/итого[\s\S]*/i, '').trim() + "."
         ].join('\n');
       }
       // Г) ЗАЯВЛЕНИЕ НА УВОЛЬНЕНИЕ
@@ -1920,11 +1949,8 @@
         title = "ЗАЯВЛЕНИЕ";
         subTitle = "О расторжении трудового договора";
         body = [
-          "Прошу расторгнуть со мной трудовой договор в соответствии с нормами Трудового кодекса Республики Казахстан.",
-          "",
-          "Основание: " + raw.replace(/итого[\s\S]*/i, '').trim() + ".",
-          "",
-          "Скан собственноручно подписанного заявления прикреплен к настоящему электронному документу."
+          "Прошу расторгнуть со мной трудовой договор по собственному желанию.",
+          "Основание: " + raw.replace(/итого[\s\S]*/i, '').trim() + "."
         ].join('\n');
       }
       // Д) СЛУЖЕБНАЯ ЗАПИСКА НА VERCEL / ВОЗМЕЩЕНИЕ
@@ -1939,18 +1965,11 @@
         amountInWords = numberToRussianWords(amount) + ' долларов США';
 
         title = "СЛУЖЕБНАЯ ЗАПИСКА";
-        subTitle = isReimbursement 
-          ? "Возмещение расходов по оплате абонентской платы за сервис Vercel" 
-          : "Согласование оплаты абонентской платы за сервис Vercel";
+        subTitle = isReimbursement ? "Возмещение оплаты сервиса Vercel" : "Оплата сервиса Vercel";
 
         body = [
-          "Прошу согласовать " + (isReimbursement ? "возмещение понесенных расходов на оплату" : "оплату") + " ежемесячной абонентской платы за облачный сервис хостинга Vercel в размере " + amount + " USD" + (isSub ? " в месяц" : "") + " (" + amountInWords + ").",
-          "",
-          "Данный сервис используется для деплоя, хостинга и бесперебойной работы корпоративных веб-приложений и Telegram Mini App компании JANAMEN в рамках текущих задач " + dept + " и IT-инфраструктуры.",
-          "",
-          isReimbursement 
-            ? "Оплата произведена с личной банковской карты сотрудника ввиду отсутствия прямого корпоративного биллинга с иностранным сервисом. Квитанция об оплате и инвойс прилагаются к настоящей служебной записке." 
-            : "Инвойс на оплату прилагается к настоящей служебной записке."
+          "Прошу согласовать " + (isReimbursement ? "возмещение расходов на оплату" : "оплату") + " подписки Vercel в размере " + amount + " USD" + (isSub ? " / месяц" : "") + " (" + amountInWords + ").",
+          "Сервис используется для хостинга и деплоя веб-приложений компании. Инвойс прилагается."
         ].join('\n');
       }
       // Е) СТАНДАРТНАЯ СЛУЖЕБНАЯ ЗАПИСКА
@@ -1964,14 +1983,13 @@
         }
 
         title = "СЛУЖЕБНАЯ ЗАПИСКА";
-        subTitle = "Согласование платежа и расходов";
+        subTitle = "Согласование платежа (" + dept + ")";
         body = [
-          "Прошу согласовать проведение платежа для обеспечения текущей операционной деятельности компании JANAMEN (" + dept + ").",
-          "",
-          "Обоснование: " + cleanRaw + ".",
-          contractNum ? ("\nРасходы осуществляются в рамках договора " + contractNum + " (" + counterparty + ").") : "",
-          "\nСоответствующие подтверждающие документы (счета, акты выполненных работ, накладные) прикреплены к документу."
-        ].join('\n');
+          "Прошу согласовать проведение платежа по операционной деятельности (" + dept + ").",
+          "Основание: " + cleanRaw + ".",
+          contractNum ? ("Договор: " + contractNum + " (" + counterparty + ").") : "",
+          "Подтверждающие документы прикреплены."
+        ].filter(Boolean).join('\n');
       }
 
       var avrChecked = document.querySelector('input[name="avr_status"]:checked');
@@ -2017,7 +2035,63 @@
       document.getElementById('sz-generated-block').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // МАРШРУТ: БЕЗ АРСЕНА БЕГАЛИНА! Исполнитель -> Руководитель -> Директор блока -> [Главбух/HR] -> Шеф!
+        // ==================== РЕДАКТИРОВАНИЕ СФОРМИРОВАННОГО БЛАНКА ====================
+    function toggleEditGeneratedSZ() {
+      var box = document.getElementById('sz-inline-edit-box');
+      var btn = document.getElementById('btn-toggle-sz-edit');
+      if (box.style.display === 'none' || !box.style.display) {
+        box.style.display = 'block';
+        btn.textContent = '👁 Закрыть редактор';
+        btn.style.background = 'var(--primary)';
+        btn.style.color = '#ffffff';
+
+        if (currentGeneratedSZ) {
+          document.getElementById('edit-sz-subtitle').value = currentGeneratedSZ.subTitle || '';
+          document.getElementById('edit-sz-body').value = currentGeneratedSZ.body || '';
+          document.getElementById('edit-sz-amount').value = currentGeneratedSZ.amount || 0;
+          document.getElementById('edit-sz-amount-words').value = currentGeneratedSZ.amountInWords || '';
+        }
+      } else {
+        box.style.display = 'none';
+        btn.textContent = '✏️ Редактировать текст';
+        btn.style.background = '';
+        btn.style.color = '';
+      }
+    }
+
+    function onEditedSZInput() {
+      if (!currentGeneratedSZ) return;
+      currentGeneratedSZ.subTitle = document.getElementById('edit-sz-subtitle').value;
+      currentGeneratedSZ.body = document.getElementById('edit-sz-body').value;
+      currentGeneratedSZ.amountInWords = document.getElementById('edit-sz-amount-words').value;
+
+      document.getElementById('prev-doc-title').innerHTML = currentGeneratedSZ.title + '<br><span style="font-size:12px;color:var(--text-muted);font-weight:600;">' + currentGeneratedSZ.subTitle + '</span>';
+      document.getElementById('prev-body').textContent = currentGeneratedSZ.body;
+    }
+
+    function onEditedSZAmountInput() {
+      if (!currentGeneratedSZ) return;
+      var val = parseInt(document.getElementById('edit-sz-amount').value, 10) || 0;
+      currentGeneratedSZ.amount = val;
+      var inWords = numberToRussianWords(val) + (currentGeneratedSZ.currency && currentGeneratedSZ.currency.indexOf('USD') !== -1 ? ' долларов США' : ' тенге 00 тиын');
+      currentGeneratedSZ.amountInWords = inWords;
+      document.getElementById('edit-sz-amount-words').value = inWords;
+
+      if (val > 0) {
+        document.getElementById('prev-amount').textContent = 'Итого к оплате / возмещению: ' + val.toLocaleString('ru-RU') + ' (' + inWords + ').';
+        document.getElementById('prev-amount').style.display = 'block';
+      } else {
+        document.getElementById('prev-amount').style.display = 'none';
+      }
+    }
+
+    function scrollToRawInput() {
+      var textarea = document.getElementById('sz-raw-text');
+      textarea.scrollIntoView({ behavior: 'smooth' });
+      textarea.focus();
+    }
+
+// МАРШРУТ: БЕЗ АРСЕНА БЕГАЛИНА! Исполнитель -> Руководитель -> Директор блока -> [Главбух/HR] -> Шеф!
     function buildDefaultRoute(data) {
       currentRoute = [];
       var deptObj = JANA_MEN_STRUCTURE.find(function(d) { return currentUser && d.name === currentUser.department; });
