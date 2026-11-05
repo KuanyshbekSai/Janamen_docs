@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   var update = req.body;
   
   // Forward to Google Apps Script without letting Telegram wait or receive a 302
-  var gasUrl = 'https://script.google.com/macros/s/AKfycbxsIObydWva8uslsR5onfnnjPfLafzgBdBlJM9qjvVVBebZXPcKqu3rtyc2u4BG38-a6Q/exec';
+  var gasUrl = 'https://script.google.com/macros/s/AKfycbwybaGgxGCnIHrWHz1UeL1sNNUU1uGGXXC4qVBDueuO3WmkPO0cLZyuELEYbXl1jYzYgw/exec';
 
   try {
     if (update) {

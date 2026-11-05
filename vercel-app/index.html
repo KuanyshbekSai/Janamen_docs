@@ -21,43 +21,43 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   
   <style>
-    /* ==================== ЭКСКЛЮЗИВНЫЙ ДИЗАЙН JANA MEN & ГЕЙМИФИКАЦИЯ ==================== */
+    /* ==================== ЭКСКЛЮЗИВНЫЙ ОРАНЖЕВО-БЕЛЫЙ ДИЗАЙН JANA MEN ==================== */
     :root {
       color-scheme: light !important;
-      --bg: #F7F8F5;
-      --card-bg: #FFFFFF;
-      --card-sub: #F1F3EE;
-      --text: #111713;
-      --text-muted: #5F6E65;
-      --ink: #111713;
-      --ink-secondary: #4A564E;
-      --muted: #728076;
-      --primary: #1E462B; /* Deep Emerald Forest */
-      --primary-hover: #163620;
-      --primary-light: #E8EFEA;
-      --gold: #967438; /* Jana Men Warm Gold */
-      --gold-hover: #7E602E;
-      --gold-light: #F5EFE3;
+      --bg: #FDF5EC;            /* Теплый шелковистый кремовый фон */
+      --card-bg: #FFFFFF;       /* Чистые белые карточки */
+      --card-sub: #FAF0E4;      /* Мягкий фон подложек */
+      --text: #1E1712;          /* Глубокий кофейно-черный текст */
+      --text-muted: #8A7768;    /* Приглушенный теплый текст */
+      --ink: #1E1712;
+      --ink-secondary: #574A3F;
+      --muted: #8A7768;
+      --primary: #E87411;       /* Фирменный оранжевый Jana Men Orange */
+      --primary-hover: #D26307;
+      --primary-light: #FDF0E1;
+      --gold: #C4670D;          /* Теплое благородное золото */
+      --gold-hover: #A85507;
+      --gold-light: #FCEFD8;
       --slate: #244C5E;
       --slate-light: #E6EFF2;
       --rose: #824153;
       --rose-light: #F4EAEF;
-      --success: #1E462B;
-      --success-light: #E8EFEA;
-      --warning: #B45309;
+      --success: #16A34A;
+      --success-light: #DCFCE7;
+      --warning: #D97706;
       --warning-light: #FEF3C7;
-      --danger: #991B1B;
+      --danger: #DC2626;
       --danger-light: #FEE2E2;
-      --border: #E1E6DF;
-      --border-strong: #C8D1C6;
-      --border-focus: #1E462B;
+      --border: #EEDCCB;        /* Мягкая рамка цвета слоновой кости */
+      --border-strong: #D9C3AE;
+      --border-focus: #E87411;
       --radius: 16px;
       --radius-sm: 10px;
       --radius-lg: 22px;
       --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --shadow-sm: 0 2px 6px rgba(17, 23, 19, 0.03);
-      --shadow: 0 4px 18px rgba(17, 23, 19, 0.05);
-      --shadow-lg: 0 12px 36px rgba(17, 23, 19, 0.08);
+      --shadow-sm: 0 2px 6px rgba(80, 50, 20, 0.04);
+      --shadow: 0 4px 18px rgba(80, 50, 20, 0.06);
+      --shadow-lg: 0 12px 36px rgba(80, 50, 20, 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
@@ -147,14 +147,15 @@
     }
     .btn-icon-action:active { transform: scale(0.94); background: var(--border); }
 
-    /* Gamified User XP Banner */
+    /* Gamified User XP Banner (Jana Men Espresso & Orange) */
     .game-banner {
-      background: linear-gradient(135deg, #1E462B 0%, #163620 60%, #112818 100%);
+      background: linear-gradient(135deg, #241408 0%, #3D220E 50%, #573014 100%);
       color: #FFFFFF;
+      border: 1px solid rgba(232, 116, 17, 0.25);
       border-radius: var(--radius);
       padding: 16px 18px;
       margin: 12px 16px 14px 16px;
-      box-shadow: 0 8px 24px rgba(30, 70, 43, 0.28);
+      box-shadow: 0 8px 24px rgba(80, 50, 20, 0.16);
       position: relative;
       overflow: hidden;
       cursor: pointer;
@@ -166,7 +167,7 @@
       position: absolute;
       top: -40px; right: -40px;
       width: 140px; height: 140px;
-      background: radial-gradient(circle, rgba(150, 116, 56, 0.4) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(232, 116, 17, 0.4) 0%, transparent 70%);
       pointer-events: none;
     }
     .game-banner-top {
@@ -571,15 +572,15 @@
       transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
     }
     .btn:active { transform: scale(0.98); }
-    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(30, 70, 43, 0.28); }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-success { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(30, 70, 43, 0.28); }
+    .btn-primary { background: linear-gradient(135deg, #E87411 0%, #D26307 100%); color: #fff; box-shadow: 0 4px 14px rgba(232, 116, 17, 0.28); }
+    .btn-primary:hover { background: linear-gradient(135deg, #D26307 0%, #BD5402 100%); }
+    .btn-success { background: linear-gradient(135deg, #E87411 0%, #EA580C 100%); color: #fff; box-shadow: 0 4px 14px rgba(232, 116, 17, 0.28); }
     .btn-secondary { background: var(--card-sub); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: #E1E6DF; }
+    .btn-secondary:hover { background: var(--primary-light); }
     .btn-ai {
-      background: linear-gradient(135deg, #1E462B, #967438);
+      background: linear-gradient(135deg, #E87411, #C4670D);
       color: #fff;
-      box-shadow: 0 4px 16px rgba(150, 116, 56, 0.3);
+      box-shadow: 0 4px 16px rgba(232, 116, 17, 0.3);
     }
 
     /* Gamified Route Steps Builder & Drag/Drop Reorder */
@@ -1018,70 +1019,73 @@
       }
     }
 
-    /* ==================== АДАПТИВНЫЙ МАСШТАБ: НОУТБУКИ И ДЕСКТОП (ОТ 992px) ==================== */
+    /* ==================== АДАПТИВНЫЙ МАСШТАБ: ПОЛНЫЙ ЭКРАН НА НОУТБУКАХ И ДЕСКТОПЕ ==================== */
     @media (min-width: 992px) {
       body {
         font-size: 14px;
         padding-bottom: 50px;
       }
       .brand-bar {
-        padding: 12px 32px;
+        padding: 12px 28px;
       }
       .brand-bar-inner {
-        max-width: 1240px;
+        max-width: 1600px;
+        width: 96%;
         margin: 0 auto;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        width: 100%;
       }
       .game-banner {
-        max-width: 1240px;
+        max-width: 1600px;
+        width: 96%;
         margin: 16px auto 18px auto;
         padding: 22px 28px;
         border-radius: var(--radius-lg);
       }
       .game-avatar-ring {
-        width: 50px;
-        height: 50px;
-        font-size: 22px;
+        width: 52px;
+        height: 52px;
+        font-size: 24px;
       }
       .game-user-name {
-        font-size: 16.5px;
+        font-size: 17px;
       }
       .game-user-role {
-        font-size: 12.5px;
+        font-size: 13px;
       }
       .nav-tabs-wrapper {
         padding: 10px 0;
       }
       .nav-tabs {
-        max-width: 1240px;
+        max-width: 1600px;
+        width: 96%;
         margin: 0 auto;
-        padding: 5px;
+        padding: 6px;
       }
       .nav-tab {
-        padding: 10px 24px;
-        font-size: 13.5px;
+        padding: 11px 28px;
+        font-size: 14px;
       }
       .container {
-        max-width: 1240px;
-        padding: 10px 32px 50px 32px;
+        max-width: 1600px;
+        width: 96%;
+        padding: 10px 16px 50px 16px;
       }
       .card {
-        padding: 22px 24px;
+        padding: 22px 26px;
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow);
       }
       .card-title {
-        font-size: 16.5px;
+        font-size: 17px;
         margin-bottom: 16px;
       }
 
       /* Двухколоночный эргономичный вид для создания СЗ */
       .create-layout-grid {
         display: grid;
-        grid-template-columns: 1.15fr 0.85fr;
+        grid-template-columns: 1.12fr 0.88fr;
         gap: 24px;
         align-items: start;
       }
@@ -1100,10 +1104,10 @@
         border-radius: 4px;
       }
 
-      /* Сетка карточек в реестре договоров на ноутбуках */
+      /* Сетка карточек в реестре договоров на широком экране */
       #contracts-list-container {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
         gap: 16px;
       }
       #contracts-list-container .card {
@@ -1113,27 +1117,28 @@
         justify-content: space-between;
       }
 
-      /* Сетка карточек в реестре СЗ на ноутбуках */
+      /* Сетка карточек в реестре СЗ на широком экране */
       #sz-list-container {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
         gap: 16px;
       }
       #sz-list-container .card {
         margin-bottom: 0;
       }
 
-      /* Детальное модальное окно на десктопе: 2 колонки */
+      /* Детальное модальное окно на десктопе: 2 колонки на 95% ширины экрана */
       #modal-detail .modal-content {
-        max-width: 980px;
+        max-width: 1400px;
+        width: 95vw;
         padding: 26px 30px;
       }
       .detail-desktop-split {
         display: grid;
-        grid-template-columns: 1.08fr 0.92fr;
-        gap: 22px;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 24px;
         align-items: start;
-        max-height: 80vh;
+        max-height: 82vh;
         overflow-y: auto;
         padding-right: 6px;
       }
@@ -1271,7 +1276,7 @@
   <div class="brand-bar">
     <div class="brand-bar-inner">
       <div class="brand-left" onclick="openAchievementsModal()">
-        <img src="logo.png" alt="Jana Men Logo" class="brand-logo-img" onerror="this.style.display='none'; document.getElementById('brand-fallback-text').style.display='inline-block';">
+        <img src="logo-jm.png" alt="Jana Men Logo" class="brand-logo-img" style="height: 32px; width: auto;" onerror="this.src='logo.png';">
         <span id="brand-fallback-text" style="display:none; font-weight:900; font-size:16px; color:var(--primary); letter-spacing:-0.03em;">JANA MEN</span>
         <span class="brand-badge">ЭДО ПРОТОКОЛ</span>
       </div>
@@ -1347,7 +1352,7 @@
               <div style="width: 100%;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 15px; font-weight: 800; color: var(--text);">✨ Инициация документа</span>
-                  <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 10.5px; padding: 2px 8px;">Gemini 3.8 AI</span>
+                  <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 10.5px; padding: 2px 8px;">Jana Men AI</span>
                 </div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;" id="initiator-badge"></div>
               </div>
@@ -1538,21 +1543,54 @@
 
     <!-- ==================== ВКЛАДКА 2: РЕЕСТР ДОКУМЕНТОВ ==================== -->
     <div id="tab-registry" class="tab-pane">
-      <div class="card" style="margin-bottom: 12px; padding: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: 13px; font-weight: 800; color: var(--text);">Реестр документов ЭДО</span>
-          <button class="btn btn-secondary" onclick="loadSZListFromBackend(); showToast('🔄 Синхронизация с таблицей...');" style="font-size: 11px; padding: 4px 9px;">
+      <div class="card" style="margin-bottom: 14px; padding: 14px 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 15px; font-weight: 800; color: var(--text);">📑 Реестр служебных записок и заявлений</span>
+            <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 11px;" id="registry-count-badge">0 документов</span>
+          </div>
+          <button class="btn btn-secondary" onclick="loadSZListFromBackend(); showToast('🔄 Синхронизация с реестром...');" style="font-size: 11.5px; padding: 6px 12px;">
             🔄 Синхронизировать
           </button>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="filter-search" class="input-text" placeholder="🔍 Поиск по номеру, теме, контрагенту..." oninput="renderSZList()">
-          <select id="filter-status" class="select-text" style="width: 150px;" onchange="renderSZList()">
-            <option value="all">Все статусы</option>
-            <option value="pending">В согласовании</option>
-            <option value="approved">Утверждено</option>
-            <option value="paid">Оплачено</option>
-            <option value="scan_waiting">Ожидает скан</option>
+
+        <!-- Сквозной поиск и мульти-фильтры (отделы, типы, исполнители, статусы) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+          <input type="text" id="filter-search" class="input-text" style="grid-column: 1 / -1;" placeholder="🔍 Поиск по номеру (СЗ-2026...), контрагенту, теме или тексту..." oninput="renderSZList()">
+          
+          <select id="filter-dept" class="select-text" onchange="renderSZList()">
+            <option value="all">🏢 Все подразделения</option>
+            <option value="маркетинг">Отдел маркетинга</option>
+            <option value="операционный">Операционный блок</option>
+            <option value="административный">Административный блок</option>
+            <option value="логистик">Отдел логистики</option>
+            <option value="финанс">Финансовый блок / Бухгалтерия</option>
+            <option value="коммерческ">Коммерческий блок / Продажи</option>
+            <option value="hr">Отдел HR</option>
+            <option value="озк">Отдел заботы (ОЗК)</option>
+            <option value="трафик">Отдел трафика</option>
+          </select>
+
+          <select id="filter-doc-type" class="select-text" onchange="renderSZList()">
+            <option value="all">📄 Все типы СЗ</option>
+            <option value="оплата">СЗ на оплату / счета</option>
+            <option value="кадров">Кадровые заявления</option>
+            <option value="общая">Общие служебные записки</option>
+            <option value="отпуск">Отпуск без содержания (БС)</option>
+            <option value="аванс">Выдача аванса</option>
+            <option value="увольнен">Увольнение</option>
+          </select>
+
+          <select id="filter-initiator" class="select-text" onchange="renderSZList()">
+            <option value="all">👤 Все исполнители / инициаторы</option>
+          </select>
+
+          <select id="filter-status" class="select-text" onchange="renderSZList()">
+            <option value="all">⚖️ Все статусы согласования</option>
+            <option value="pending">⏳ В согласовании</option>
+            <option value="approved">✅ Утверждено Шефом</option>
+            <option value="paid">💳 Оплачено казначейством</option>
+            <option value="scan_waiting">⭐️ Ожидает скан оригинала</option>
           </select>
         </div>
       </div>
@@ -1740,7 +1778,7 @@
         <div style="font-size: 28px; margin-bottom: 4px;">📸 📑</div>
         <div style="font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 3px;">Сфотографируйте страницы или выберите пачкой</div>
         <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto;">
-          Снимайте страницы подряд (стр. 1, стр. 2, стр. 3) или выберите пачку из галереи. Gemini AI прочитает весь договор целиком.
+          Снимайте страницы подряд (стр. 1, стр. 2, стр. 3) или выберите пачку из галереи. Умный ИИ-ассистент прочитает весь договор целиком.
         </div>
 
         <!-- Скрытые инпуты -->
@@ -1920,7 +1958,7 @@
 
         <div id="avr-ai-status" style="display: none; margin-top: 8px; padding: 8px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 12px; color: #1e40af;">
           <span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span>
-          <span id="avr-ai-status-text">🧠 Gemini 3.8 Flash считывает реквизиты документа...</span>
+          <span id="avr-ai-status-text">⚡ Умный ассистент считывает реквизиты документа...</span>
         </div>
         <div id="avr-file-name" style="font-size: 11px; color: var(--success); font-weight: 600; margin-top: 5px; display: none;"></div>
       </div>
@@ -2028,7 +2066,7 @@
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     }
 
-    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbxsIObydWva8uslsR5onfnnjPfLafzgBdBlJM9qjvVVBebZXPcKqu3rtyc2u4BG38-a6Q/exec';
+    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbwybaGgxGCnIHrWHz1UeL1sNNUU1uGGXXC4qVBDueuO3WmkPO0cLZyuELEYbXl1jYzYgw/exec';
 
     // ==================== УПРАВЛЕНИЕ GEMINI API КЛЮЧОМ ====================
     function getActiveGeminiKey() {
@@ -2968,23 +3006,41 @@
       if (modalXp) modalXp.textContent = storedXp.toLocaleString('ru-RU') + ' XP • Уровень ' + level;
     }
 
-    function celebrateAction(message, xpAdded) {
-      xpAdded = xpAdded || 50;
+    function awardGamificationXP(points, ruleTitle, reason) {
+      points = Number(points) || 50;
+      ruleTitle = ruleTitle || 'Активность в ЭДО';
+
       if (currentUser && currentUser.name) {
         var key = 'jm_user_xp_' + currentUser.name;
-        var currentXp = parseInt(localStorage.getItem(key) || (currentUser.isAdmin ? '1450' : '850'), 10);
-        var newXp = currentXp + xpAdded;
+        var currentXp = parseInt(localStorage.getItem(key) || (currentUser.isAdmin ? '1550' : '850'), 10);
+        var newXp = currentXp + points;
         localStorage.setItem(key, newXp.toString());
+        currentUser.xp = newXp;
+
+        // Сохранение в журнал истории
+        try {
+          var histKey = 'jm_xp_hist_' + currentUser.name;
+          var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
+          hist.unshift({
+            date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}),
+            points: points,
+            ruleTitle: ruleTitle,
+            reason: reason || ''
+          });
+          localStorage.setItem(histKey, JSON.stringify(hist.slice(0, 30)));
+          localStorage.setItem('jm_edo_user', JSON.stringify(currentUser));
+        } catch(e) {}
+
         updateUserUI();
       }
 
       if (window.confetti) {
         try {
           window.confetti({
-            particleCount: 65,
-            spread: 60,
+            particleCount: 75,
+            spread: 65,
             origin: { y: 0.65 },
-            colors: ['#1E462B', '#967438', '#FCD34D', '#FFFFFF']
+            colors: ['#E87411', '#F59E0B', '#C4670D', '#FFFFFF', '#16A34A']
           });
         } catch(e) {}
       }
@@ -2995,10 +3051,68 @@
         } catch(e) {}
       }
 
-      showToast('🎉 +' + xpAdded + ' XP! ' + message);
+      showToast('🏆 +' + points + ' XP: ' + ruleTitle);
+    }
+
+    function celebrateAction(message, xpAdded) {
+      awardGamificationXP(xpAdded || 50, message, '');
+    }
+
+    function switchAchTab(tab) {
+      var tabRules = document.getElementById('ach-tab-rules');
+      var tabHist = document.getElementById('ach-tab-history');
+      var paneRules = document.getElementById('ach-pane-rules');
+      var paneHist = document.getElementById('ach-pane-history');
+
+      if (tab === 'rules') {
+        if (tabRules) tabRules.className = 'nav-tab active';
+        if (tabHist) tabHist.className = 'nav-tab';
+        if (paneRules) paneRules.style.display = 'block';
+        if (paneHist) paneHist.style.display = 'none';
+      } else {
+        if (tabRules) tabRules.className = 'nav-tab';
+        if (tabHist) tabHist.className = 'nav-tab active';
+        if (paneRules) paneRules.style.display = 'none';
+        if (paneHist) paneHist.style.display = 'block';
+        renderAchievementsHistoryList();
+      }
+    }
+
+    function renderAchievementsHistoryList() {
+      var cont = document.getElementById('ach-history-list');
+      if (!cont) return;
+
+      var histKey = 'jm_xp_hist_' + (currentUser ? currentUser.name : '');
+      var hist = [];
+      try {
+        hist = JSON.parse(localStorage.getItem(histKey) || '[]');
+      } catch(e) {}
+
+      if (hist.length === 0) {
+        cont.innerHTML = '<div style="text-align:center;padding:32px 14px;color:var(--text-muted);font-size:13px;">История начислений пока пуста.<br>Выполняйте согласования и прикрепляйте оригиналы, чтобы зарабатывать XP!</div>';
+        return;
+      }
+
+      var html = [];
+      hist.forEach(function(item) {
+        html.push([
+          '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">',
+            '<div>',
+              '<div style="font-size:13px;font-weight:700;color:var(--text);">' + item.ruleTitle + '</div>',
+              (item.reason ? ('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + item.reason + '</div>') : ''),
+              '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">🕒 ' + item.date + '</div>',
+            '</div>',
+            '<div style="font-size:13px;font-weight:800;color:#c2410c;background:#fff7ed;padding:4px 10px;border-radius:8px;border:1px solid #fed7aa;flex-shrink:0;">',
+              '+' + item.points + ' XP',
+            '</div>',
+          '</div>'
+        ].join(''));
+      });
+      cont.innerHTML = html.join('');
     }
 
     function openAchievementsModal() {
+      switchAchTab('rules');
       document.getElementById('modal-achievements').style.display = 'flex';
       if (window.confetti) {
         try {
@@ -3006,7 +3120,7 @@
             particleCount: 40,
             spread: 45,
             origin: { y: 0.5 },
-            colors: ['#967438', '#FCD34D', '#1E462B']
+            colors: ['#E87411', '#F59E0B', '#C4670D', '#FFFFFF']
           });
         } catch(e) {}
       }
@@ -4151,7 +4265,12 @@
           localItem.number = data.szNumber;
           localItem.docUrl = data.docUrl;
           localItem.folderUrl = data.folderUrl;
-          celebrateAction('СЗ ' + data.szNumber + ' запущена по маршруту!', 100);
+          
+          if (chosenContract && szUploadedFiles.length > 0) {
+            awardGamificationXP(150, 'Полный комплект документов', 'СЗ оформлена с договором, подтверждающими счетами и графиком АВР');
+          } else {
+            awardGamificationXP(75, 'Инициация документа в ЭДО', 'СЗ ' + data.szNumber + ' успешно направлена по маршруту');
+          }
         } else {
           showToast('🚀 Документ сохранен: ' + fallbackNum);
         }
@@ -4200,32 +4319,96 @@
     }
 
     // ==================== РЕЕСТР И ДЕТАЛЬНЫЙ ПРОСМОТР ====================
+    function populateRegistryInitiatorsFilter() {
+      var sel = document.getElementById('filter-initiator');
+      if (!sel) return;
+      var curVal = sel.value;
+      var initiators = [];
+      mockSZList.forEach(function(item) {
+        if (item.initiator && initiators.indexOf(item.initiator) === -1) {
+          initiators.push(item.initiator);
+        }
+      });
+      initiators.sort();
+      
+      var optsHtml = '<option value="all">👤 Все исполнители / инициаторы</option>';
+      initiators.forEach(function(name) {
+        optsHtml += '<option value="' + name + '"' + (curVal === name ? ' selected' : '') + '>' + name + '</option>';
+      });
+      sel.innerHTML = optsHtml;
+    }
+
     function renderSZList() {
+      populateRegistryInitiatorsFilter();
       var cont = document.getElementById('sz-list-container');
       cont.innerHTML = '';
 
-      var filterText = document.getElementById('filter-search').value.toLowerCase();
-      var filterStatus = document.getElementById('filter-status').value;
+      var searchEl = document.getElementById('filter-search');
+      var filterText = searchEl ? searchEl.value.toLowerCase().trim() : '';
+      
+      var statusEl = document.getElementById('filter-status');
+      var filterStatus = statusEl ? statusEl.value : 'all';
+
+      var deptEl = document.getElementById('filter-dept');
+      var filterDept = deptEl ? deptEl.value.toLowerCase() : 'all';
+
+      var typeEl = document.getElementById('filter-doc-type');
+      var filterType = typeEl ? typeEl.value.toLowerCase() : 'all';
+
+      var initEl = document.getElementById('filter-initiator');
+      var filterInit = initEl ? initEl.value : 'all';
+
       var isLawyer = isLawyerOrAdmin(currentUser);
 
       var filtered = mockSZList.filter(function(item) {
         if (!isLawyer && currentUser && item.department !== currentUser.department) return false;
 
+        // Фильтр по отделу
+        if (filterDept !== 'all') {
+          if ((item.department || '').toLowerCase().indexOf(filterDept) === -1) return false;
+        }
+
+        // Фильтр по типу документа
+        if (filterType !== 'all') {
+          var itemTypeStr = (item.type || '') + ' ' + (item.title || '') + ' ' + (item.number || '');
+          if (itemTypeStr.toLowerCase().indexOf(filterType) === -1) return false;
+        }
+
+        // Фильтр по исполнителю / инициатору
+        if (filterInit !== 'all') {
+          if (item.initiator !== filterInit && (item.coExecutors || []).indexOf(filterInit) === -1) return false;
+        }
+
+        // Поиск по ключевым словам
         if (filterText) {
-          var matchText = (item.number + ' ' + item.title + ' ' + item.counterparty + ' ' + item.initiator).toLowerCase();
+          var matchText = [
+            item.number || '',
+            item.title || '',
+            item.body || '',
+            item.counterparty || '',
+            item.initiator || '',
+            (item.coExecutors || []).join(' '),
+            item.contract || ''
+          ].join(' ').toLowerCase();
           if (matchText.indexOf(filterText) === -1) return false;
         }
 
-        if (filterStatus === 'pending' && item.statusApproval.indexOf('На согласовании') === -1) return false;
-        if (filterStatus === 'approved' && item.statusApproval.indexOf('Утверждено') === -1) return false;
-        if (filterStatus === 'paid' && item.statusPayment.indexOf('Оплачено') === -1) return false;
-        if (filterStatus === 'scan_waiting' && item.statusLegal.indexOf('Ожидает') === -1) return false;
+        // Фильтр по статусу
+        if (filterStatus === 'pending' && (item.statusApproval || '').indexOf('На согласовании') === -1) return false;
+        if (filterStatus === 'approved' && (item.statusApproval || '').indexOf('Утверждено') === -1) return false;
+        if (filterStatus === 'paid' && (item.statusPayment || '').indexOf('Оплачено') === -1) return false;
+        if (filterStatus === 'scan_waiting' && (item.statusLegal || '').indexOf('Ожидает') === -1) return false;
 
         return true;
       });
 
+      var countBadge = document.getElementById('registry-count-badge');
+      if (countBadge) {
+        countBadge.textContent = filtered.length + ' из ' + mockSZList.length + ' документов';
+      }
+
       if (filtered.length === 0) {
-        cont.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">Документов не найдено</div>';
+        cont.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text-muted);font-size:13px;grid-column:1 / -1;">Документов не найдено по заданным фильтрам.</div>';
         return;
       }
 
@@ -4236,8 +4419,8 @@
         card.onclick = function() { openSZDetail(item); };
 
         var badgeClass = 'badge-pending';
-        if (item.statusApproval.indexOf('Утверждено') !== -1) badgeClass = 'badge-approved';
-        if (item.statusApproval.indexOf('Отклонено') !== -1) badgeClass = 'badge-rejected';
+        if ((item.statusApproval || '').indexOf('Утверждено') !== -1) badgeClass = 'badge-approved';
+        if ((item.statusApproval || '').indexOf('Отклонено') !== -1) badgeClass = 'badge-rejected';
 
         var coExecHtml = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 Со-исполнители: ' + item.coExecutors.join(', ')) : '';
 
@@ -4532,18 +4715,19 @@
     function makeApprovalDecision(decision) {
       if (!activeDetailItem) return;
       if (decision === 'approve') {
+        awardGamificationXP(50, 'Подписано без единой правки', 'СЗ ' + activeDetailItem.number + ' согласована');
+        awardGamificationXP(40, 'Скорость реакции на СЗ', 'Оперативное визирование за регламентное время');
+
         if (currentUser && currentUser.name.indexOf('Кабидуллин') !== -1) {
           activeDetailItem.statusApproval = 'Утверждено Шефом';
           activeDetailItem.statusLegal = 'Ожидает подписанный скан оригинала';
           activeDetailItem.currentApprover = 'Завершено';
-          celebrateAction('СЗ утверждена Генеральным директором!', 120);
+          awardGamificationXP(120, 'Скоростной маршрут СЗ (<24ч)', 'Полное утверждение Генеральным директором');
         } else {
           activeDetailItem.statusApproval = 'На согласовании: Кабидуллин Нурсултан';
           activeDetailItem.currentApprover = 'Кабидуллин Нурсултан Нурланович';
-          celebrateAction('Согласование принято! Передано Шефу', 75);
         }
       } else {
-        var reason = prompt('Укажите причину отклонения:');
         activeDetailItem.statusApproval = 'Отклонено (' + (currentUser ? currentUser.name : 'Руководитель') + ')';
         activeDetailItem.currentApprover = '-';
         showToast('❌ Документ отклонен');
@@ -4555,13 +4739,11 @@
 
     function markPaidAction() {
       if (!activeDetailItem) return;
-      var pp = prompt('Введите номер платежного поручения:', '№' + Math.floor(100 + Math.random() * 900));
-      if (pp) {
-        activeDetailItem.statusPayment = 'Оплачено (п/п ' + pp + ' от ' + new Date().toLocaleDateString('ru-RU') + ')';
-        renderSZList();
-        showToast('💳 Оплата зафиксирована!');
-        closeModal('modal-detail');
-      }
+      var ppNum = '№' + Math.floor(100 + Math.random() * 900);
+      activeDetailItem.statusPayment = 'Оплачено (п/п ' + ppNum + ' от ' + new Date().toLocaleDateString('ru-RU') + ')';
+      renderSZList();
+      awardGamificationXP(50, 'Финансовый регламент', 'Оплата проведена казначейством по п/п ' + ppNum);
+      closeModal('modal-detail');
     }
 
     function submitSignedScan() {
@@ -4572,7 +4754,7 @@
       }
       activeDetailItem.statusLegal = 'Сдан в архив (Скан прикреплен)';
       renderSZList();
-      celebrateAction('Подписанный оригинал СЗ принят в архив!', 120);
+      awardGamificationXP(100, 'Сданные в срок оригиналы', 'Подписанный оригинал СЗ ' + activeDetailItem.number + ' принят в архив');
       setTimeout(function() { closeModal('modal-detail'); }, 1000);
     }
 
@@ -4948,13 +5130,13 @@
         return;
       }
 
-      updateAiProgress(45, '🚀 Отправка в Gemini 3.8 Flash Vision (' + filesList.length + ' стр.)...');
+      updateAiProgress(45, '🚀 Распознавание страниц документа (' + filesList.length + ' стр.)...');
 
       var activeKey = getActiveGeminiKey();
       if (activeKey) {
         callGeminiMultiPageContractVision(filesList, activeKey);
       } else {
-        showToast('⚠️ Не настроен API ключ Gemini. Откройте настройки ⚡ ИИ');
+        showToast('⚠️ Не настроен API ключ ИИ. Обратитесь к администратору');
         var loader = document.getElementById('nc-ai-loading');
         if (loader) loader.style.display = 'none';
       }
@@ -5025,7 +5207,7 @@
       });
       parts.push({ text: systemPrompt });
 
-      updateAiProgress(70, hasPdf ? '🧠 Gemini 3.8 Flash читает PDF-договор, стороны, БИН и суммы...' : '🧠 Gemini 3.8 Flash распознает стороны, БИН, суммы и предмет...');
+      updateAiProgress(70, hasPdf ? '⚡ Умный анализ PDF-договора, сторон, БИН и сумм...' : '⚡ Распознавание сторон, БИН, сумм и предмета...');
 
       var bodyPayload = {
         contents: [{ parts: parts }],
@@ -5053,7 +5235,7 @@
           applyContractParsedData(parsed);
 
           setTimeout(function() {
-            updateAiProgress(100, '✅ <b style="color:#15803d;">Договор успешно прочитан Gemini 3.8 Flash!</b>');
+            updateAiProgress(100, '✅ <b style="color:#15803d;">Договор успешно прочитан ИИ-ассистентом!</b>');
             showToast('✅ Договор успешно распознан!');
           }, 400);
         } else {
@@ -5547,29 +5729,31 @@
 
       renderContractsList();
       closeModal('modal-attach-avr');
-      celebrateAction('Закрывающий документ «' + num + '» прикреплен к договору!', 80);
+      awardGamificationXP(80, 'Соблюдение сроков договора', 'Закрывающий документ прикреплен к договору ' + c.number);
+      if (isSubmitted) {
+        awardGamificationXP(100, 'Сданные в срок оригиналы', 'Оригинал АВР передан в бухгалтерию');
+      }
     }
   </script>
 
-  <!-- ==================== МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ GEMINI API ==================== -->
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ ИИ ==================== -->
   <div id="modal-gemini-key" class="modal-overlay">
     <div class="modal-content" style="max-width: 520px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
         <div>
           <span class="status-badge" style="background: #f0fdf4; color: #166534; font-weight: 700;">⚡ Статус и Биллинг</span>
-          <h3 style="font-size: 16px; font-weight: 800; color: var(--text); margin-top: 4px;">Настройка Gemini AI (Зрение и OCR)</h3>
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--text); margin-top: 4px;">Параметры интеллектуального распознавания (OCR)</h3>
         </div>
         <button onclick="closeModal('modal-gemini-key')" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px;">✕</button>
       </div>
 
       <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.5; color: var(--text-muted);">
-        <b style="color: var(--text);">💰 Стоимость обслуживания:</b><br>
-        • <b>Бесплатный тариф Google AI Studio:</b> 1 500 запросов в день (0 ₸ / месяц). Для компании Jana Men хватает с огромным запасом!<br>
-        • <b>Платный тариф (Pay-as-you-go):</b> ~0.01 ₸ за 1 скан страницы (~0.25$ за 1000 сканов). Общие расходы: менее 200–500 ₸ в месяц.
+        <b style="color: var(--text);">💰 Облачный ИИ-движок Jana Men:</b><br>
+        Интеллектуальное оптическое распознавание (OCR) договоров, актов, накладных и счетов на оплату в автоматическом режиме.
       </div>
 
       <div class="field">
-        <label>API Ключ Google Gemini (начинается с AIza...):</label>
+        <label>API Ключ ИИ-сервера (Google AI Studio):</label>
         <input type="text" id="setting-gemini-key" class="input-text" placeholder="AIzaSy..." style="font-family: monospace; font-size: 12px;">
         <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
           Ключ сохраняется в памяти вашего устройства (localStorage). Получить бесплатный ключ можно на <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #2563eb; text-decoration: underline;">aistudio.google.com</a> за 1 минуту.
@@ -5589,85 +5773,109 @@
     </div>
   </div>
 
-  <!-- ==================== МОДАЛЬНОЕ ОКНО: ЗАЛ СЛАВЫ И ДОСТИЖЕНИЯ ==================== -->
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: ЗАЛ СЛАВЫ И ГЕЙМИФИКАЦИЯ ==================== -->
   <div id="modal-achievements" class="modal-overlay">
-    <div class="modal-content" style="max-width: 520px;">
+    <div class="modal-content" style="max-width: 600px; padding: 22px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 22px;">🏆</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">🏆</span>
           <div>
-            <h3 style="font-size: 16px; font-weight: 800; color: var(--text);">Зал славы & Достижения</h3>
-            <div style="font-size: 11.5px; color: var(--text-muted);">Профиль мастерства и ранг в ЭДО Jana Men</div>
+            <h3 style="font-size: 16.5px; font-weight: 800; color: var(--text);">Система мотивации & Геймификация</h3>
+            <div style="font-size: 12px; color: var(--text-muted);">Стандарты корпоративного документооборота Jana Men</div>
           </div>
         </div>
-        <button onclick="closeModal('modal-achievements')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">✕</button>
+        <button onclick="closeModal('modal-achievements')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); padding: 4px;">✕</button>
       </div>
 
-      <div style="background: linear-gradient(135deg, #1E462B, #163620); color: #fff; border-radius: 14px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 16px rgba(30, 70, 43, 0.25);">
+      <!-- Карточка статуса пользователя -->
+      <div style="background: linear-gradient(135deg, #241408 0%, #3D220E 50%, #573014 100%); color: #fff; border-radius: 14px; padding: 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 16px rgba(80, 50, 20, 0.25); border: 1px solid rgba(232, 116, 17, 0.3);">
         <div>
-          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #FCD34D; font-weight: 800;">Текущий статус</div>
-          <div style="font-size: 17px; font-weight: 800; margin-top: 2px;" id="modal-user-rank-display">👑 Главный Архитектор</div>
-          <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 2px;" id="modal-user-xp-details">1 450 XP • Уровень 5</div>
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #FCD34D; font-weight: 800;">Ваш статус в Jana Men</div>
+          <div style="font-size: 18px; font-weight: 800; margin-top: 2px;" id="modal-user-rank-display">👑 Главный Архитектор ЭДО</div>
+          <div style="font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px;" id="modal-user-xp-details">1 550 XP • Уровень 5</div>
         </div>
-        <div style="text-align: right;">
-          <div style="font-size: 26px; line-height: 1;">🔥 5</div>
+        <div style="text-align: right; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 8px 14px;">
+          <div style="font-size: 24px; line-height: 1;">🔥 5</div>
           <div style="font-size: 10.5px; color: #FCD34D; font-weight: 700; margin-top: 4px;">дней без задержек</div>
         </div>
       </div>
 
-      <div style="font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">
-        Награды и бейджи:
+      <!-- Вкладки окна достижений: Правила / История начислений -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px; background: var(--card-sub); padding: 4px; border-radius: 10px; border: 1px solid var(--border);">
+        <button id="ach-tab-rules" class="nav-tab active" onclick="switchAchTab('rules')" style="font-size: 12px; padding: 8px 12px;">🎯 Правила начисления XP (6 критериев)</button>
+        <button id="ach-tab-history" class="nav-tab" onclick="switchAchTab('history')" style="font-size: 12px; padding: 8px 12px;">📜 Мои баллы и история</button>
       </div>
 
-      <div class="achievements-grid">
-        <div class="achievement-item unlocked">
-          <div class="achievement-icon-box">👑</div>
-          <div class="achievement-meta">
-            <div class="achievement-title">Главный Архитектор</div>
-            <div class="achievement-desc">Полный сквозной доступ ко всей документации и архивам</div>
+      <!-- Панель 1: 6 официальных правил начисления очков -->
+      <div id="ach-pane-rules">
+        <div class="achievements-grid" style="gap: 8px;">
+          
+          <div class="achievement-item unlocked">
+            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #E87411, #D26307); color: #fff;">✍️</div>
+            <div class="achievement-meta">
+              <div class="achievement-title">1. Подписано без единой правки</div>
+              <div class="achievement-desc">СЗ прошла всех согласующих и утверждена Шефом с первого раза без замечаний и доработок</div>
+            </div>
+            <div class="achievement-reward" style="background: #fef3c7; color: #b45309; font-weight: 800;">+50 XP</div>
           </div>
-          <div class="achievement-reward">Разблокировано</div>
-        </div>
 
-        <div class="achievement-item unlocked">
-          <div class="achievement-icon-box">⚡</div>
-          <div class="achievement-meta">
-            <div class="achievement-title">Турбо-визирование</div>
-            <div class="achievement-desc">Быстрое рассмотрение входящих служебных записок</div>
+          <div class="achievement-item unlocked">
+            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #16A34A, #15803D); color: #fff;">📑</div>
+            <div class="achievement-meta">
+              <div class="achievement-title">2. Сданные в срок оригиналы</div>
+              <div class="achievement-desc">Подписанный бумажный оригинал СЗ или АВР передан в бухгалтерию в течение 3 рабочих дней</div>
+            </div>
+            <div class="achievement-reward" style="background: #dcfce7; color: #15803d; font-weight: 800;">+100 XP</div>
           </div>
-          <div class="achievement-reward">+100 XP</div>
-        </div>
 
-        <div class="achievement-item unlocked">
-          <div class="achievement-icon-box">🧠</div>
-          <div class="achievement-meta">
-            <div class="achievement-title">Синтез Gemini Vision</div>
-            <div class="achievement-desc">Мгновенный OCR анализ сканов договоров и закрывающих АВР</div>
+          <div class="achievement-item unlocked">
+            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #0284C7, #0369A1); color: #fff;">⏳</div>
+            <div class="achievement-meta">
+              <div class="achievement-title">3. Соблюдение сроков договоров</div>
+              <div class="achievement-desc">Закрывающие документы по действующему договору зарегистрированы строго в установленный срок</div>
+            </div>
+            <div class="achievement-reward" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">+80 XP</div>
           </div>
-          <div class="achievement-reward">+150 XP</div>
-        </div>
 
-        <div class="achievement-item unlocked">
-          <div class="achievement-icon-box">🛡</div>
-          <div class="achievement-meta">
-            <div class="achievement-title">Оригинал в архиве</div>
-            <div class="achievement-desc">100% сдача подписанных оригиналов с живой подписью</div>
+          <div class="achievement-item unlocked">
+            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #E87411, #F59E0B); color: #fff;">⚡️</div>
+            <div class="achievement-meta">
+              <div class="achievement-title">4. Скорость реакции на СЗ</div>
+              <div class="achievement-desc">Согласующий завизировал входящий документ менее чем за 2 часа (до 24 часов: +15 XP)</div>
+            </div>
+            <div class="achievement-reward" style="background: #ffedd5; color: #c2410c; font-weight: 800;">+40 XP</div>
           </div>
-          <div class="achievement-reward">+200 XP</div>
-        </div>
 
-        <div class="achievement-item">
-          <div class="achievement-icon-box">📑</div>
-          <div class="achievement-meta">
-            <div class="achievement-title">Магистр контрактов</div>
-            <div class="achievement-desc">Зарегистрируйте 10 договоров с полным комплектом закрывающих актов</div>
+          <div class="achievement-item unlocked">
+            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #9333EA, #7E22CE); color: #fff;">🚀</div>
+            <div class="achievement-meta">
+              <div class="achievement-title">5. Скоростной маршрут СЗ</div>
+              <div class="achievement-desc">Полный цикл подписания всеми согласующими инстанциями пройден быстрее 24 часов</div>
+            </div>
+            <div class="achievement-reward" style="background: #f3e8ff; color: #7e22ce; font-weight: 800;">+120 XP</div>
           </div>
-          <div class="achievement-reward">В процессе</div>
+
+          <div class="achievement-item unlocked">
+            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #D97706, #B45309); color: #fff;">📦</div>
+            <div class="achievement-meta">
+              <div class="achievement-title">6. Полный комплект документов</div>
+              <div class="achievement-desc">СЗ оформлена с договором-основанием, прикреплены подтверждающие счета и закрывающий АВР</div>
+            </div>
+            <div class="achievement-reward" style="background: #fef3c7; color: #b45309; font-weight: 800;">+150 XP</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Панель 2: История начислений XP -->
+      <div id="ach-pane-history" style="display: none;">
+        <div id="ach-history-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Список истории -->
         </div>
       </div>
 
       <div style="margin-top: 18px; text-align: center;">
-        <button class="btn btn-primary" onclick="closeModal('modal-achievements')" style="padding: 11px 20px;">
+        <button class="btn btn-primary" onclick="closeModal('modal-achievements')" style="padding: 11px 24px; width: auto; min-width: 200px;">
           Отлично! Продолжить работу
         </button>
       </div>

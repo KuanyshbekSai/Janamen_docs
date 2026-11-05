@@ -408,55 +408,71 @@ function generateSZGoogleDoc(szNumber, data, dateStr, folder) {
   docBody.setMarginLeft(72);
   docBody.setMarginRight(54);
 
-  // Шапка справа
-  var pRecipient = docBody.appendParagraph('Генеральному директору JANAMEN\nКабидуллину Н.Н.');
+  // 1. Шапка адресата в правом верхнем углу (деловой стандарт)
+  var pRecipient = docBody.appendParagraph('Генеральному директору ТОО «JANAMEN»\nКабидуллину Н.Н.');
   pRecipient.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
   pRecipient.setHeading(DocumentApp.ParagraphHeading.NORMAL);
+  pRecipient.setFontFamily('Arial');
   pRecipient.setFontSize(11);
-  pRecipient.setBold(true);
+  pRecipient.setBold(false);
+  pRecipient.setLineSpacing(1.15);
+  pRecipient.setSpacingAfter(18);
 
-  docBody.appendParagraph('');
-
-  // Заголовок СЛУЖЕБНАЯ ЗАПИСКА
+  // 2. Официальный заголовок документа (по центру, полужирный)
   var pTitle = docBody.appendParagraph('СЛУЖЕБНАЯ ЗАПИСКА\n' + szNumber);
   pTitle.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-  pTitle.setFontSize(14);
+  pTitle.setFontFamily('Arial');
+  pTitle.setFontSize(13);
   pTitle.setBold(true);
-  pTitle.setSpacingAfter(14);
+  pTitle.setLineSpacing(1.15);
+  pTitle.setSpacingAfter(18);
 
-  // Основной текст
+  // 3. Основной текст (ОБЫЧНЫЙ ШРИФТ НЕ ЖИРНЫЙ, выравнивание по ширине, красная строка)
   var pBody = docBody.appendParagraph(data.body || '');
   pBody.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
+  pBody.setFontFamily('Arial');
   pBody.setFontSize(11);
-  pBody.setLineSpacing(1.15);
-  pBody.setSpacingAfter(12);
+  pBody.setBold(false);
+  pBody.setItalic(false);
+  pBody.setLineSpacing(1.2);
+  pBody.setIndentFirstLine(28); // Абзацный отступ (красная строка)
+  pBody.setSpacingAfter(14);
 
-  if (data.contract) {
+  // 4. Договор-основание (если указан)
+  if (data.contract && String(data.contract).trim() && data.contract !== 'Не привязан к договору' && data.contract !== 'Нет') {
     var pContract = docBody.appendParagraph('Договор-основание: ' + data.contract);
+    pContract.setFontFamily('Arial');
     pContract.setFontSize(10.5);
-    pContract.setBold(true);
+    pContract.setBold(false);
+    pContract.setItalic(false);
     pContract.setSpacingAfter(10);
   }
 
+  // 5. Финансовые параметры
   if (data.amount && Number(data.amount) > 0) {
-    var pAmount = docBody.appendParagraph('Итого к оплате: ' + Number(data.amount).toLocaleString('ru-RU') + ' (' + (data.amountInWords || '') + ') тенге.');
+    var pAmount = docBody.appendParagraph('Итого к оплате / возмещению: ' + Number(data.amount).toLocaleString('ru-RU') + ' (' + (data.amountInWords || '') + ') тенге.');
+    pAmount.setFontFamily('Arial');
     pAmount.setFontSize(11);
     pAmount.setBold(true);
     pAmount.setSpacingAfter(16);
   }
 
-  // Подписи инициаторов
-  var pExec = docBody.appendParagraph('Исп: ' + data.initiator + (data.coExecutors ? (', ' + data.coExecutors) : '') + '\nДата: ' + dateStr);
+  // 6. Подписи инициатора и соисполнителей
+  var pExec = docBody.appendParagraph('Исп: ' + data.initiator + (data.coExecutors ? (', ' + data.coExecutors) : '') + '\nДата регистрации: ' + dateStr);
+  pExec.setFontFamily('Arial');
   pExec.setFontSize(10);
+  pExec.setBold(false);
   pExec.setItalic(true);
-  pExec.setSpacingAfter(20);
+  pExec.setSpacingAfter(22);
 
-  // ТАБЛИЦА: ДИНАМИЧЕСКИЙ ЛИСТ СОГЛАСОВАНИЯ
+  // 7. ТАБЛИЦА: ДИНАМИЧЕСКИЙ ЛИСТ СОГЛАСОВАНИЯ И ВИЗИРОВАНИЯ
   docBody.appendHorizontalRule();
   var pAuditTitle = docBody.appendParagraph('ЛИСТ СОГЛАСОВАНИЯ И ВИЗИРОВАНИЯ:');
+  pAuditTitle.setFontFamily('Arial');
   pAuditTitle.setFontSize(10);
   pAuditTitle.setBold(true);
-  pAuditTitle.setSpacingAfter(6);
+  pAuditTitle.setItalic(false);
+  pAuditTitle.setSpacingAfter(8);
 
   var tableData = [
     ['Этап', 'Согласующий', 'Статус', 'Дата и время']
@@ -475,7 +491,23 @@ function generateSZGoogleDoc(szNumber, data, dateStr, folder) {
 
   var table = docBody.appendTable(tableData);
   table.setBorderColor('#cbd5e1');
-  table.getRow(0).editAsText().setBold(true);
+  
+  // Четкая очистка стилей таблицы: шапка полужирная, строки чистые нормальные (не курсив)
+  for (var rowIdx = 0; rowIdx < table.getNumRows(); rowIdx++) {
+    var row = table.getRow(rowIdx);
+    for (var cellIdx = 0; cellIdx < row.getNumCells(); cellIdx++) {
+      var cell = row.getCell(cellIdx);
+      cell.editAsText().setFontFamily('Arial');
+      cell.editAsText().setFontSize(9.5);
+      cell.editAsText().setItalic(false);
+      if (rowIdx === 0) {
+        cell.editAsText().setBold(true);
+        cell.setBackgroundColor('#f1f5f9');
+      } else {
+        cell.editAsText().setBold(false);
+      }
+    }
+  }
 
   doc.saveAndClose();
   return doc.getUrl();
