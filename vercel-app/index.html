@@ -1667,7 +1667,88 @@
       });
     }
 
-    // ==================== УМНЫЙ ГЕНЕРАТОР ТЕКСТА ДОКУМЕНТА ====================
+    // ==================== УМНЫЙ ИИ-ГЕНЕРАТОР ТЕКСТА ДОКУМЕНТА И РАСЧЕТА СУММ ====================
+    function numberToRussianWords(n) {
+      if (!n || isNaN(n)) return '';
+      if (n === 0) return 'ноль';
+      n = Math.round(Math.abs(n));
+
+      var ones = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+      var onesFem = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+      var teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+      var tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+      var hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+      function triplets(num, isFemale, forms) {
+        var h = Math.floor(num / 100);
+        var rem = num % 100;
+        var t = Math.floor(rem / 10);
+        var o = rem % 10;
+        var words = [];
+
+        if (h > 0) words.push(hundreds[h]);
+        if (t === 1) {
+          words.push(teens[o]);
+        } else {
+          if (t > 1) words.push(tens[t]);
+          if (o > 0) words.push(isFemale ? onesFem[o] : ones[o]);
+        }
+
+        if (words.length > 0 && forms) {
+          var last = (t === 1) ? 0 : o;
+          if (last === 1) words.push(forms[0]);
+          else if (last >= 2 && last <= 4) words.push(forms[1]);
+          else words.push(forms[2]);
+        }
+        return words.join(' ');
+      }
+
+      var millions = Math.floor(n / 1000000);
+      var thousands = Math.floor((n % 1000000) / 1000);
+      var rest = n % 1000;
+
+      var parts = [];
+      if (millions > 0) parts.push(triplets(millions, false, ['миллион', 'миллиона', 'миллионов']));
+      if (thousands > 0) parts.push(triplets(thousands, true, ['тысяча', 'тысячи', 'тысяч']));
+      if (rest > 0 || parts.length === 0) parts.push(triplets(rest, false, null));
+
+      return parts.filter(Boolean).join(' ').trim();
+    }
+
+    function parsePurchaseItems(raw) {
+      var lines = raw.split('\n');
+      var items = [];
+      var total = 0;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+
+        // 1. Шаблон с дефисами/двоеточиями: 1. Ножи - 4 шт - 700 тенге за шт
+        var m = line.match(/^(?:(\d+)[\.\)]\s*)?(.+?)\s*[-–—:]\s*(\d+(?:[\.,]\d+)?)\s*(?:шт[ү]?|штук[и]?|ед|компл|рулон[ов]*|пач[ек]*)?(?:\s*\.?)\s*[-–—:]\s*(\d[\d\s]*)(?:тенге|тг|kzt|₸|\$|usd|руб)?(?:\s*(?:за\s*шт[ү]?|в\s*месяц|\/шт))?/i);
+        
+        // 2. Шаблон с "по ... тенге": 1. Ножи 4 шт по 700 тенге
+        if (!m) {
+          m = line.match(/^(?:(\d+)[\.\)]\s*)?(.+?)\s+(\d+(?:[\.,]\d+)?)\s*(?:шт[ү]?|штук[и]?)\s+(?:по\s*)?(\d[\d\s]*)\s*(?:тенге|тг|kzt|₸)/i);
+        }
+
+        if (m) {
+          var name = m[2].trim().replace(/^[-–—\s]+|[-–—\s]+$/g, '');
+          // Проверяем чтобы это не была строка "Итого сумма"
+          if (/^итого/i.test(name)) continue;
+
+          var qty = parseFloat(m[3].replace(',', '.'));
+          var price = parseInt(m[4].replace(/\s+/g, ''), 10);
+          if (!isNaN(qty) && !isNaN(price) && qty > 0 && price > 0) {
+            var subtotal = Math.round(qty * price);
+            items.push({ name: name, qty: qty, price: price, subtotal: subtotal });
+            total += subtotal;
+          }
+        }
+      }
+      return { items: items, total: total };
+    }
+
     function generateSmartSZ() {
       var raw = document.getElementById('sz-raw-text').value.trim();
       if (!raw) {
@@ -1677,18 +1758,89 @@
 
       var btn = document.getElementById('btn-run-gemini');
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Составляю официальный документ...</span>';
+      btn.innerHTML = '<span>⏳ ИИ анализирует текст, рассчитывает суммы и составляет документ...</span>';
 
-      setTimeout(function() {
+      // Пробуем вызвать Gemini API, при ошибке/лимите мгновенно используем встроенный компилятор
+      callGeminiDocComposer(raw, function(geminiResult) {
         btn.disabled = false;
         btn.innerHTML = '<span>✨ Сформировать официальный документ</span>';
-        generateContextualDoc(raw);
-      }, 350);
+
+        if (geminiResult && geminiResult.body) {
+          displayGeneratedSZ(geminiResult);
+        } else {
+          var compiled = compileIntelligentDoc(raw);
+          displayGeneratedSZ(compiled);
+        }
+      });
     }
 
-    function generateContextualDoc(raw) {
+    function callGeminiDocComposer(raw, callback) {
+      if (!GEMINI_API_KEY) {
+        callback(null);
+        return;
+      }
+
+      var promptText = [
+        'Ты корпоративный юрист компании JANAMEN.',
+        'Проанализируй черновик служебной записки или заявления и составь идеальный официальный документ.',
+        'Если в тексте перечислены позиции с количеством и ценой (канцелярия, материалы, оборудование):',
+        '1. Обязательно математически перемножь количество на цену по каждой позиции и сложи ИТОГО!',
+        '2. Сформируй официальный перечень: 1. Наименование — Кол-во шт. × Цена ₸ = Сумма ₸.',
+        '3. Выведи точную итоговую сумму цифрами и прописью на русском языке.',
+        '4. Сформулируй деловое обоснование закупа (для чего нужно компании).',
+        'Верни ТОЛЬКО валидный JSON без markdown следующей структуры:',
+        '{',
+        '  "title": "СЛУЖЕБНАЯ ЗАПИСКА",',
+        '  "subTitle": "Тема документа",',
+        '  "body": "Полный официальный текст...",',
+        '  "amount": 14950,',
+        '  "amountInWords": "четырнадцать тысяч девятьсот пятьдесят тенге 00 тиын",',
+        '  "currency": "тенге (KZT)",',
+        '  "counterparty": "",',
+        '  "requiresPayment": true',
+        '}'
+      ].join('\n');
+
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' + GEMINI_API_KEY;
+      var bodyPayload = {
+        contents: [{
+          parts: [{ text: promptText + '\n\nЧерновик пользователя:\n' + raw }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json"
+        }
+      };
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload)
+      })
+      .then(function(res) {
+        if (!res.ok) throw new Error('API ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        var rawText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
+        if (rawText) {
+          var clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          var parsed = JSON.parse(clean);
+          parsed.docTypeCategory = currentDocType;
+          callback(parsed);
+        } else {
+          callback(null);
+        }
+      })
+      .catch(function(err) {
+        console.warn('Gemini doc composer fallback:', err);
+        callback(null);
+      });
+    }
+
+    function compileIntelligentDoc(raw) {
       var low = raw.toLowerCase();
-      var dept = currentUser ? currentUser.department : 'Отдел';
+      var dept = currentUser ? currentUser.department : 'Отдел маркетинга';
       var role = currentUser ? currentUser.role : 'Специалист';
       var authorName = currentUser ? currentUser.name : 'Сотрудник';
 
@@ -1696,77 +1848,103 @@
       var amountInWords = '';
       var currency = '₸';
 
-      // Поиск валют и сумм
-      var dollarMatch = raw.match(/(\d+[\s\d]*)\s*(доллар|usd|\$)/i) || raw.match(/\$\s*(\d+[\s\d]*)/);
-      if (dollarMatch) {
-        amount = parseInt((dollarMatch[1] || dollarMatch[0]).replace(/[^\d]/g, ''), 10);
-        currency = 'USD ($)';
-        amountInWords = numberToRussianWords(amount) + ' долларов США';
-      } else {
-        var tengeMatch = raw.match(/(\d+[\s\d]*)\s*(тенге|тг|kzt)/i) || raw.match(/(\d+[\s\d]*)/);
-        if (tengeMatch) {
-          amount = parseInt((tengeMatch[1] || tengeMatch[0]).replace(/\s+/g, ''), 10);
-          currency = 'тенге (KZT)';
-          amountInWords = numberToRussianWords(amount) + ' тенге 00 тиын';
-        }
-      }
-
-      var isVercel = /vercel/i.test(low);
-      var isReimbursement = /возмещ|компенсир|своих денег|с карты|личной/i.test(low);
-      var isSubscription = /абонент|подписк|тариф|в месяц|ежемесяч/i.test(low);
+      // 1. ПРОВЕРКА СПИСКА ТОВАРОВ / КАНЦЕЛЯРИИ С МАТЕМАТИЧЕСКИМ РАСЧЕТОМ
+      var purchase = parsePurchaseItems(raw);
 
       var title = "СЛУЖЕБНАЯ ЗАПИСКА";
-      var subTitle = "";
+      var subTitle = "Согласование платежа и расходов";
       var body = "";
       var counterparty = selectedContract ? selectedContract.counterparty : "";
       var contractNum = selectedContract ? (selectedContract.number + ' от ' + selectedContract.date) : "";
 
-      // 1. ЗАЯВЛЕНИЕ НА ОТПУСК БС
-      if (currentDocType === 'vacation_bs') {
+      // А) Если обнаружен список товаров / канцелярии (ножи, скотч, коробки и т.д.)
+      if (purchase.items.length > 0) {
+        amount = purchase.total;
+        currency = 'тенге (KZT)';
+        amountInWords = numberToRussianWords(amount) + ' тенге 00 тиын';
+
+        var hasSpeedAssembly = /скорост|сборк|готов|продукц|склад/i.test(low);
+        var purposeText = hasSpeedAssembly
+          ? "В целях обеспечения повышенной скорости сборки готовой продукции на складе компании JANAMEN, оптимизации технологических процессов упаковки и своевременного выполнения клиентских заказов,"
+          : "В целях обеспечения текущей производственной и операционной деятельности компании JANAMEN (" + dept + "),";
+
+        subTitle = hasSpeedAssembly
+          ? "О согласовании закупа расходных материалов и канцелярии для ускорения сборки готовой продукции"
+          : "О согласовании закупа расходных материалов и хозяйственных принадлежностей";
+
+        var tableLines = purchase.items.map(function(it, idx) {
+          return (idx + 1) + '. ' + it.name + ' — ' + it.qty + ' шт. × ' + it.price.toLocaleString('ru-RU') + ' ₸ = ' + it.subtotal.toLocaleString('ru-RU') + ' ₸;';
+        }).join('\n');
+
+        body = [
+          purposeText + " прошу согласовать приобретение следующих материалов и принадлежностей:",
+          "",
+          tableLines,
+          "",
+          "Итого общая стоимость закупа составляет: " + amount.toLocaleString('ru-RU') + " (" + amountInWords + ").",
+          "",
+          "Приобретенные принадлежности будут переданы сотрудникам сборочно-упаковочной линии для бесперебойного выполнения задач. Оплату / возмещение расходов прошу произвести на основании предоставленных фискальных чеков и товарных накладных."
+        ].join('\n');
+      }
+      // Б) ЗАЯВЛЕНИЕ НА ОТПУСК БС
+      else if (currentDocType === 'vacation_bs') {
         title = "ЗАЯВЛЕНИЕ";
         subTitle = "О предоставлении отпуска без сохранения заработной платы";
         body = [
           "Прошу предоставить мне, " + role + " (" + dept + ") " + authorName + ", отпуск без сохранения заработной платы (БС).",
           "",
-          "Основание и детали: " + raw + ".",
+          "Основание: " + raw.replace(/итого[\s\S]*/i, '').trim() + ".",
           "",
           "Обязуюсь к моменту выхода приступить к выполнению служебных обязанностей в полном объеме."
         ].join('\n');
       }
-      // 2. ЗАЯВЛЕНИЕ НА АВАНС
+      // В) ЗАЯВЛЕНИЕ НА АВАНС
       else if (currentDocType === 'advance') {
+        var numM = raw.match(/(\d+[\s\d]*)/);
+        if (numM) amount = parseInt(numM[0].replace(/\s+/g, ''), 10);
+        amount = amount || 100000;
+        amountInWords = numberToRussianWords(amount) + ' тенге 00 тиын';
+
         title = "ЗАЯВЛЕНИЕ";
         subTitle = "О выплате аванса в счет заработной платы";
         body = [
-          "Прошу согласовать выплату аванса в счет заработной платы за текущий месяц в размере " + (amount ? amount + " " + currency : "100 000 ₸") + " (" + (amountInWords || "сто тысяч тенге") + ").",
+          "Прошу согласовать выплату аванса в счет заработной платы за текущий месяц в размере " + amount.toLocaleString('ru-RU') + " тенге (" + amountInWords + ").",
           "",
-          "Причина обращения: " + raw + ".",
+          "Обоснование: " + raw.replace(/итого[\s\S]*/i, '').trim() + ".",
           "",
-          "Прошу бухгалтерию удержать данную сумму при окончательном расчете заработной платы."
+          "Прошу бухгалтерию удержать указанную сумму при окончательном расчете заработной платы."
         ].join('\n');
       }
-      // 3. ЗАЯВЛЕНИЕ НА УВОЛЬНЕНИЕ
+      // Г) ЗАЯВЛЕНИЕ НА УВОЛЬНЕНИЕ
       else if (currentDocType === 'resignation') {
         title = "ЗАЯВЛЕНИЕ";
         subTitle = "О расторжении трудового договора";
         body = [
-          "Прошу расторгнуть трудовой договор по соглашению сторон / собственному желанию в соответствии с трудовым законодательством Республики Казахстан.",
+          "Прошу расторгнуть со мной трудовой договор в соответствии с нормами Трудового кодекса Республики Казахстан.",
           "",
-          "Основание: " + raw + ".",
+          "Основание: " + raw.replace(/итого[\s\S]*/i, '').trim() + ".",
           "",
           "Скан собственноручно подписанного заявления прикреплен к настоящему электронному документу."
         ].join('\n');
       }
-      // 4. СЛУЖЕБНАЯ ЗАПИСКА НА VERCEL / ВОЗМЕЩЕНИЕ
-      else if (isVercel) {
+      // Д) СЛУЖЕБНАЯ ЗАПИСКА НА VERCEL / ВОЗМЕЩЕНИЕ
+      else if (/vercel/i.test(low)) {
         counterparty = "Vercel Inc.";
+        var isReimbursement = /возмещ|компенсир|своих денег|с карты|личной/i.test(low);
+        var isSub = /абонент|подписк|тариф|в месяц|ежемесяч/i.test(low);
+
+        var dMatch = raw.match(/(\d+[\s\d]*)\s*(доллар|usd|\$)/i) || raw.match(/\$\s*(\d+[\s\d]*)/);
+        amount = dMatch ? parseInt((dMatch[1] || dMatch[0]).replace(/[^\d]/g, ''), 10) : 20;
+        currency = 'USD ($)';
+        amountInWords = numberToRussianWords(amount) + ' долларов США';
+
         title = "СЛУЖЕБНАЯ ЗАПИСКА";
         subTitle = isReimbursement 
           ? "Возмещение расходов по оплате абонентской платы за сервис Vercel" 
           : "Согласование оплаты абонентской платы за сервис Vercel";
 
         body = [
-          "Прошу согласовать " + (isReimbursement ? "возмещение понесенных расходов на оплату" : "оплату") + " ежемесячной абонентской платы за облачный сервис хостинга Vercel в размере " + (amount ? amount + " " + currency : "20 USD") + (isSubscription ? " в месяц" : "") + ".",
+          "Прошу согласовать " + (isReimbursement ? "возмещение понесенных расходов на оплату" : "оплату") + " ежемесячной абонентской платы за облачный сервис хостинга Vercel в размере " + amount + " USD" + (isSub ? " в месяц" : "") + " (" + amountInWords + ").",
           "",
           "Данный сервис используется для деплоя, хостинга и бесперебойной работы корпоративных веб-приложений и Telegram Mini App компании JANAMEN в рамках текущих задач " + dept + " и IT-инфраструктуры.",
           "",
@@ -1775,14 +1953,22 @@
             : "Инвойс на оплату прилагается к настоящей служебной записке."
         ].join('\n');
       }
-      // 5. ОБЩАЯ СЗ С ДОГОВОРОМ И АВР
+      // Е) СТАНДАРТНАЯ СЛУЖЕБНАЯ ЗАПИСКА
       else {
+        var cleanRaw = raw.replace(/итого[\s\S]*/i, '').trim();
+        var tengeMatch = raw.match(/(\d+[\s\d]*)\s*(тенге|тг|kzt)/i) || raw.match(/(\d+[\s\d]*)/);
+        if (tengeMatch) {
+          amount = parseInt((tengeMatch[1] || tengeMatch[0]).replace(/\s+/g, ''), 10);
+          currency = 'тенге (KZT)';
+          amountInWords = numberToRussianWords(amount) + ' тенге 00 тиын';
+        }
+
         title = "СЛУЖЕБНАЯ ЗАПИСКА";
         subTitle = "Согласование платежа и расходов";
         body = [
           "Прошу согласовать проведение платежа для обеспечения текущей операционной деятельности компании JANAMEN (" + dept + ").",
           "",
-          "Обоснование: " + raw + ".",
+          "Обоснование: " + cleanRaw + ".",
           contractNum ? ("\nРасходы осуществляются в рамках договора " + contractNum + " (" + counterparty + ").") : "",
           "\nСоответствующие подтверждающие документы (счета, акты выполненных работ, накладные) прикреплены к документу."
         ].join('\n');
@@ -1793,7 +1979,7 @@
         ? "✅ Оригинал АВР сдан в бухгалтерию" 
         : (selectedContract ? "⏳ Ожидается сдача оригинала АВР" : "Не требуется");
 
-      var result = {
+      return {
         docTypeCategory: currentDocType,
         title: title,
         subTitle: subTitle,
@@ -1806,17 +1992,6 @@
         avrStatus: avrText,
         requiresPayment: (amount > 0 || currentDocType === 'advance' || currentDocType === 'sz_payment')
       };
-
-      displayGeneratedSZ(result);
-    }
-
-    function numberToRussianWords(num) {
-      if (num === 20) return "двадцать";
-      if (num === 500000) return "пятьсот тысяч";
-      if (num === 50000) return "пятьдесят тысяч";
-      if (num === 100000) return "сто тысяч";
-      if (num === 200000) return "двести тысяч";
-      return String(num);
     }
 
     function displayGeneratedSZ(data) {
