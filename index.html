@@ -7,6 +7,8 @@
   
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- jsPDF for genuine multi-page PDF compilation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <style>
     /* ==================== СВЕТЛЫЙ КОРПОРАТИВНЫЙ ДИЗАЙН ==================== */
@@ -3058,13 +3060,33 @@
             (executorsHtml ? ('<br>' + executorsHtml) : ''),
           '</div>',
           avrItemsHtml,
-          '<div style="margin-top: 12px; display: flex; gap: 8px;">',
+          '<div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">',
             '<button class="btn btn-secondary" onclick="attachAvrModal(' + c.id + ')" style="font-size: 11.5px; padding: 7px 12px;">➕ Прикрепить АВР</button>',
-            '<button class="btn btn-secondary" onclick="alert(\'Скачивание документа: ' + (c.fileName || 'договор.pdf') + '\')" style="font-size: 11.5px; padding: 7px 12px;">📄 Скачать договор</button>',
+            (c.fileUrl ? ('<a href="' + c.fileUrl + '" target="_blank" class="btn btn-secondary" style="font-size: 11.5px; padding: 7px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">☁️ Открыть на Диске</a>') : ''),
+            '<button class="btn btn-secondary" onclick="downloadOrPreviewContract(' + c.id + ')" style="font-size: 11.5px; padding: 7px 12px;">📄 Скачать PDF</button>',
           '</div>'
         ].join('');
         cont.appendChild(el);
       });
+    }
+
+    function downloadOrPreviewContract(contractId) {
+      var c = mockContracts.find(function(x) { return x.id === contractId; });
+      if (!c) return;
+
+      if (c.pdfDataUri) {
+        var a = document.createElement('a');
+        a.href = c.pdfDataUri;
+        a.download = c.fileName || ('Договор_' + (c.counterparty || '') + '.pdf');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('📥 Загрузка PDF: ' + a.download);
+      } else if (c.fileUrl) {
+        window.open(c.fileUrl, '_blank');
+      } else {
+        alert('Файл документа еще формируется или доступен на Диске.');
+      }
     }
 
     // ==================== МУЛЬТИ-ФОТО И ПАЧКА ДЛЯ ДОГОВОРОВ ====================
@@ -3510,7 +3532,93 @@
       });
     }
 
-    function saveNewContract() {
+    async function generatePdfFromContractFiles(uploadedFiles, contractNumber, counterparty) {
+      if (!uploadedFiles || uploadedFiles.length === 0) return null;
+
+      // Если пользователь загрузил один уже готовый PDF
+      if (uploadedFiles.length === 1 && (uploadedFiles[0].type === 'application/pdf' || (uploadedFiles[0].name && uploadedFiles[0].name.toLowerCase().endsWith('.pdf')))) {
+        return {
+          base64: uploadedFiles[0].base64,
+          dataUrl: uploadedFiles[0].dataUrl || ('data:application/pdf;base64,' + uploadedFiles[0].base64),
+          pageCount: 1,
+          isPdf: true
+        };
+      }
+
+      // Если это фотографии со смартфона или камеры, собираем настоящий многостраничный PDF через jsPDF
+      var jsPDFClass = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
+      if (!jsPDFClass) {
+        console.warn('jsPDF не загрузился, используем первое изображение как вложение');
+        return {
+          base64: uploadedFiles[0].base64,
+          dataUrl: uploadedFiles[0].dataUrl,
+          pageCount: uploadedFiles.length,
+          isPdf: false
+        };
+      }
+
+      var doc = new jsPDFClass({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4',
+        compress: true
+      });
+
+      var pageWidth = 595.28;
+      var pageHeight = 841.89;
+      var margin = 16;
+      var availWidth = pageWidth - (margin * 2);
+      var availHeight = pageHeight - (margin * 2);
+
+      for (var i = 0; i < uploadedFiles.length; i++) {
+        if (i > 0) {
+          doc.addPage('a4', 'portrait');
+        }
+        var item = uploadedFiles[i];
+        var dataUrl = item.dataUrl || ('data:' + (item.type || 'image/jpeg') + ';base64,' + item.base64);
+
+        var dims = await new Promise(function(resolve) {
+          var img = new Image();
+          img.onload = function() {
+            resolve({ width: img.naturalWidth || img.width || 800, height: img.naturalHeight || img.height || 1100 });
+          };
+          img.onerror = function() {
+            resolve({ width: 800, height: 1100 });
+          };
+          img.src = dataUrl;
+        });
+
+        var imgAspect = dims.width / dims.height;
+        var pageAspect = availWidth / availHeight;
+        var renderWidth = availWidth;
+        var renderHeight = availHeight;
+
+        if (imgAspect > pageAspect) {
+          renderWidth = availWidth;
+          renderHeight = renderWidth / imgAspect;
+        } else {
+          renderHeight = availHeight;
+          renderWidth = renderHeight * imgAspect;
+        }
+
+        var posX = margin + (availWidth - renderWidth) / 2;
+        var posY = margin + (availHeight - renderHeight) / 2;
+
+        doc.addImage(dataUrl, 'JPEG', posX, posY, renderWidth, renderHeight, undefined, 'FAST');
+      }
+
+      var pdfDataUri = doc.output('datauristring');
+      var pdfBase64 = pdfDataUri.split(',')[1] || '';
+
+      return {
+        base64: pdfBase64,
+        dataUrl: pdfDataUri,
+        pageCount: uploadedFiles.length,
+        isPdf: true
+      };
+    }
+
+    async function saveNewContract() {
       var cp = document.getElementById('nc-counterparty').value.trim();
       var subj = document.getElementById('nc-subject').value.trim();
       var title = document.getElementById('nc-title').value.trim();
@@ -3534,6 +3642,20 @@
         title = buildContractTitle(cp, subj);
       }
 
+      var safeNum = internalNum.replace(/[\/\\?%*:|"<>]/g, '-');
+      var safeCp = cp.replace(/[\/\\?%*:|"<>]/g, '').trim();
+      var cleanFileName = safeNum + '_' + (newContractUploadedFiles.length > 1 ? (newContractUploadedFiles.length + '_страниц_') : '') + safeCp + '.pdf';
+
+      var pdfResult = null;
+      if (newContractUploadedFiles.length > 0) {
+        showToast('📄 Сборка официального PDF (' + newContractUploadedFiles.length + ' стр.)...');
+        try {
+          pdfResult = await generatePdfFromContractFiles(newContractUploadedFiles, internalNum, cp);
+        } catch(pdfErr) {
+          console.warn('PDF generate warning:', pdfErr);
+        }
+      }
+
       var executorsList = selectedNcExecutors.map(function(x) { return x.name; });
       if (executorsList.length === 0 && currentUser) {
         executorsList.push(currentUser.name);
@@ -3554,7 +3676,10 @@
         manager: currentUser ? currentUser.name : 'Менеджер',
         executors: executorsList,
         status: 'Действует',
-        fileName: newContractUploadedFiles.length > 0 ? (newContractUploadedFiles.length + '_страниц_' + cp + '.pdf') : ('Договор_' + cp + '.pdf'),
+        fileName: cleanFileName,
+        fileBase64: pdfResult ? pdfResult.base64 : '',
+        pdfDataUri: pdfResult ? pdfResult.dataUrl : '',
+        fileUrl: '',
         attachments: newContractUploadedFiles.map(function(f) { return { name: f.name, mimeType: f.type, base64: f.base64 }; }),
         avrList: []
       };
@@ -3580,10 +3705,19 @@
             subject: newContract.subject,
             amount: newContract.amount,
             manager: newContract.manager,
-            fileName: newContract.fileName,
-            fileBase64: newContractUploadedFiles[0] ? newContractUploadedFiles[0].base64 : ''
+            fileName: cleanFileName,
+            fileBase64: pdfResult ? pdfResult.base64 : (newContractUploadedFiles[0] ? newContractUploadedFiles[0].base64 : '')
           })
-        }).catch(function(e) { console.warn('Contract save to GAS error:', e); });
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resData) {
+          if (resData && resData.ok && resData.fileUrl) {
+            newContract.fileUrl = resData.fileUrl;
+            renderContractsList();
+            showToast('☁️ Оригинал PDF сохранен на Google Диске!');
+          }
+        })
+        .catch(function(e) { console.warn('Contract save to GAS error:', e); });
       }
     }
 

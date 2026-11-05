@@ -93,6 +93,10 @@ function doGet(e) {
     } else if (action === 'get_contracts') {
       var cDept = e.parameter.department || '';
       result = getContractsList(cDept);
+    } else if (action === 'list_drive') {
+      result = listDriveFilesAndFolders();
+    } else if (action === 'search_screens') {
+      result = searchScreenshots();
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -624,9 +628,18 @@ function uploadSignedScan(szNumber, uploaderFio, fileBase64, fileName) {
   }
   if (!targetFolder) targetFolder = DriveApp.getRootFolder();
 
-  var cleanName = szNumber + '_ПОДПИСАННЫЙ_ОРИГИНАЛ_' + (fileName || 'scan.pdf');
-  var blob = Utilities.newBlob(Utilities.base64Decode(fileBase64), 'application/pdf', cleanName);
+  var rawClean = (fileName || 'scan.pdf').replace(/[\/\\]/g, '-');
+  var isPdfScan = fileBase64.indexOf('JVBERi0') === 0;
+  var mimeType = isPdfScan ? 'application/pdf' : 'image/jpeg';
+  if (isPdfScan && !rawClean.toLowerCase().endsWith('.pdf')) rawClean += '.pdf';
+  if (!isPdfScan && rawClean.toLowerCase().endsWith('.pdf')) rawClean = rawClean.replace(/\.pdf$/i, '.jpg');
+
+  var cleanName = szNumber.replace(/[\/\\]/g, '-') + '_ПОДПИСАННЫЙ_ОРИГИНАЛ_' + rawClean;
+  var blob = Utilities.newBlob(Utilities.base64Decode(fileBase64), mimeType, cleanName);
   var scanFile = targetFolder.createFile(blob);
+  try {
+    scanFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch(e) {}
 
   // Обновляем юридический статус
   sheet.getRange(rowIdx, 13).setValue('Сдан в архив (Скан прикреплен)');
@@ -749,8 +762,24 @@ function createNewContract(data) {
   var folder = getOrCreateContractDriveFolder(dept);
   var fileUrl = '';
   if (data.fileBase64 && data.fileName) {
-    var blob = Utilities.newBlob(Utilities.base64Decode(data.fileBase64), 'application/pdf', (data.number || 'Договор') + '_' + data.fileName);
+    var rawName = String(data.fileName || 'договор.pdf').trim();
+    var safeFileName = rawName.replace(/[\/\\]/g, '-');
+    var isRealPdf = (data.fileBase64.indexOf('JVBERi0') === 0);
+    var mimeType = isRealPdf ? 'application/pdf' : 'image/jpeg';
+
+    if (isRealPdf && !safeFileName.toLowerCase().endsWith('.pdf')) {
+      safeFileName += '.pdf';
+    } else if (!isRealPdf && safeFileName.toLowerCase().endsWith('.pdf')) {
+      safeFileName = safeFileName.replace(/\.pdf$/i, '.jpg');
+    }
+
+    var blob = Utilities.newBlob(Utilities.base64Decode(data.fileBase64), mimeType, safeFileName);
     var savedFile = folder.createFile(blob);
+    try {
+      savedFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(shareErr) {
+      Logger.log('Sharing error: ' + shareErr);
+    }
     fileUrl = savedFile.getUrl();
   }
 
@@ -1379,4 +1408,63 @@ function getCompanyStructure() {
       }
     ]
   };
+}
+
+function listDriveFilesAndFolders() {
+  var folder = DriveApp.getFolderById(CONFIG.ARCHIVE_ROOT_FOLDER_ID);
+  var res = { folderName: folder.getName(), files: [], subfolders: [] };
+  
+  var fIter = folder.getFiles();
+  while (fIter.hasNext()) {
+    var f = fIter.next();
+    res.files.push({ id: f.getId(), name: f.getName(), mimeType: f.getMimeType(), size: f.getSize(), url: f.getUrl() });
+  }
+  
+  var sfIter = folder.getFolders();
+  while (sfIter.hasNext()) {
+    var sf = sfIter.next();
+    var sfFiles = [];
+    var sffIter = sf.getFiles();
+    while (sffIter.hasNext()) {
+      var sff = sffIter.next();
+      sfFiles.push({ id: sff.getId(), name: sff.getName(), mimeType: sff.getMimeType(), size: sff.getSize(), url: sff.getUrl() });
+    }
+    res.subfolders.push({ id: sf.getId(), name: sf.getName(), files: sfFiles });
+  }
+  return res;
+}
+
+function searchScreenshots() {
+  var f = DriveApp.getFolderById("1tv9UfgpQOIONW_nwWZ-BLdcg42aZjRhA");
+  var fIt = f.getFiles();
+  var items = [];
+  while (fIt.hasNext()) {
+    var fl = fIt.next();
+    items.push({ id: fl.getId(), name: fl.getName(), mimeType: fl.getMimeType(), size: fl.getSize(), url: fl.getUrl() });
+  }
+  return { ok: true, name: f.getName(), files: items };
+
+  var results = [];
+  var fIter = DriveApp.searchFiles('modifiedDate > "2026-11-04" or title contains "Скрин" or title contains "Договор" or title contains "IMG"');
+  var count = 0;
+  while (fIter.hasNext() && count < 50) {
+    var f = fIter.next();
+    results.push({ id: f.getId(), name: f.getName(), mimeType: f.getMimeType(), size: f.getSize(), url: f.getUrl() });
+    count++;
+  }
+  
+  var folders = [];
+  var dIter = DriveApp.searchFolders('title contains "Скрин" or title contains "Договор" or title contains "Jana"');
+  while (dIter.hasNext()) {
+    var d = dIter.next();
+    var dFiles = [];
+    var dfIt = d.getFiles();
+    while (dfIt.hasNext()) {
+      var df = dfIt.next();
+      dFiles.push({ id: df.getId(), name: df.getName(), mimeType: df.getMimeType(), url: df.getUrl() });
+    }
+    folders.push({ id: d.getId(), name: d.getName(), files: dFiles });
+  }
+  
+  return { ok: true, files: results, folders: folders };
 }
