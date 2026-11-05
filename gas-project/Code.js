@@ -802,8 +802,8 @@ function createNewContract(data) {
   if (data.fileBase64 && data.fileName) {
     var rawB64 = cleanBase64(data.fileBase64);
     var rawName = String(data.fileName || 'договор.pdf').trim();
-    var safeFileName = rawName.replace(/[\/\\]/g, '-');
-    var isRealPdf = (rawB64.indexOf('JVBERi0') === 0);
+    var safeFileName = rawName.replace(/[\/\\?%*:|"<>]/g, '-');
+    var isRealPdf = (rawB64.indexOf('JVBERi0') === 0) || /\.pdf$/i.test(safeFileName);
     var mimeType = isRealPdf ? 'application/pdf' : 'image/jpeg';
 
     if (isRealPdf && !safeFileName.toLowerCase().endsWith('.pdf')) {
