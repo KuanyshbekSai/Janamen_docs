@@ -1257,11 +1257,73 @@
       cursor: pointer;
       transition: all 0.15s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
     }
     .kanban-card:hover {
       transform: translateY(-2px);
       box-shadow: var(--shadow-md);
       border-color: var(--primary);
+    }
+    .kanban-card-dragging {
+      opacity: 0.35;
+      border: 2px dashed var(--primary);
+      transform: scale(0.98);
+    }
+    .btn-card-del-action {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.15s;
+    }
+    .btn-card-del-action:hover {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    .btn-card-move-down {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-card-move-down:hover {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+    .btn-admin-toggle {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-admin-toggle:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .btn-admin-toggle.active {
+      background: #fef2f2 !important;
+      border: 1.5px solid #ef4444 !important;
+      color: #b91c1c !important;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
     }
   </style>
 </head>
@@ -1383,6 +1445,11 @@
         <span class="brand-badge">ЭДО ПРОТОКОЛ</span>
       </div>
       <div class="brand-actions">
+        <!-- Кнопка Режима Администратора (видна только Куанышбеку Сайдуллаеву / Администратору) -->
+        <button id="btn-admin-toggle" class="btn-admin-toggle" onclick="toggleAdminMode()" title="Режим Администратора: удаление документов, управление архивом" style="display: none;">
+          <span id="admin-toggle-icon">🛡️</span> <span id="admin-toggle-text">Режим Администратора</span>
+        </button>
+
         <button class="btn-streak-pill" onclick="openAchievementsModal()" title="Серия дней без задержек">
           <span>🔥</span> <span id="u-streak-num">5</span> дн
         </button>
@@ -1704,6 +1771,11 @@
             <option value="scan_waiting">⭐️ Ожидает оригинал</option>
             <option value="archive">📦 Архив / Завершено</option>
           </select>
+
+          <select id="filter-sort-order" class="select-text" onchange="renderSZList()">
+            <option value="asc">⏳ Сначала ранние СЗ (хронология)</option>
+            <option value="desc">⚡ Сначала свежие СЗ (новые)</option>
+          </select>
         </div>
       </div>
 
@@ -1882,6 +1954,22 @@
                 <button class="btn btn-secondary" onclick="closeRejectReasonBox()" style="padding: 8px 14px; font-size: 12px;">Отмена</button>
               </div>
             </div>
+          </div>
+
+          <!-- Блок повторной подачи для отклоненной СЗ (Инициатор или Администратор) -->
+          <div id="det-rejected-resubmit-bar" style="display: none; margin-top: 14px; background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 12px 14px;">
+            <div style="font-size: 13px; font-weight: 800; color: #9a3412;">⚠️ Документ отклонен согласующим</div>
+            <div id="det-rejected-reason-display" style="font-size: 11.5px; color: #c2410c; margin-top: 3px; margin-bottom: 10px; line-height: 1.4;"></div>
+            <button type="button" class="btn btn-primary" onclick="openEditRejectedSZModal(activeDetailItem)" style="width: 100%; font-size: 12.5px; padding: 9px; font-weight: 700;">
+              ✏️ Внести правки и перезапустить СЗ
+            </button>
+          </div>
+
+          <!-- Кнопка удаления документа в Режиме Администратора -->
+          <div id="det-admin-delete-bar" style="display: none; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #fca5a5;">
+            <button type="button" class="btn" onclick="confirmDeleteSZ(activeDetailItem.number, activeDetailItem.title)" style="width: 100%; background: #fee2e2; border: 1px solid #f87171; color: #b91c1c; font-size: 12px; font-weight: 700; padding: 8px;">
+              🗑️ Безвозвратно удалить СЗ (Режим Администратора)
+            </button>
           </div>
         </div>
       </div>
@@ -2174,6 +2262,71 @@
     </div>
   </div>
 
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: РЕДАКТИРОВАНИЕ ОТКЛОНЕННОЙ СЗ ==================== -->
+  <div id="modal-edit-rejected-sz" class="modal-overlay">
+    <div class="modal-content" style="max-width: 680px; width: 95vw; max-height: 90vh;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+        <div>
+          <span class="status-badge" style="background: #fff7ed; color: #c2410c; font-weight: 700;">✏️ Корректировка документа</span>
+          <h3 id="edit-sz-modal-title" style="font-size: 16.5px; font-weight: 800; color: var(--text); margin-top: 4px;">Редактирование отклоненной СЗ</h3>
+        </div>
+        <button onclick="closeModal('modal-edit-rejected-sz')" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+
+      <div id="edit-sz-rejection-info" style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: #991b1b;">
+        <b>Замечания согласующего:</b> <span id="edit-sz-rejection-text"></span>
+      </div>
+
+      <div class="field" style="margin-bottom: 10px;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--text);">Тема / Заголовок СЗ:</label>
+        <input type="text" id="edit-sz-title-input" class="input-text" autocomplete="off">
+      </div>
+
+      <div class="field" style="margin-bottom: 10px;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--text);">Суть служебной записки:</label>
+        <textarea id="edit-sz-body-input" class="input-text" rows="4"></textarea>
+      </div>
+
+      <div class="field" style="margin-bottom: 10px;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--text);">Сумма к оплате (₸):</label>
+        <input type="number" id="edit-sz-amount-input" class="input-text" placeholder="0">
+      </div>
+
+      <div class="field" style="margin-bottom: 12px;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--text);">Привязанный договор:</label>
+        <input type="text" id="edit-sz-contract-input" class="input-text" placeholder="Номер или контрагент договора..." autocomplete="off">
+      </div>
+
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 11.5px; color: #166534;">
+        ℹ️ После сохранения СЗ автоматически вернется на 1-й шаг маршрута согласования, и первому согласующему поступит уведомление в Telegram.
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-rejected-sz')" style="font-size: 12px; padding: 8px 16px;">Отмена</button>
+        <button type="button" class="btn btn-primary" onclick="submitEditRejectedSZ()" style="font-size: 12px; padding: 8px 20px; font-weight: 700;">
+          🚀 Сохранить и отправить повторно
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ (ТОЛЬКО АДМИН) ==================== -->
+  <div id="modal-confirm-delete" class="modal-overlay">
+    <div class="modal-content" style="max-width: 480px; width: 95vw; text-align: center; padding: 26px;">
+      <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+      <h3 style="font-size: 17px; font-weight: 800; color: #b91c1c; margin-bottom: 8px;">Подтверждение удаления</h3>
+      <p id="confirm-delete-msg" style="font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 18px;">
+        Вы уверены, что хотите удалить документ?
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-confirm-delete')" style="padding: 9px 20px; font-size: 13px;">Отмена</button>
+        <button type="button" class="btn" id="btn-execute-delete" onclick="executePendingDelete()" style="background: #dc2626; color: #fff; font-weight: 700; padding: 9px 22px; font-size: 13px; border: none; border-radius: 8px; cursor: pointer;">
+          🗑️ Да, удалить безвозвратно
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Модальное окно увеличения сканов и чеков -->
   <div id="modal-image-zoom" class="modal-overlay" onclick="closeModal('modal-image-zoom')">
     <div style="position: relative; max-width: 90vw; max-height: 90vh; margin: auto; text-align: center;" onclick="event.stopPropagation()">
@@ -2417,6 +2570,19 @@
       if (/генеральный|главный бухгалтер/i.test(role)) return true;
       return false;
     }
+
+    // Проверка прав ГЛАВНОГО АДМИНИСТРАТОРА (только Куанышбек Сайдуллаев)
+    function isAdminUser(user) {
+      if (!user) return false;
+      var name = (user.name || '').toLowerCase();
+      var role = (user.role || '').toLowerCase();
+      return /сайдуллаев куанышбек/i.test(name) || user.isAdmin === true || /администратор|admin/i.test(role);
+    }
+
+    var adminModeActive = false;
+    var pendingDeleteAction = null;
+    var kanbanCustomOrder = {};
+    var draggedCardNumber = null;
 
     var currentUser = null;
     var currentGeneratedSZ = null;
@@ -3096,6 +3262,11 @@
       document.getElementById('u-role').textContent = currentUser.role + ' • ' + currentUser.department + accessBadge;
       document.getElementById('u-avatar').textContent = currentUser.name.charAt(0);
       document.getElementById('initiator-badge').textContent = 'Инициатор: ' + currentUser.name;
+
+      var adminBtn = document.getElementById('btn-admin-toggle');
+      if (adminBtn) {
+        adminBtn.style.display = isAdminUser(currentUser) ? 'inline-flex' : 'none';
+      }
 
       document.getElementById('contracts-dept-title').textContent = isSuper 
         ? (isAdmin ? 'Все отделы компании (Режим Администратора)' : 'Все отделы компании (Режим Юриста)') 
@@ -4564,6 +4735,21 @@
         return true;
       });
 
+      // Сортировка: сначала ранние СЗ (asc по умолчанию) или свежие (desc) с учетом ручного приоритета
+      var sortOrder = document.getElementById('filter-sort-order') ? document.getElementById('filter-sort-order').value : 'asc';
+      filtered.sort(function(a, b) {
+        var ordA = kanbanCustomOrder[a.number];
+        var ordB = kanbanCustomOrder[b.number];
+        if (ordA !== undefined || ordB !== undefined) {
+          if (ordA !== undefined && ordB !== undefined) return ordA - ordB;
+          if (ordA !== undefined) return 1;
+          if (ordB !== undefined) return -1;
+        }
+        var tA = getSZSortTimestamp(a);
+        var tB = getSZSortTimestamp(b);
+        return (sortOrder === 'desc') ? (tB - tA) : (tA - tB);
+      });
+
       var countBadge = document.getElementById('registry-count-badge');
       if (countBadge) {
         countBadge.textContent = filtered.length + ' из ' + mockSZList.length + ' документов';
@@ -4605,10 +4791,11 @@
             item.contract ? ('<br>📄 Договор: ' + item.contract) : '',
             item.amount > 0 ? ('<br>💰 Сумма: <b style="color: var(--success);">' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</b>' + (item.counterparty ? ' (' + item.counterparty + ')' : '')) : '',
           '</div>',
-          '<div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px;">',
+          '<div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; align-items: center;">',
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">💳 ' + item.statusPayment + '</span>',
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📑 ' + item.avrStatus + '</span>',
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📎 ' + item.statusLegal + '</span>',
+            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" style="background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;font-size:11px;padding:3px 8px;margin-left:auto;" onclick="event.stopPropagation();confirmDeleteSZ(\'' + item.number + '\', \'' + (item.title||'').replace(/'/g, "\\'") + '\')">🗑️ Удалить</button>') : ''),
           '</div>'
         ].join('');
 
@@ -4741,17 +4928,44 @@
             var coExec = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 ' + item.coExecutors.join(', ')) : '';
             var amountStr = (item.amount && item.amount > 0) ? ('<div style="font-size:12px;font-weight:800;color:var(--primary);margin-top:4px;">💰 ' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</div>') : '';
             
-            html.push('<div class="kanban-card" onclick="openSZDetailByNumber(\'' + item.number + '\')">');
+            var isRejected = (item.statusApproval || '').indexOf('Отклонено') !== -1;
+            var canResubmit = isRejected && currentUser && (
+              currentUser.name === item.initiator || 
+              (item.coExecutors || []).indexOf(currentUser.name) !== -1 || 
+              isAdminUser(currentUser)
+            );
+
+            var adminDelCardBtn = (adminModeActive && isAdminUser(currentUser)) 
+              ? ('<button type="button" class="btn-card-del-action" onclick="event.stopPropagation(); confirmDeleteSZ(\'' + item.number + '\', \'' + (item.title || '').replace(/'/g, "\\'") + '\')" title="Удалить СЗ (Режим Администратора)">🗑️</button>') 
+              : '';
+
+            var resubmitBtn = canResubmit 
+              ? ('<button type="button" class="btn-card-move-down" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa;" onclick="event.stopPropagation(); openEditRejectedSZModal(mockSZList.find(function(x){return x.number===\'' + item.number + '\';}))" title="Внести исправления">✏️ Исправить</button>') 
+              : '';
+
+            var moveDownBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); moveKanbanCardDown(\'' + item.number + '\')" title="Переместить карточку в самый низ колонки">⬇ Вниз</button>';
+
+            html.push('<div class="kanban-card" draggable="true" ondragstart="onKanbanDragStart(event, \'' + item.number + '\')" ondragover="onKanbanDragOver(event)" ondrop="onKanbanDrop(event, \'' + item.number + '\')" ondragend="onKanbanDragEnd(event)" onclick="openSZDetailByNumber(\'' + item.number + '\')">');
             html.push('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">');
             html.push('<span style="font-weight:800;font-size:12.5px;color:var(--primary);">' + item.number + '</span>');
+            html.push('<div style="display:flex;align-items:center;gap:5px;">');
             html.push('<span style="font-size:10.5px;color:var(--text-muted);">' + item.date + '</span>');
+            html.push(adminDelCardBtn);
+            html.push('</div>');
             html.push('</div>');
             html.push('<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.35;">' + item.title + '</div>');
             html.push('<div style="font-size:11px;color:var(--text-muted);line-height:1.4;">👤 ' + item.initiator + ' (' + item.department + ')' + coExec + '</div>');
             html.push(amountStr);
+
+            html.push('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;">');
             if (item.currentApprover && item.currentApprover !== '-' && item.currentApprover !== 'Завершено') {
-              html.push('<div style="margin-top:6px;font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);">⏳ Виза: <b>' + item.currentApprover + '</b></div>');
+              html.push('<div style="font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">⏳ <b>' + item.currentApprover + '</b></div>');
+            } else {
+              html.push('<div></div>');
             }
+            html.push('<div style="display:flex;gap:4px;flex-shrink:0;">' + resubmitBtn + moveDownBtn + '</div>');
+            html.push('</div>');
+
             html.push('</div>');
           });
         }
@@ -4761,6 +4975,207 @@
       });
 
       container.innerHTML = html.join('');
+    }
+
+    function getSZSortTimestamp(item) {
+      if (item.date) {
+        var parts = String(item.date).match(/(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2}))?/);
+        if (parts) {
+          return new Date(Number(parts[3]), Number(parts[2]) - 1, Number(parts[1]), Number(parts[4] || 0), Number(parts[5] || 0)).getTime();
+        }
+        var d = new Date(item.date);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      var numMatch = String(item.number || '').match(/\d+$/);
+      if (numMatch) return Number(numMatch[0]);
+      return 0;
+    }
+
+    function moveKanbanCardDown(num) {
+      var highest = 0;
+      for (var k in kanbanCustomOrder) {
+        if (kanbanCustomOrder[k] > highest) highest = kanbanCustomOrder[k];
+      }
+      kanbanCustomOrder[num] = Math.max(highest, 1000) + 10;
+      renderSZList();
+      showToast('⬇ Карточка ' + num + ' перемещена в конец колонки');
+    }
+
+    function onKanbanDragStart(e, num) {
+      draggedCardNumber = num;
+      e.dataTransfer.setData('text/plain', num);
+      if (e.target && e.target.classList) e.target.classList.add('kanban-card-dragging');
+    }
+
+    function onKanbanDragOver(e) {
+      e.preventDefault();
+    }
+
+    function onKanbanDrop(e, targetNum) {
+      e.preventDefault();
+      if (!draggedCardNumber || draggedCardNumber === targetNum) return;
+      var targetP = kanbanCustomOrder[targetNum] !== undefined ? kanbanCustomOrder[targetNum] : 10;
+      kanbanCustomOrder[draggedCardNumber] = targetP + 1;
+      renderSZList();
+      showToast('↕ Порядок карточек обновлен');
+    }
+
+    function onKanbanDragEnd(e) {
+      draggedCardNumber = null;
+      document.querySelectorAll('.kanban-card').forEach(function(el) {
+        el.classList.remove('kanban-card-dragging');
+      });
+    }
+
+    function toggleAdminMode() {
+      if (!isAdminUser(currentUser)) {
+        showToast('⛔ Доступ к Режиму Администратора разрешен только Сайдуллаеву К.Г.');
+        return;
+      }
+      adminModeActive = !adminModeActive;
+      var btn = document.getElementById('btn-admin-toggle');
+      if (btn) {
+        if (adminModeActive) {
+          btn.classList.add('active');
+          btn.innerHTML = '<span>🛡️</span> <span>Режим Админа: ВКЛ 🟢</span>';
+          showToast('🛡️ Режим Администратора активирован! Появились кнопки удаления документов.');
+        } else {
+          btn.classList.remove('active');
+          btn.innerHTML = '<span>🛡️</span> <span>Режим Администратора</span>';
+          showToast('🛡️ Режим Администратора выключен.');
+        }
+      }
+      renderSZList();
+      renderContractsList();
+      if (activeDetailItem) {
+        openSZDetail(activeDetailItem);
+      }
+    }
+
+    function confirmDeleteSZ(num, title) {
+      if (!isAdminUser(currentUser)) return;
+      pendingDeleteAction = { type: 'sz', number: num, title: title };
+      var msg = document.getElementById('confirm-delete-msg');
+      if (msg) {
+        msg.innerHTML = 'Вы уверены, что хотите безвозвратно удалить служебную записку <b>' + num + '</b> («' + (title || '') + '»)?<br><br><span style="color:#dc2626;font-size:12px;">Документ будет удален из Реестра СЗ, Канбана и базы данных.</span>';
+      }
+      document.getElementById('modal-confirm-delete').style.display = 'flex';
+    }
+
+    function confirmDeleteContract(num, id, title) {
+      if (!isAdminUser(currentUser)) return;
+      pendingDeleteAction = { type: 'contract', number: num, id: id, title: title };
+      var msg = document.getElementById('confirm-delete-msg');
+      if (msg) {
+        msg.innerHTML = 'Вы уверены, что хотите безвозвратно удалить договор <b>' + num + '</b> («' + (title || '') + '»)?<br><br><span style="color:#dc2626;font-size:12px;">Договор будет удален из Архива договоров компании.</span>';
+      }
+      document.getElementById('modal-confirm-delete').style.display = 'flex';
+    }
+
+    function executePendingDelete() {
+      if (!pendingDeleteAction) return;
+      var act = pendingDeleteAction;
+      closeModal('modal-confirm-delete');
+
+      if (act.type === 'sz') {
+        var idx = mockSZList.findIndex(function(x) { return x.number === act.number; });
+        if (idx !== -1) mockSZList.splice(idx, 1);
+        renderSZList();
+        closeModal('modal-detail');
+        showToast('🗑️ Служебная записка ' + act.number + ' удалена');
+
+        if (SCRIPT_EXEC_URL) {
+          fetch(SCRIPT_EXEC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'delete_sz', szNumber: act.number })
+          }).catch(function(e) { console.warn('Delete SZ sync error:', e); });
+        }
+      } else if (act.type === 'contract') {
+        var cIdx = mockContracts.findIndex(function(x) { return x.number === act.number || x.id === act.id; });
+        if (cIdx !== -1) mockContracts.splice(cIdx, 1);
+        renderContractsList();
+        showToast('🗑️ Договор ' + act.number + ' удален из архива');
+
+        if (SCRIPT_EXEC_URL) {
+          fetch(SCRIPT_EXEC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'delete_contract', contractNumber: act.number, contractId: act.id })
+          }).catch(function(e) { console.warn('Delete contract sync error:', e); });
+        }
+      }
+      pendingDeleteAction = null;
+    }
+
+    var activeEditingRejectedSZ = null;
+
+    function openEditRejectedSZModal(item) {
+      if (!item) return;
+      activeEditingRejectedSZ = item;
+      document.getElementById('edit-sz-modal-title').textContent = 'Редактирование ' + item.number;
+      var rejReason = item.statusApproval || 'Замечания согласующего';
+      document.getElementById('edit-sz-rejection-text').textContent = rejReason;
+      document.getElementById('edit-sz-title-input').value = item.title || '';
+      document.getElementById('edit-sz-body-input').value = item.body || item.title || '';
+      document.getElementById('edit-sz-amount-input').value = item.amount || '';
+      document.getElementById('edit-sz-contract-input').value = (item.contract && item.contract !== 'Не привязан к договору') ? item.contract : '';
+
+      document.getElementById('modal-edit-rejected-sz').style.display = 'flex';
+    }
+
+    function submitEditRejectedSZ() {
+      if (!activeEditingRejectedSZ) return;
+      var item = activeEditingRejectedSZ;
+      var title = document.getElementById('edit-sz-title-input').value.trim();
+      var body = document.getElementById('edit-sz-body-input').value.trim();
+      var amount = parseFloat(document.getElementById('edit-sz-amount-input').value) || 0;
+      var contract = document.getElementById('edit-sz-contract-input').value.trim();
+
+      if (!title) {
+        alert('Пожалуйста, укажите тему служебной записки!');
+        return;
+      }
+
+      var firstApprover = (item.routeList && item.routeList.length > 0 && item.routeList[0].name) ? item.routeList[0].name : 'Руководитель';
+      var newStatus = 'На согласовании: ' + firstApprover;
+
+      item.title = title;
+      item.body = body;
+      item.amount = amount;
+      if (contract) item.contract = contract;
+      item.statusApproval = newStatus;
+      item.currentApprover = firstApprover;
+      if (amount > 0) item.statusPayment = 'Ожидает визы';
+
+      if (item.routeList && item.routeList.length > 0) {
+        item.routeList.forEach(function(s, idx) {
+          s.status = (idx === 0) ? '⏳ Ожидает решения' : 'В очереди';
+        });
+      }
+
+      closeModal('modal-edit-rejected-sz');
+      closeModal('modal-detail');
+
+      renderSZList();
+      awardGamificationXP(60, 'Оперативное исправление СЗ', 'Замечания устранены, СЗ ' + item.number + ' перезапущена');
+      showToast('🚀 СЗ ' + item.number + ' успешно обновлена и направлена на повторное согласование!');
+
+      if (SCRIPT_EXEC_URL) {
+        fetch(SCRIPT_EXEC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'resubmit_sz',
+            szNumber: item.number,
+            title: title,
+            body: body,
+            amount: amount,
+            contract: contract,
+            route: item.routeList
+          })
+        }).catch(function(e) { console.warn('Resubmit SZ sync error:', e); });
+      }
     }
 
     function openSZDetailByNumber(num) {
@@ -5127,6 +5542,28 @@
       document.getElementById('det-approval-actions').style.display = isMyTurn ? 'flex' : 'none';
       closeRejectReasonBox();
 
+      // Проверка на возможность редактирования отклоненной СЗ (Инициатор или Администратор)
+      var rejBar = document.getElementById('det-rejected-resubmit-bar');
+      var isRejected = (item.statusApproval || '').indexOf('Отклонено') !== -1;
+      var canEditRej = isRejected && isInitiatorOrManager;
+      if (rejBar) {
+        if (canEditRej) {
+          rejBar.style.display = 'block';
+          var rejReasonEl = document.getElementById('det-rejected-reason-display');
+          if (rejReasonEl) {
+            rejReasonEl.textContent = 'Причина отказа: ' + (item.statusApproval || 'Требуется исправление');
+          }
+        } else {
+          rejBar.style.display = 'none';
+        }
+      }
+
+      // Проверка на показ кнопки удаления в Режиме Администратора
+      var adminDelBar = document.getElementById('det-admin-delete-bar');
+      if (adminDelBar) {
+        adminDelBar.style.display = (adminModeActive && isAdminUser(currentUser)) ? 'block' : 'none';
+      }
+
       document.getElementById('modal-detail').style.display = 'flex';
     }
 
@@ -5381,10 +5818,11 @@
             (executorsHtml ? ('<br>' + executorsHtml) : ''),
           '</div>',
           avrItemsHtml,
-          '<div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">',
+          '<div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">',
             '<button class="btn btn-secondary" onclick="attachAvrModal(' + c.id + ')" style="font-size: 11.5px; padding: 7px 12px;">➕ Прикрепить АВР</button>',
             (c.fileUrl ? ('<a href="' + c.fileUrl + '" target="_blank" class="btn btn-secondary" style="font-size: 11.5px; padding: 7px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">☁️ Открыть на Диске</a>') : ''),
             '<button class="btn btn-secondary" onclick="downloadOrPreviewContract(' + c.id + ')" style="font-size: 11.5px; padding: 7px 12px;">📄 Скачать PDF</button>',
+            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" onclick="confirmDeleteContract(\'' + c.number + '\', ' + c.id + ', \'' + (displayTitle.replace(/'/g, "\\'")) + '\')" style="background:#fee2e2; border:1px solid #fca5a5; color:#dc2626; font-size:11.5px; padding:7px 12px; margin-left:auto;">🗑️ Удалить</button>') : ''),
           '</div>'
         ].join('');
         cont.appendChild(el);

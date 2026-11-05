@@ -99,6 +99,12 @@ function doGet(e) {
       result = searchScreenshots();
     } else if (action === 'make_archive_public') {
       result = makeArchivePublic();
+    } else if (action === 'delete_sz') {
+      result = deleteSZ(postData.szNumber);
+    } else if (action === 'delete_contract') {
+      result = deleteContract(postData.contractNumber, postData.contractId);
+    } else if (action === 'resubmit_sz') {
+      result = resubmitSZ(postData.szNumber, postData);
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -164,6 +170,12 @@ function doPost(e) {
       result = sendTestTelegramNotification(postData.fio);
     } else if (action === 'make_archive_public') {
       result = makeArchivePublic();
+    } else if (action === 'delete_sz') {
+      result = deleteSZ(postData.szNumber);
+    } else if (action === 'delete_contract') {
+      result = deleteContract(postData.contractNumber, postData.contractId);
+    } else if (action === 'resubmit_sz') {
+      result = resubmitSZ(postData.szNumber, postData);
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -723,6 +735,102 @@ function uploadSignedScan(szNumber, uploaderFio, fileBase64, fileName) {
     fileUrl: scanFile.getUrl(),
     message: 'Скан подписанной СЗ успешно принят в архив!'
   };
+}
+
+/**
+ * Удаление СЗ из реестра (только для Главного Администратора)
+ */
+function deleteSZ(szNumber) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) return { ok: false, error: 'Лист Реестр СЗ не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  var targetRow = -1;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(szNumber).trim()) {
+      targetRow = i + 1;
+      break;
+    }
+  }
+
+  if (targetRow === -1) return { ok: false, error: 'СЗ ' + szNumber + ' не найдена' };
+
+  sheet.deleteRow(targetRow);
+  logApprovalEvent(szNumber, 'Удаление СЗ', 'Администратор системы', 'Служебная записка удалена из реестра', 'Удалено');
+
+  return { ok: true, message: 'Служебная записка ' + szNumber + ' успешно удалена из реестра!' };
+}
+
+/**
+ * Удаление договора из реестра (только для Главного Администратора)
+ */
+function deleteContract(contractNumber, contractId) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACTS);
+  if (!sheet) return { ok: false, error: 'Лист Договоры не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  var targetRow = -1;
+  for (var i = 1; i < rows.length; i++) {
+    var cNum = String(rows[i][1]).trim();
+    var cId = String(rows[i][0]).trim();
+    if ((contractNumber && cNum === String(contractNumber).trim()) || (contractId && (cId === String(contractId).trim() || String(i) === String(contractId)))) {
+      targetRow = i + 1;
+      break;
+    }
+  }
+
+  if (targetRow === -1) return { ok: false, error: 'Договор не найден' };
+
+  sheet.deleteRow(targetRow);
+  return { ok: true, message: 'Договор успешно удален из архива!' };
+}
+
+/**
+ * Повторная подача / корректировка отклоненной СЗ инициатором
+ */
+function resubmitSZ(szNumber, data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) return { ok: false, error: 'Лист Реестр СЗ не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  var targetRow = -1;
+  var oldRow = null;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(szNumber).trim()) {
+      targetRow = i + 1;
+      oldRow = rows[i];
+      break;
+    }
+  }
+
+  if (targetRow === -1) return { ok: false, error: 'СЗ ' + szNumber + ' не найдена' };
+
+  var route = data.route || [];
+  var firstApprover = (route.length > 0 && (route[0].name || route[0].role)) ? (route[0].name || route[0].role) : CONFIG.BUSINESS_ASSISTANT;
+
+  if (data.title) sheet.getRange(targetRow, 7).setValue(data.title);
+  if (data.amount !== undefined) sheet.getRange(targetRow, 8).setValue(Number(data.amount));
+  if (data.counterparty) sheet.getRange(targetRow, 9).setValue(data.counterparty);
+  if (data.contract) sheet.getRange(targetRow, 10).setValue(data.contract);
+  
+  sheet.getRange(targetRow, 11).setValue('На согласовании: ' + firstApprover);
+  if (data.amount > 0) sheet.getRange(targetRow, 12).setValue('Ожидает визы');
+  sheet.getRange(targetRow, 14).setValue(firstApprover);
+
+  if (route.length > 0) {
+    var routeDisplay = route.map(function(r) { return r.name || r.role; }).join(' ➡️ ');
+    sheet.getRange(targetRow, 15).setValue(routeDisplay);
+  }
+
+  logApprovalEvent(szNumber, 'Повторный запуск', oldRow[3], 'Инициатор исправил замечания и повторно направил СЗ на согласование', 'На согласовании');
+
+  // Уведомляем первого согласующего в Telegram
+  notifyApproverInTelegram(firstApprover, szNumber, oldRow[3], data.title || oldRow[6], Number(data.amount || oldRow[7]));
+
+  return { ok: true, message: 'СЗ ' + szNumber + ' успешно скорректирована и повторно направлена на согласование!' };
 }
 
 /**
