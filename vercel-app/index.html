@@ -1039,34 +1039,48 @@
       .game-banner {
         max-width: 1600px;
         width: 96%;
-        margin: 8px auto 12px auto;
-        padding: 10px 18px;
+        margin: 6px auto 10px auto;
+        padding: 8px 18px;
         border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
       }
       .game-avatar-ring {
-        width: 38px;
-        height: 38px;
-        font-size: 16px;
+        width: 34px;
+        height: 34px;
+        font-size: 15px;
       }
       .game-user-name {
-        font-size: 14.5px;
+        font-size: 13.5px;
       }
       .game-user-role {
-        font-size: 12px;
+        font-size: 11.5px;
       }
       .game-banner-top {
-        margin-bottom: 6px;
+        margin-bottom: 0;
+        flex: 0 0 auto;
       }
-      .game-progress-bar-wrap {
-        margin-bottom: 6px;
+      .game-progress-wrapper {
+        flex: 1;
+        max-width: 300px;
+        margin: 0 10px;
+      }
+      .game-progress-bar {
         height: 5px;
+        margin-bottom: 3px;
+      }
+      .game-xp-next {
+        font-size: 10px;
       }
       .game-quests-row {
+        flex: 0 0 auto;
         gap: 6px;
       }
       .game-quest-pill {
-        padding: 2px 8px;
-        font-size: 11px;
+        padding: 3px 8px;
+        font-size: 10.5px;
       }
       .nav-tabs-wrapper {
         padding: 10px 0;
@@ -1206,7 +1220,7 @@
     }
     @media (min-width: 1200px) {
       .kanban-view-container {
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(7, minmax(215px, 1fr));
       }
     }
     .kanban-column {
@@ -1461,8 +1475,8 @@
             <!-- Поле привязки договора своего отдела -->
             <div class="field" id="field-contract-binding">
               <label>Привязать договор вашего отдела (по желанию):</label>
-              <div class="searchable-box">
-                <input type="text" id="sz-contract-search" class="input-text" placeholder="🔍 Выберите договор, например: №82 (Аренда склада)..." onfocus="onContractSearchFocus()" oninput="onContractSearchInput(this.value)">
+              <div class="searchable-box" id="sz-contract-search-box">
+                <input type="text" id="sz-contract-search" class="input-text" placeholder="🔍 Выберите договор, например: №82 (Аренда склада)..." onfocus="onContractSearchFocus()" oninput="onContractSearchInput(this.value)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="sz_contract_choice_rand">
                 <div id="sz-contract-dropdown" class="search-results-dropdown"></div>
               </div>
               <div id="selected-contract-badge" style="display: none; margin-top: 8px;"></div>
@@ -1472,7 +1486,7 @@
             <div class="field">
               <label>Со-исполнители (только линейные специалисты):</label>
               <div class="searchable-box">
-                <input type="text" id="coexec-search" class="input-text" placeholder="🔍 Поиск линейного сотрудника: Адель, Акзере, Арман..." oninput="onCoExecSearchInput(this.value)">
+                <input type="text" id="coexec-search" class="input-text" placeholder="🔍 Поиск линейного сотрудника: Адель, Акзере, Арман..." oninput="onCoExecSearchInput(this.value)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="sz_coexec_query_rand">
                 <div id="coexec-dropdown" class="search-results-dropdown"></div>
               </div>
               <div id="selected-coexec-tags" class="selected-tags"></div>
@@ -1651,7 +1665,7 @@
 
         <!-- Сквозной поиск и мульти-фильтры (отделы, типы, исполнители, статусы) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
-          <input type="text" id="filter-search" class="input-text" style="grid-column: 1 / -1;" placeholder="🔍 Поиск по номеру (СЗ-2026...), контрагенту, теме или тексту..." oninput="renderSZList()">
+          <input type="text" id="filter-search" class="input-text" style="grid-column: 1 / -1;" placeholder="🔍 Поиск по номеру (СЗ-2026...), контрагенту, теме или тексту..." oninput="renderSZList()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="sz_filter_query_rand">
           
           <select id="filter-dept" class="select-text" onchange="renderSZList()">
             <option value="all">🏢 Все подразделения</option>
@@ -1681,12 +1695,14 @@
           </select>
 
           <select id="filter-status" class="select-text" onchange="renderSZList()">
-            <option value="all">⚖️ Все статусы согласования</option>
+            <option value="all">⚖️ Все этапы (Канбан)</option>
             <option value="in_progress">🛠️ В работе</option>
-            <option value="pending">⏳ В согласовании</option>
+            <option value="pending_my">🔔 На согласовании у меня</option>
+            <option value="pending_colleagues">⏳ На согласовании у коллег</option>
             <option value="approved">✅ Утверждено Шефом</option>
-            <option value="paid">💳 Оплачено казначейством</option>
-            <option value="scan_waiting">⭐️ Ожидает скан оригинала</option>
+            <option value="paid">💳 Оплачено / Отработано</option>
+            <option value="scan_waiting">⭐️ Ожидает оригинал</option>
+            <option value="archive">📦 Архив / Завершено</option>
           </select>
         </div>
       </div>
@@ -1713,7 +1729,7 @@
 
         <!-- Панель быстрого поиска и фильтрации договоров -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
-          <input type="text" id="contracts-filter-search" class="input-text" style="flex: 2; min-width: 220px;" placeholder="🔍 Поиск по контрагенту, номеру, БИН или предмету..." oninput="renderContractsList()">
+          <input type="text" id="contracts-filter-search" class="input-text" style="flex: 2; min-width: 220px;" placeholder="🔍 Поиск по контрагенту, номеру, БИН или предмету..." oninput="renderContractsList()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="contract_filter_rand">
           <select id="contracts-filter-date" class="select-text" style="flex: 1; min-width: 140px;" onchange="renderContractsList()">
             <option value="all">Все даты (за всё время)</option>
             <option value="2026">2026 год</option>
@@ -2109,7 +2125,7 @@
 
       <div class="field" style="margin-bottom: 10px;">
         <label style="font-size: 12px; font-weight: 700; color: var(--text);">Поиск сотрудника Jana Men:</label>
-        <input type="text" id="approver-search-input" class="input-text" placeholder="🔍 Введите ФИО, должность или отдел..." oninput="onApproverSearchInput(this.value)">
+        <input type="text" id="approver-search-input" class="input-text" placeholder="🔍 Введите ФИО, должность или отдел..." oninput="onApproverSearchInput(this.value)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="approver_query_rand">
       </div>
 
       <!-- Постоянный прокручиваемый список сотрудников (ВСЕГДА ВИДЕН!) -->
@@ -3509,15 +3525,19 @@
       document.getElementById('sz-contract-search').value = cTitle;
       document.getElementById('sz-contract-dropdown').style.display = 'none';
 
-      // Показываем бейдж выбранного договора
+      // Скрываем текстовое поле поиска во избежание всплывающих подсказок браузера Chrome
+      var searchBox = document.getElementById('sz-contract-search-box');
+      if (searchBox) searchBox.style.display = 'none';
+
+      // Показываем бейдж выбранного договора с кнопкой смены
       var badge = document.getElementById('selected-contract-badge');
       badge.innerHTML = [
-        '<div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">',
+        '<div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">',
           '<div>',
-            '<b style="color: var(--success);">' + cTitle + '</b>',
-            '<div style="color: var(--text-muted); font-size: 11px;">Внутренний №: ' + contract.number + ' • Срок: до ' + contract.validUntil + ' • Отдел: ' + contract.department + '</div>',
+            '<b style="color: #166534; font-size: 13px;">' + cTitle + '</b>',
+            '<div style="color: var(--text-muted); font-size: 11px; margin-top: 3px;">Внутренний №: <b>' + contract.number + '</b> • Срок: до ' + contract.validUntil + ' • Отдел: ' + contract.department + '</div>',
           '</div>',
-          '<button type="button" onclick="clearSelectedContract()" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;">✕</button>',
+          '<button type="button" onclick="clearSelectedContract()" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; margin-left: 10px; border-color: #cbd5e1; color: #dc2626; cursor: pointer;">✕ Сменить договор</button>',
         '</div>'
       ].join('');
       badge.style.display = 'block';
@@ -3529,8 +3549,14 @@
     function clearSelectedContract() {
       selectedContract = null;
       document.getElementById('sz-contract-search').value = '';
+      var searchBox = document.getElementById('sz-contract-search-box');
+      if (searchBox) searchBox.style.display = 'block';
       document.getElementById('selected-contract-badge').style.display = 'none';
       document.getElementById('field-avr-original').style.display = 'none';
+      setTimeout(function() {
+        var input = document.getElementById('sz-contract-search');
+        if (input) input.focus();
+      }, 50);
     }
 
     // ==================== УМНЫЙ ПОИСК СО-ИСПОЛНИТЕЛЕЙ (ТОЛЬКО ЛИНЕЙНЫЕ!) ====================
@@ -4528,10 +4554,12 @@
 
         // Фильтр по статусу
         if (filterStatus === 'in_progress' && getSZKanbanStage(item) !== 'in_progress') return false;
-        if (filterStatus === 'pending' && getSZKanbanStage(item) !== 'pending') return false;
+        if (filterStatus === 'pending_my' && getSZKanbanStage(item) !== 'pending_my') return false;
+        if (filterStatus === 'pending_colleagues' && getSZKanbanStage(item) !== 'pending_colleagues') return false;
         if (filterStatus === 'approved' && (item.statusApproval || '').indexOf('Утверждено') === -1) return false;
-        if (filterStatus === 'paid' && (item.statusPayment || '').indexOf('Оплачено') === -1) return false;
+        if (filterStatus === 'paid' && (item.statusPayment || '').indexOf('Оплачено') === -1 && (item.statusPayment || '').indexOf('Отработано') === -1) return false;
         if (filterStatus === 'scan_waiting' && (item.statusLegal || '').indexOf('Ожидает') === -1) return false;
+        if (filterStatus === 'archive' && getSZKanbanStage(item) !== 'archive') return false;
 
         return true;
       });
@@ -4631,17 +4659,19 @@
       var leg = (item.statusLegal || '').toLowerCase();
       var init = (item.initiator || '').trim().toLowerCase();
       var curr = (item.currentApprover || '').trim().toLowerCase();
+      var myName = (currentUser && currentUser.name) ? currentUser.name.trim().toLowerCase() : '';
+      var mySurname = myName ? myName.split(' ')[0] : '';
 
       // 1. Архив / Завершено
       if (appr.indexOf('отклонено') !== -1 || leg.indexOf('сдан в архив') !== -1 || leg.indexOf('в архиве') !== -1) {
         return 'archive';
       }
       // 2. Ожидает оригинал
-      if (leg.indexOf('ожидает') !== -1 && (appr.indexOf('утверждено') !== -1 || pay.indexOf('оплачено') !== -1)) {
+      if (leg.indexOf('ожидает') !== -1 && (appr.indexOf('утверждено') !== -1 || pay.indexOf('оплачено') !== -1 || pay.indexOf('отработано') !== -1)) {
         return 'waiting_scan';
       }
-      // 3. Оплачено
-      if (pay.indexOf('оплачено') !== -1) {
+      // 3. Оплачено / Отработано
+      if (pay.indexOf('оплачено') !== -1 || pay.indexOf('отработано') !== -1) {
         return 'paid';
       }
       // 4. Утверждено Шефом
@@ -4652,8 +4682,27 @@
       if (appr.indexOf('в работе') !== -1 || appr.indexOf('черновик') !== -1 || appr.indexOf('формируется') !== -1 || (init && curr && (init === curr || init.indexOf(curr) !== -1 || curr.indexOf(init) !== -1))) {
         return 'in_progress';
       }
-      // 6. На согласовании (передан другим согласующим по маршруту)
-      return 'pending';
+
+      // 6. На согласовании: разделяем на "🔔 На согласовании у меня" и "⏳ На согласовании у коллег"
+      var isMyApproval = false;
+      if (myName) {
+        if (curr && (curr.indexOf(myName) !== -1 || (mySurname.length > 2 && curr.indexOf(mySurname) !== -1))) {
+          isMyApproval = true;
+        } else if (item.auditTrail && Array.isArray(item.auditTrail)) {
+          var activeStep = item.auditTrail.find(function(s) {
+            var st = (s.status || '').toLowerCase();
+            return st.indexOf('ожидает') !== -1 || st.indexOf('в очереди') !== -1 || st.indexOf('не рассмотрен') !== -1;
+          });
+          if (activeStep && activeStep.approver) {
+            var stAppr = activeStep.approver.toLowerCase();
+            if (stAppr.indexOf(myName) !== -1 || (mySurname.length > 2 && stAppr.indexOf(mySurname) !== -1)) {
+              isMyApproval = true;
+            }
+          }
+        }
+      }
+
+      return isMyApproval ? 'pending_my' : 'pending_colleagues';
     }
 
     function renderSZKanban(filteredList) {
@@ -4662,9 +4711,10 @@
 
       var columns = [
         { id: 'in_progress', title: '🛠️ В работе', color: '#0284c7', bg: '#f0f9ff', items: [] },
-        { id: 'pending', title: '⏳ На согласовании', color: '#E87411', bg: '#fff7ed', items: [] },
+        { id: 'pending_my', title: '🔔 На согласовании у меня', color: '#dc2626', bg: '#fef2f2', items: [] },
+        { id: 'pending_colleagues', title: '⏳ На согласовании у коллег', color: '#E87411', bg: '#fff7ed', items: [] },
         { id: 'approved', title: '✅ Утверждено Шефом', color: '#16a34a', bg: '#f0fdf4', items: [] },
-        { id: 'paid', title: '💳 Оплачено', color: '#2563eb', bg: '#eff6ff', items: [] },
+        { id: 'paid', title: '💳 Оплачено / Отработано', color: '#2563eb', bg: '#eff6ff', items: [] },
         { id: 'waiting_scan', title: '⭐️ Ожидает оригинал', color: '#d97706', bg: '#fffbeb', items: [] },
         { id: 'archive', title: '📦 Архив / Завершено', color: '#64748b', bg: '#f8fafc', items: [] }
       ];
@@ -4751,7 +4801,22 @@
       if (docWrap) {
         if (item.docUrl) {
           docWrap.style.display = 'block';
-          docWrap.innerHTML = '<div style="font-size:11.5px;font-weight:700;color:var(--primary);margin-bottom:6px;">Встроенный просмотр официального Google Doc:</div><iframe src="' + item.docUrl + '?embedded=true" style="width:100%;height:450px;border:1px solid var(--border);border-radius:8px;background:#fff;"></iframe>';
+          docWrap.innerHTML = [
+            '<div style="margin-top:10px; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:12px;">',
+              '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">',
+                '<div>',
+                  '<span style="font-size:12.5px; font-weight:800; color:#9a3412;">📝 Официальный бланк Google Doc (Служебная записка)</span>',
+                  '<div style="font-size:11px; color:#c2410c;">Сформирован ИИ по корпоративному стандарту Jana Men</div>',
+                '</div>',
+                '<a href="' + item.docUrl + '" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">',
+                  '<span>📝 Открыть Google Doc на весь экран</span> <span>↗</span>',
+                '</a>',
+              '</div>',
+              '<div style="border-radius:8px; overflow:hidden; border:1px solid #cbd5e1; background:#ffffff; box-shadow:0 1px 4px rgba(0,0,0,0.05);">',
+                '<iframe src="' + item.docUrl + '?embedded=true" style="width:100%; height:500px; border:none; background:#fff;"></iframe>',
+              '</div>',
+            '</div>'
+          ].join('');
         } else {
           docWrap.style.display = 'none';
           docWrap.innerHTML = '';
@@ -4760,30 +4825,56 @@
 
       // Поиск привязанного договора с многофакторным скорингом (исключает ложные совпадения одинаковых номеров)
       var boundContract = null;
-      var cNorm = ((item.contract || '') + ' ' + (item.title || '') + ' ' + (item.counterparty || '')).toLowerCase().trim();
-      if (cNorm && cNorm !== 'не привязан к договору' && cNorm !== 'нет' && cNorm !== 'б/н' && cNorm !== 'не требуется') {
+      function cleanMatchStr(str) {
+        return String(str || '').toLowerCase().replace(/['"«»„“”`]/g, '').replace(/[^\wа-яё0-9]/gi, ' ').replace(/\s+/g, ' ').trim();
+      }
+
+      var cNorm = cleanMatchStr((item.contract || '') + ' ' + (item.title || '') + ' ' + (item.counterparty || ''));
+      if (cNorm && cNorm !== 'не привязан к договору' && cNorm !== 'нет' && cNorm !== 'б н' && cNorm !== 'не требуется') {
         var bestScore = 0;
         mockContracts.forEach(function(c) {
           var score = 0;
-          var cp = (c.counterparty || '').toLowerCase().replace(/['"«»]/g, '').trim();
+          var cp = cleanMatchStr(c.counterparty);
           var bin = String(c.bin || '').trim();
-          var title = (c.title || '').toLowerCase().trim();
-          var num = (c.number || '').toLowerCase().trim();
+          var title = cleanMatchStr(c.title);
+          var subj = cleanMatchStr(c.subject);
+          var num = cleanMatchStr(c.number);
+          var extNum = cleanMatchStr(c.externalNumber);
 
-          if (cp && cNorm.indexOf(cp) !== -1) score += 60;
-          if (bin && cNorm.indexOf(bin) !== -1) score += 50;
-          if (title && cNorm.indexOf(title) !== -1) score += 30;
+          // 1. Прямое совпадение контрагента целиком (например: "ип nurmolda")
+          if (cp && cNorm.indexOf(cp) !== -1) score += 90;
+
+          // 2. Совпадение по ключевому уникальному слову контрагента (например: "nurmolda", "qaztech", "жакиш", "сиба")
+          if (cp) {
+            var cpWords = cp.split(' ').filter(function(w) { return w.length >= 4 && w !== 'тоо' && w !== 'ип' && w !== 'ао' && w !== 'ооо'; });
+            cpWords.forEach(function(w) {
+              if (cNorm.indexOf(w) !== -1) score += 70;
+            });
+          }
+
+          // 3. Совпадение по БИН (100% точность)
+          if (bin && bin.length >= 6 && cNorm.indexOf(bin) !== -1) score += 100;
+
+          // 4. Совпадение по внешнему номеру договора контрагента
+          if (extNum && extNum.length >= 3 && cNorm.indexOf(extNum) !== -1) score += 50;
+
+          // 5. Совпадение по предмету
+          if (subj && subj.length >= 5 && cNorm.indexOf(subj) !== -1) score += 30;
+
+          // 6. Совпадение по номеру
           if (num && cNorm.indexOf(num) !== -1) score += 20;
 
-          if (score > bestScore) {
+          if (score > bestScore && score >= 25) {
             bestScore = score;
             boundContract = c;
           }
         });
 
+        // Запасной fallback, если скоринг не дал однозначного победителя
         if (!boundContract && item.contract) {
+          var cTargetNum = cleanMatchStr(item.contract);
           boundContract = mockContracts.find(function(c) {
-            return c.number && item.contract.toLowerCase().indexOf(c.number.toLowerCase()) !== -1;
+            return c.number && cTargetNum.indexOf(cleanMatchStr(c.number)) !== -1;
           });
         }
       }
@@ -4906,12 +4997,22 @@
         if (contractUrl) {
           var previewUrl = contractUrl.replace(/\/view(\?[^#]*)?/i, '/preview');
           drivePreviewHtml = [
-            '<div style="margin-top:12px;">',
-              '<div style="font-size:11.5px; font-weight:700; color:#166534; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">',
-                '<span>Встроенный просмотр договора:</span>',
-                '<a href="' + contractUrl + '" target="_blank" style="color:var(--primary); font-weight:700; text-decoration:underline;">Открыть в Google Диске ↗</a>',
+            '<div style="margin-top:14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px;">',
+              '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">',
+                '<div>',
+                  '<span style="font-size:12.5px; font-weight:800; color:#14532d;">📄 Скан договора в архиве</span>',
+                  '<div style="font-size:11px; color:#166534;">Доступ к документу открыт для всех сотрудников по ссылке</div>',
+                '</div>',
+                '<a href="' + contractUrl + '" target="_blank" class="btn btn-primary" style="font-size:12px; padding:6px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">',
+                  '<span>📄 Открыть оригинал на весь экран</span> <span>↗</span>',
+                '</a>',
               '</div>',
-              '<iframe src="' + previewUrl + '" style="width:100%; height:450px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc;" allow="autoplay"></iframe>',
+              '<div style="border-radius:8px; overflow:hidden; border:1px solid #cbd5e1; background:#ffffff; box-shadow:0 1px 4px rgba(0,0,0,0.05);">',
+                '<iframe src="' + previewUrl + '" style="width:100%; height:520px; border:none; background:#f8fafc;" allow="autoplay"></iframe>',
+              '</div>',
+              '<div style="font-size:11px; color:#64748b; margin-top:6px; text-align:center;">',
+                '💡 Если Google запрашивает вход в аккаунт внутри фрейма, нажмите кнопку выше «Открыть оригинал на весь экран» для просмотра без ограничений.',
+              '</div>',
             '</div>'
           ].join('');
         }

@@ -97,6 +97,8 @@ function doGet(e) {
       result = listDriveFilesAndFolders();
     } else if (action === 'search_screens') {
       result = searchScreenshots();
+    } else if (action === 'make_archive_public') {
+      result = makeArchivePublic();
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -160,6 +162,8 @@ function doPost(e) {
       result = sendDailyReminders();
     } else if (action === 'send_test_tg_message') {
       result = sendTestTelegramNotification(postData.fio);
+    } else if (action === 'make_archive_public') {
+      result = makeArchivePublic();
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -339,6 +343,11 @@ function createNewSZ(data) {
         var rawB64 = cleanBase64(att.base64);
         var fileBlob = Utilities.newBlob(Utilities.base64Decode(rawB64), att.mimeType || 'application/pdf', att.name);
         var savedFile = folderInfo.folder.createFile(fileBlob);
+        try {
+          savedFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        } catch(eShare) {
+          Logger.log('Error sharing attached file: ' + eShare);
+        }
         attachedFileUrls.push({ name: att.name, url: savedFile.getUrl() });
       }
     }
@@ -401,6 +410,11 @@ function generateSZGoogleDoc(szNumber, data, dateStr, folder) {
   var docFile = DriveApp.getFileById(doc.getId());
   folder.addFile(docFile);
   DriveApp.getRootFolder().removeFile(docFile); // убираем из корня
+  try {
+    docFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch(eShareDoc) {
+    Logger.log('Error sharing doc: ' + eShareDoc);
+  }
 
   var docBody = doc.getBody();
   docBody.setMarginTop(54);
@@ -437,6 +451,10 @@ function generateSZGoogleDoc(szNumber, data, dateStr, folder) {
   pBody.setLineSpacing(1.2);
   pBody.setIndentFirstLine(28); // Абзацный отступ (красная строка)
   pBody.setSpacingAfter(14);
+  try {
+    pBody.editAsText().setBold(false);
+    pBody.editAsText().setItalic(false);
+  } catch(eText) {}
 
   // 4. Договор-основание (если указан)
   if (data.contract && String(data.contract).trim() && data.contract !== 'Не привязан к договору' && data.contract !== 'Нет') {
@@ -892,16 +910,28 @@ function createNewContract(data) {
  */
 
 function getOrCreateArchiveRoot() {
+  var root = null;
   if (CONFIG.ARCHIVE_ROOT_FOLDER_ID && CONFIG.ARCHIVE_ROOT_FOLDER_ID.trim() !== '') {
     try {
-      return DriveApp.getFolderById(CONFIG.ARCHIVE_ROOT_FOLDER_ID.trim());
+      root = DriveApp.getFolderById(CONFIG.ARCHIVE_ROOT_FOLDER_ID.trim());
     } catch(e) {
       Logger.log('Could not open folder by ID: ' + e);
     }
   }
-  var folders = DriveApp.getFoldersByName(CONFIG.ARCHIVE_ROOT_NAME);
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(CONFIG.ARCHIVE_ROOT_NAME);
+  if (!root) {
+    var folders = DriveApp.getFoldersByName(CONFIG.ARCHIVE_ROOT_NAME);
+    if (folders.hasNext()) {
+      root = folders.next();
+    } else {
+      root = DriveApp.createFolder(CONFIG.ARCHIVE_ROOT_NAME);
+    }
+  }
+  try {
+    root.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch(eShare) {
+    Logger.log('Could not setSharing on root: ' + eShare);
+  }
+  return root;
 }
 
 function getOrCreateSZDriveFolder(department, szNumber, title) {
@@ -934,8 +964,52 @@ function getOrCreateContractDriveFolder(department) {
 
 function getSubFolder(parent, name) {
   var it = parent.getFoldersByName(name);
-  if (it.hasNext()) return it.next();
-  return parent.createFolder(name);
+  var folder = it.hasNext() ? it.next() : parent.createFolder(name);
+  try {
+    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch(eShare) {}
+  return folder;
+}
+
+/**
+ * Рекурсивное открытие доступа на просмотр по ссылке для всех папок и файлов архива
+ */
+function makeArchivePublic() {
+  var root = getOrCreateArchiveRoot();
+  try {
+    root.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch(e) {}
+
+  var totalFolders = 0;
+  var totalFiles = 0;
+
+  function processFolder(f) {
+    try {
+      f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      totalFolders++;
+    } catch(e) {}
+
+    var files = f.getFiles();
+    while (files.hasNext()) {
+      try {
+        var fl = files.next();
+        fl.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        totalFiles++;
+      } catch(e) {}
+    }
+
+    var subs = f.getFolders();
+    while (subs.hasNext()) {
+      processFolder(subs.next());
+    }
+  }
+
+  processFolder(root);
+
+  return {
+    ok: true,
+    message: 'Доступ по ссылке успешно открыт на весь архив компании! Обработано папок: ' + totalFolders + ', файлов: ' + totalFiles
+  };
 }
 
 /**
