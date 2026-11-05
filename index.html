@@ -780,7 +780,7 @@
           <div style="width: 100%;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-size: 15px; font-weight: 800; color: var(--text);">✨ Инициация документа</span>
-              <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 10.5px; padding: 2px 8px;">Gemini 2.5 AI</span>
+              <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 10.5px; padding: 2px 8px;">Gemini 3.8 AI</span>
             </div>
             <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;" id="initiator-badge"></div>
           </div>
@@ -1270,7 +1270,7 @@
     function getActiveGeminiKey() {
       var saved = localStorage.getItem('JANAMEN_GEMINI_KEY');
       if (saved && saved.trim()) return saved.trim();
-      return window.__GEMINI_KEY || ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join('');
+      return window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6JOZ6qCbNlleuAJAOFLaxziwkngagRWKb-TNhwLO0PvXw'].join('');
     }
 
     function openGeminiKeyModal() {
@@ -1289,7 +1289,7 @@
         showToast('✅ API ключ Gemini успешно сохранен!');
       } else {
         localStorage.removeItem('JANAMEN_GEMINI_KEY');
-        GEMINI_API_KEY = ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join('');
+        GEMINI_API_KEY = ['AQ', '.', 'Ab8RN6JOZ6qCbNlleuAJAOFLaxziwkngagRWKb-TNhwLO0PvXw'].join('');
         showToast('ℹ️ Возвращен стандартный ключ проекта');
       }
       closeModal('modal-gemini-key');
@@ -1306,9 +1306,9 @@
       resBox.style.background = '#f8fafc';
       resBox.style.border = '1px solid #cbd5e1';
       resBox.style.color = '#475569';
-      resBox.innerHTML = 'Отправка тестового запроса к модели Gemini 2.5 Flash...';
+      resBox.innerHTML = 'Отправка тестового запроса к модели Gemini 3.8 Flash...';
 
-      var testUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + inputKey;
+      var testUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + inputKey;
       var testPayload = {
         contents: [{ parts: [{ text: 'Ответь на русском строго одним словом: "РАБОТАЕТ"' }] }]
       };
@@ -1346,7 +1346,7 @@
       });
     }
 
-    var GEMINI_API_KEY = window.__GEMINI_KEY || ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join('');
+    var GEMINI_API_KEY = window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6JOZ6qCbNlleuAJAOFLaxziwkngagRWKb-TNhwLO0PvXw'].join('');
 
     // Штатное расписание Jana Men
     var JANA_MEN_STRUCTURE = [
@@ -2315,7 +2315,7 @@
         '}'
       ].join('\n');
 
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' + GEMINI_API_KEY;
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + GEMINI_API_KEY;
       var bodyPayload = {
         contents: [{
           parts: [{ text: promptText + '\n\nЧерновик пользователя:\n' + raw }]
@@ -3193,7 +3193,7 @@
       }
 
       loader.style.display = 'block';
-      statusText.innerHTML = '<span style="color:#2563eb;">Gemini 2.5 Flash читает страницы договора (' + filesList.length + ' стр.): распознает стороны, суммы, реквизиты...</span>';
+      statusText.innerHTML = '<span style="color:#2563eb;">Gemini 3.8 Flash читает страницы договора (' + filesList.length + ' стр.): распознает стороны, суммы, реквизиты...</span>';
 
       var activeKey = getActiveGeminiKey();
       if (activeKey) {
@@ -3206,7 +3206,7 @@
     }
 
     function callGeminiMultiPageContractVision(filesList, activeKey) {
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + activeKey;
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + activeKey;
       var promptText = [
         'Ты старший корпоративный юрист компании JANAMEN. Перед тобой все страницы официального договора (страницы 1, 2, 3 и т.д.).',
         'Внимательно прочитай все страницы: шапку, предмет, раздел цен и оплат, реквизиты, печати и подписи.',

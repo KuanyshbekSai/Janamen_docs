@@ -22,8 +22,8 @@ var CONFIG = {
   ARCHIVE_ROOT_NAME: 'Jana Men - Документация (Архив ЭДО)',
   
   // Gemini API
-  GEMINI_API_KEY: ['AIzaSyC7H92XH84AKrR3ss8e7juILWh', 'CQAD-mMg'].join(''),
-  MODELS: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'],
+  GEMINI_API_KEY: ['AQ', '.', 'Ab8RN6JOZ6qCbNlleuAJAOFLaxziwkngagRWKb-TNhwLO0PvXw'].join(''),
+  MODELS: ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'],
   
   // Telegram Bot: @janamen_docs_bot (Jana Men – Docs operator)
   BOT_TOKEN: '9068269998:AAGXf6cDc6yHa5pWzn2_jcRP1kv18JHpoA8',
