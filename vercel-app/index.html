@@ -669,9 +669,14 @@
         <p id="u-role">Определение отдела...</p>
       </div>
     </div>
-    <button class="btn-switch-user" onclick="openSwitchAccountModal()">
-      <span>🔄</span> <span>Сменить</span>
-    </button>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <button class="btn-switch-user" onclick="openGeminiKeyModal()" title="Статус и настройки ИИ" style="padding: 6px 10px; background: #f0fdf4; border-color: #bbf7d0; color: #166534;">
+        <span>⚡ ИИ</span>
+      </button>
+      <button class="btn-switch-user" onclick="openSwitchAccountModal()">
+        <span>🔄</span> <span>Сменить</span>
+      </button>
+    </div>
   </div>
 
   <div class="nav-tabs-wrapper">
@@ -1166,6 +1171,87 @@
     }
 
     var SCRIPT_EXEC_URL = '';
+
+    // ==================== УПРАВЛЕНИЕ GEMINI API КЛЮЧОМ ====================
+    function getActiveGeminiKey() {
+      var saved = localStorage.getItem('JANAMEN_GEMINI_KEY');
+      if (saved && saved.trim()) return saved.trim();
+      return window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join('');
+    }
+
+    function openGeminiKeyModal() {
+      var currentKey = localStorage.getItem('JANAMEN_GEMINI_KEY') || '';
+      document.getElementById('setting-gemini-key').value = currentKey;
+      var resBox = document.getElementById('gemini-key-test-result');
+      resBox.style.display = 'none';
+      document.getElementById('modal-gemini-key').style.display = 'flex';
+    }
+
+    function saveGeminiApiKey() {
+      var key = document.getElementById('setting-gemini-key').value.trim();
+      if (key) {
+        localStorage.setItem('JANAMEN_GEMINI_KEY', key);
+        GEMINI_API_KEY = key;
+        showToast('✅ API ключ Gemini успешно сохранен!');
+      } else {
+        localStorage.removeItem('JANAMEN_GEMINI_KEY');
+        GEMINI_API_KEY = ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join('');
+        showToast('ℹ️ Возвращен стандартный ключ проекта');
+      }
+      closeModal('modal-gemini-key');
+    }
+
+    function testGeminiApiKey() {
+      var inputKey = document.getElementById('setting-gemini-key').value.trim() || getActiveGeminiKey();
+      var resBox = document.getElementById('gemini-key-test-result');
+      var btn = document.getElementById('btn-test-key');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Тестирование...';
+      resBox.style.display = 'block';
+      resBox.style.background = '#f8fafc';
+      resBox.style.border = '1px solid #cbd5e1';
+      resBox.style.color = '#475569';
+      resBox.innerHTML = 'Отправка тестового запроса к модели Gemini 2.5 Flash...';
+
+      var testUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + inputKey;
+      var testPayload = {
+        contents: [{ parts: [{ text: 'Ответь на русском строго одним словом: "РАБОТАЕТ"' }] }]
+      };
+
+      fetch(testUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testPayload)
+      })
+      .then(function(res) {
+        if (!res.ok) {
+          if (res.status === 402) throw new Error('Ошибка 402 (Баланс исчерпан). Требуется обновить ключ на aistudio.google.com');
+          if (res.status === 400) throw new Error('Ошибка 400 (Неверный формат ключа)');
+          if (res.status === 403) throw new Error('Ошибка 403 (Доступ запрещен / Ограничение по API)');
+          throw new Error('Код HTTP ошибки: ' + res.status);
+        }
+        return res.json();
+      })
+      .then(function(data) {
+        var reply = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
+        resBox.style.background = '#f0fdf4';
+        resBox.style.border = '1px solid #86efac';
+        resBox.style.color = '#15803d';
+        resBox.innerHTML = '✅ <b>Ключ полностью активен!</b> Ответ Gemini: "' + (reply ? reply.trim() : 'ОК') + '". Сканирование договоров готово к работе.';
+      })
+      .catch(function(err) {
+        resBox.style.background = '#fef2f2';
+        resBox.style.border = '1px solid #fca5a5';
+        resBox.style.color = '#b91c1c';
+        resBox.innerHTML = '❌ <b>Сбой проверки:</b> ' + err.message + '<br><span style="font-size: 11px;">Создайте бесплатный ключ на aistudio.google.com и вставьте его выше.</span>';
+      })
+      .finally(function() {
+        btn.disabled = false;
+        btn.textContent = '🧪 Протестировать ключ';
+      });
+    }
+
     var GEMINI_API_KEY = window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join('');
 
     // Штатное расписание Jana Men
@@ -2718,13 +2804,20 @@
       var loader = document.getElementById('nc-ai-loading');
       var statusText = document.getElementById('nc-ai-status-text');
       loader.style.display = 'block';
-      statusText.textContent = 'Gemini AI считывает текст договора, реквизиты и суть...';
+      statusText.innerHTML = '<span style="color:#2563eb;">Gemini 2.5 Flash анализирует документ (OCR, реквизиты, стороны, суммы)...</span>';
 
-      if (file.type && file.type.indexOf('image') !== -1 && GEMINI_API_KEY) {
+      var activeKey = getActiveGeminiKey();
+      var isSupported = file && (
+        (file.type && (file.type.indexOf('image') !== -1 || file.type === 'application/pdf')) ||
+        (file.name && (file.name.endsWith('.pdf') || file.name.endsWith('.png') || file.name.endsWith('.jpg') || file.name.endsWith('.jpeg')))
+      );
+
+      if (isSupported && activeKey) {
         var reader = new FileReader();
         reader.onload = function(e) {
           var base64Data = e.target.result.split(',')[1];
-          callGeminiContractVision(base64Data, file.type, file);
+          var mime = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+          callGeminiContractVision(base64Data, mime, file);
         };
         reader.onerror = function() {
           applySmartFallbackContract(file);
@@ -2738,7 +2831,8 @@
     }
 
     function callGeminiContractVision(base64Data, mimeType, file) {
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+      var activeKey = getActiveGeminiKey();
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + activeKey;
       var promptText = [
         'Ты корпоративный юрист компании JANAMEN. Внимательно прочитай весь этот договор.',
         'Извлеки ключевую информацию строго в виде JSON без markdown:',
@@ -3031,5 +3125,44 @@
       showToast('📑 АВР успешно прикреплен к договору!');
     }
   </script>
+
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ GEMINI API ==================== -->
+  <div id="modal-gemini-key" class="modal-overlay">
+    <div class="modal-content" style="max-width: 520px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+        <div>
+          <span class="status-badge" style="background: #f0fdf4; color: #166534; font-weight: 700;">⚡ Статус и Биллинг</span>
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--text); margin-top: 4px;">Настройка Gemini AI (Зрение и OCR)</h3>
+        </div>
+        <button onclick="closeModal('modal-gemini-key')" style="background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.5; color: var(--text-muted);">
+        <b style="color: var(--text);">💰 Стоимость обслуживания:</b><br>
+        • <b>Бесплатный тариф Google AI Studio:</b> 1 500 запросов в день (0 ₸ / месяц). Для компании Jana Men хватает с огромным запасом!<br>
+        • <b>Платный тариф (Pay-as-you-go):</b> ~0.01 ₸ за 1 скан страницы (~0.25$ за 1000 сканов). Общие расходы: менее 200–500 ₸ в месяц.
+      </div>
+
+      <div class="field">
+        <label>API Ключ Google Gemini (начинается с AIza...):</label>
+        <input type="text" id="setting-gemini-key" class="input-text" placeholder="AIzaSy..." style="font-family: monospace; font-size: 12px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          Ключ сохраняется в памяти вашего устройства (localStorage). Получить бесплатный ключ можно на <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #2563eb; text-decoration: underline;">aistudio.google.com</a> за 1 минуту.
+        </div>
+      </div>
+
+      <div id="gemini-key-test-result" style="display: none; padding: 10px; border-radius: 8px; margin-bottom: 14px; font-size: 12px;"></div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
+        <button type="button" class="btn btn-secondary" onclick="testGeminiApiKey()" id="btn-test-key" style="padding: 9px 14px; font-size: 12px;">
+          🧪 Протестировать ключ
+        </button>
+        <button type="button" class="btn btn-primary" onclick="saveGeminiApiKey()" style="padding: 9px 18px; font-size: 12px;">
+          💾 Сохранить ключ
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
