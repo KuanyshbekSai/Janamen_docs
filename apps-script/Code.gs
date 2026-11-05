@@ -746,7 +746,7 @@ function getContractsList(department) {
     });
   }
 
-  return { ok: true, contracts: list };
+  return { ok: true, contracts: list.reverse() };
 }
 
 function createNewContract(data) {

@@ -952,6 +952,12 @@
     <!-- ==================== ВКЛАДКА 2: РЕЕСТР ДОКУМЕНТОВ ==================== -->
     <div id="tab-registry" class="tab-pane">
       <div class="card" style="margin-bottom: 12px; padding: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 13px; font-weight: 800; color: var(--text);">Реестр документов ЭДО</span>
+          <button class="btn btn-secondary" onclick="loadSZListFromBackend(); showToast('🔄 Синхронизация с таблицей...');" style="font-size: 11px; padding: 4px 9px;">
+            🔄 Синхронизировать
+          </button>
+        </div>
         <div style="display: flex; gap: 8px;">
           <input type="text" id="filter-search" class="input-text" placeholder="🔍 Поиск по номеру, теме, контрагенту..." oninput="renderSZList()">
           <select id="filter-status" class="select-text" style="width: 150px;" onchange="renderSZList()">
@@ -972,7 +978,10 @@
       <div class="card">
         <div class="card-title">
           <span>📂 Архив договоров: <span id="contracts-dept-title" style="color: var(--primary);">Отдел</span></span>
-          <button class="btn-switch-user" onclick="openNewContractModal()">➕ Новый договор</button>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-secondary" onclick="loadContractsFromBackend(); showToast('🔄 Синхронизация архива...');" style="font-size: 11.5px; padding: 6px 10px;">🔄 Синхронизировать</button>
+            <button class="btn-switch-user" onclick="openNewContractModal()">➕ Новый договор</button>
+          </div>
         </div>
         <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;" id="contracts-access-hint">
           Отображаются договоры вашего подразделения.
@@ -1652,6 +1661,62 @@
         });
     }
 
+    // ==================== СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ (РЕЕСТР ДОГОВОРОВ) ====================
+    function loadContractsFromBackend() {
+      if (!SCRIPT_EXEC_URL) return;
+      var dept = currentUser ? currentUser.department : '';
+      var isLawyer = isLawyerOrAdmin(currentUser);
+      var queryDept = isLawyer ? 'Все' : dept;
+      var url = SCRIPT_EXEC_URL + '?action=get_contracts&department=' + encodeURIComponent(queryDept);
+
+      fetch(url)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && data.ok && Array.isArray(data.contracts)) {
+            mockContracts = data.contracts.map(function(c) {
+              var fmtDate = c.date;
+              if (fmtDate && typeof fmtDate === 'string' && fmtDate.indexOf('T') !== -1) {
+                var d = new Date(fmtDate);
+                fmtDate = d.toLocaleDateString('ru-RU');
+              }
+              var fmtUntil = c.validUntil;
+              if (fmtUntil && typeof fmtUntil === 'string' && fmtUntil.indexOf('T') !== -1) {
+                var du = new Date(fmtUntil);
+                fmtUntil = du.toLocaleDateString('ru-RU');
+              }
+
+              var cp = (c.counterparty || '').trim();
+              var subj = (c.subject || '').trim();
+              var displayTitle = (cp && subj) ? (cp + ' — ' + subj) : (cp || subj || 'Договор');
+
+              return {
+                id: c.id,
+                department: c.department || 'Операционный блок',
+                number: c.number || 'б/н',
+                externalNumber: c.externalNumber || '',
+                title: displayTitle,
+                counterparty: cp,
+                bin: c.bin ? String(c.bin) : '',
+                subject: subj,
+                amount: c.amount || 'По заявкам',
+                date: fmtDate || new Date().toLocaleDateString('ru-RU'),
+                validUntil: fmtUntil || 'Бессрочный',
+                manager: c.manager || (currentUser ? currentUser.name : 'Менеджер'),
+                executors: [],
+                status: c.status || 'Действует',
+                fileUrl: c.scanUrl || '',
+                fileName: (cp ? ('Договор_' + cp + '.pdf') : 'договор.pdf').replace(/[\/\\]/g, '-'),
+                avrList: []
+              };
+            });
+            renderContractsList();
+          }
+        })
+        .catch(function(err) {
+          console.warn('Could not sync contracts list from GAS:', err);
+        });
+    }
+
     var mockSZList = [
       {
         number: "СЗ-2026-0001",
@@ -1692,6 +1757,9 @@
         updateUserUI();
         renderSZList();
         renderContractsList();
+        // Реальная синхронизация с Google Таблицей и Архивом Диска
+        loadSZListFromBackend();
+        loadContractsFromBackend();
       } else {
         openAuthScreen(false);
       }
@@ -1829,6 +1897,8 @@
       updateUserUI();
       renderSZList();
       renderContractsList();
+      loadSZListFromBackend();
+      loadContractsFromBackend();
       showToast('✅ Авторизован: ' + currentUser.name);
       if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     }
@@ -1867,6 +1937,8 @@
       updateUserUI();
       renderSZList();
       renderContractsList();
+      loadSZListFromBackend();
+      loadContractsFromBackend();
       showToast('🎉 Добро пожаловать!');
     }
 
@@ -1909,6 +1981,12 @@
       });
       var target = document.getElementById('tab-' + tabId);
       if (target) target.classList.add('active');
+
+      if (tabId === 'registry') {
+        loadSZListFromBackend();
+      } else if (tabId === 'contracts') {
+        loadContractsFromBackend();
+      }
 
       if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
     }
@@ -3176,17 +3254,30 @@
           return;
         }
 
+        // Если это PDF-файл любого типа
+        var isPdf = (file.type && file.type === 'application/pdf') || (file.name && file.name.match(/\.pdf$/i));
+        if (isPdf) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var b64 = e.target.result.split(',')[1] || '';
+            resolve({ mimeType: 'application/pdf', base64: b64, dataUrl: e.target.result });
+          };
+          reader.onerror = function() { resolve(null); };
+          reader.readAsDataURL(file);
+          return;
+        }
+
         var isImg = file.type && file.type.indexOf('image') !== -1;
         var isNamedImg = file.name && file.name.match(/\.(jpg|jpeg|png|heic|webp)$/i);
 
         if (!isImg && !isNamedImg) {
-          // Если это PDF или другой тип
-          var reader = new FileReader();
-          reader.onload = function(e) {
+          var rdr = new FileReader();
+          rdr.onload = function(e) {
             var b64 = e.target.result.split(',')[1] || '';
-            resolve({ mimeType: file.type || 'application/pdf', base64: b64, dataUrl: e.target.result });
+            resolve({ mimeType: file.type || 'application/octet-stream', base64: b64, dataUrl: e.target.result });
           };
-          reader.readAsDataURL(file);
+          rdr.onerror = function() { resolve(null); };
+          rdr.readAsDataURL(file);
           return;
         }
 
@@ -3289,16 +3380,23 @@
 
       var html = [];
       newContractUploadedFiles.forEach(function(item, idx) {
-        var isImg = item.type.indexOf('image') !== -1 || (item.name && item.name.match(/\.(jpg|jpeg|png|heic|webp)$/i));
-        var previewContent = isImg 
-          ? '<img src="' + item.dataUrl + '" alt="Стр. ' + (idx + 1) + '">' 
-          : '<div style="height:86px;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-size:26px;">📑</div>';
+        var isPdf = (item.type && item.type.indexOf('pdf') !== -1) || (item.name && item.name.match(/\.pdf$/i));
+        var isImg = !isPdf && (item.type.indexOf('image') !== -1 || (item.name && item.name.match(/\.(jpg|jpeg|png|heic|webp)$/i)));
+        
+        var previewContent = '';
+        if (isPdf) {
+          previewContent = '<div style="height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fee2e2;border-radius:8px;padding:4px;"><span style="font-size:24px;">📕</span><span style="font-size:9.5px;font-weight:700;color:#991b1b;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (item.name || 'PDF документ') + '</span></div>';
+        } else if (isImg) {
+          previewContent = '<img src="' + item.dataUrl + '" alt="Стр. ' + (idx + 1) + '">';
+        } else {
+          previewContent = '<div style="height:86px;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-size:26px;">📑</div>';
+        }
 
         html.push([
           '<div class="photo-thumb-card">',
             '<button type="button" class="btn-remove-thumb" onclick="removeContractPhoto(\'' + item.id + '\')" title="Удалить страницу">✕</button>',
             previewContent,
-            '<div class="thumb-badge">Стр. ' + (idx + 1) + '</div>',
+            '<div class="thumb-badge">' + (isPdf ? 'PDF' : ('Стр. ' + (idx + 1))) + '</div>',
           '</div>'
         ].join(''));
       });
@@ -3384,11 +3482,17 @@
       ].join('\n');
 
       var parts = [];
+      var hasPdf = false;
       filesList.forEach(function(item) {
         if (item.base64) {
+          var mType = item.type;
+          if (!mType || mType === 'application/octet-stream') {
+            mType = (item.name && item.name.match(/\.pdf$/i)) ? 'application/pdf' : 'image/jpeg';
+          }
+          if (mType === 'application/pdf') hasPdf = true;
           parts.push({
             inlineData: {
-              mimeType: item.type || 'image/jpeg',
+              mimeType: mType,
               data: item.base64
             }
           });
@@ -3396,7 +3500,7 @@
       });
       parts.push({ text: systemPrompt });
 
-      updateAiProgress(70, '🧠 Gemini 3.8 Flash распознает стороны, БИН, суммы и предмет...');
+      updateAiProgress(70, hasPdf ? '🧠 Gemini 3.8 Flash читает PDF-договор, стороны, БИН и суммы...' : '🧠 Gemini 3.8 Flash распознает стороны, БИН, суммы и предмет...');
 
       var bodyPayload = {
         contents: [{ parts: parts }],
@@ -3751,6 +3855,7 @@
             newContract.fileUrl = resData.fileUrl;
             renderContractsList();
             showToast('☁️ Оригинал PDF сохранен на Google Диске!');
+            loadContractsFromBackend();
           }
         })
         .catch(function(e) { console.warn('Contract save to GAS error:', e); });
