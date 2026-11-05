@@ -1,0 +1,1382 @@
+/**
+ * ============================================================================
+ * JANA MEN ЭДО — СИСТЕМА ЭЛЕКТРОННОГО ДОКУМЕНТООБОРОТА СЛУЖЕБНЫХ ЗАПИСОК
+ * ============================================================================
+ * 
+ * Ключевые возможности:
+ * 1. Интеллектуальное составление СЗ через Gemini API ( деловой стиль, авто-структурирование).
+ * 2. Изолированные электронные архивы договоров и СЗ по отделам компании.
+ * 3. Динамический конструктор маршрута согласования (с поддержкой со-исполнителей).
+ * 4. Контроль бизнес-ассистента (Бегалин Арсен) перед утверждением Генеральным директором.
+ * 5. Независимый финансовый трек (оплата бухгалтерией до/параллельно с подписью шефа).
+ * 6. Обязательный финальный юридический этап — загрузка скана подписанного оригинала.
+ * 7. Динамическое пришивание виз (Audit Trail) прямо в тело Google Doc документа.
+ */
+
+var CONFIG = {
+  // Идентификатор основной таблицы
+  SPREADSHEET_ID: '1rz2cJJalpsSDKZt8yrm2PBmdQSoKfjAPy8_Rd780_5s',
+  
+  // Корневая папка на Google Диске для архива документов
+  ARCHIVE_ROOT_FOLDER_ID: '1ZoGrl__Pakw7tMmjB2mrhJ_DfBtpwQM9',
+  ARCHIVE_ROOT_NAME: 'Jana Men - Документация (Архив ЭДО)',
+  
+  // Gemini API
+  GEMINI_API_KEY: ['AQ', '.', 'Ab8RN6Je7dl4w5sJTVEmFt', 'PUA0U9CF-PpaiCJliRZ5SG1mZQqA'].join(''),
+  MODELS: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'],
+  
+  // Telegram Bot: @janamen_docs_bot (Jana Men – Docs operator)
+  BOT_TOKEN: '9068269998:AAGXf6cDc6yHa5pWzn2_jcRP1kv18JHpoA8',
+  BOT_USERNAME: 'janamen_docs_bot',
+  
+  // Имена ключевых лиц компании Jana Men
+  GENERAL_DIRECTOR: 'Кабидуллин Нурсултан Нурланович',
+  BUSINESS_ASSISTANT: 'Бегалин Арсен Кайратович',
+  CHIEF_ACCOUNTANT: 'Смагулова Алия Сагинтаевна',
+  
+  // Листы таблицы
+  SHEETS: {
+    SZ_REGISTRY: 'Реестр СЗ',
+    EMPLOYEES: 'Сотрудники',
+    CONTRACTS: 'Реестр Договоров',
+    AUDIT_LOG: 'Журнал согласований'
+  }
+};
+
+/**
+ * Получить активную или связанную таблицу
+ */
+function getSpreadsheet() {
+  if (CONFIG.SPREADSHEET_ID && CONFIG.SPREADSHEET_ID.trim() !== '') {
+    return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  }
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+/**
+ * ============================================================================
+ * 1. ТОЧКА ВХОДА HTTP WEB APP (doGet и doPost)
+ * ============================================================================
+ */
+
+function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
+  
+  // Если запуск без параметров — отдаем статус сервиса
+  if (!action) {
+    return ContentService.createTextOutput(JSON.stringify({
+      ok: true,
+      service: 'Jana Men EDO Backend API',
+      status: 'active',
+      timestamp: new Date().toISOString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  try {
+    var result = {};
+    
+    if (action === 'get_structure') {
+      result = getCompanyStructure();
+    } else if (action === 'get_employees') {
+      result = getEmployeesList();
+    } else if (action === 'get_user_profile') {
+      var userId = e.parameter.userId;
+      result = getUserProfile(userId);
+    } else if (action === 'get_sz_list') {
+      var dept = e.parameter.department || '';
+      var userFio = e.parameter.userFio || '';
+      var userRole = e.parameter.userRole || '';
+      result = getSZList(dept, userFio, userRole);
+    } else if (action === 'get_sz_detail') {
+      var szNumber = e.parameter.number;
+      result = getSZDetail(szNumber);
+    } else if (action === 'get_contracts') {
+      var cDept = e.parameter.department || '';
+      result = getContractsList(cDept);
+    } else {
+      result = { ok: false, error: 'Неизвестное действие: ' + action };
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) {
+  try {
+    var postData = null;
+    if (e && e.postData && e.postData.contents) {
+      try {
+        postData = JSON.parse(e.postData.contents);
+      } catch(pe) {
+        postData = e.parameter;
+      }
+    } else {
+      postData = e ? e.parameter : {};
+    }
+    
+    // Проверка Telegram Webhook
+    if (postData && (postData.message || postData.callback_query)) {
+      return handleTelegramUpdate(postData);
+    }
+    
+    var action = postData.action || (e && e.parameter && e.parameter.action) || '';
+    var result = {};
+    
+    if (action === 'get_sz_list') {
+      result = getSZList(postData.department || '', postData.userFio || '', postData.userRole || '');
+    } else if (action === 'get_contracts') {
+      result = getContractsList(postData.department || '');
+    } else if (action === 'get_employees') {
+      result = getEmployeesList();
+    } else if (action === 'generate_sz_with_gemini') {
+      result = generateSZWithGemini(postData.rawText, postData.attachmentsInfo, postData.authorData);
+    } else if (action === 'create_sz') {
+      result = createNewSZ(postData);
+    } else if (action === 'approve_sz') {
+      result = approveSZ(postData.szNumber, postData.approverFio, postData.comment, postData.decision);
+    } else if (action === 'mark_paid') {
+      result = markSZPaid(postData.szNumber, postData.payerFio, postData.paymentOrder, postData.paymentDate);
+    } else if (action === 'upload_signed_scan') {
+      result = uploadSignedScan(postData.szNumber, postData.uploaderFio, postData.fileBase64, postData.fileName);
+    } else if (action === 'register_employee') {
+      result = registerEmployeeDynamic(postData);
+    } else if (action === 'create_contract') {
+      result = createNewContract(postData);
+    } else {
+      result = { ok: false, error: 'Неизвестное действие: ' + action };
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    Logger.log('doPost error: ' + err.toString());
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * ============================================================================
+ * 2. ИНТЕЛЛЕКТУАЛЬНЫЙ МОДУЛЬ GEMINI API
+ * ============================================================================
+ */
+
+function generateSZWithGemini(rawText, attachmentsInfo, authorData) {
+  if (!rawText || !rawText.trim()) {
+    return { ok: false, error: 'Описание служебной записки не может быть пустым' };
+  }
+  
+  var authorName = authorData ? (authorData.name || 'Сотрудник') : 'Сотрудник';
+  var authorRole = authorData ? (authorData.role || 'Должность') : 'Должность';
+  var authorDept = authorData ? (authorData.department || 'Отдел') : 'Отдел';
+  
+  var systemInstruction = [
+    'Ты — старший юридический и финансовый референт компании JANAMEN.',
+    'Твоя задача: взять сырой черновик или голосовое описание служебной записки от сотрудника и составить идеальный, строгий, официально-деловой документ по корпоративному стандарту JANAMEN.',
+    '',
+    'ОБРАЗЕЦ ДОКУМЕНТА JANAMEN:',
+    'Адресат: Генеральному директору JANAMEN Кабидуллину Н.Н.',
+    'Название: СЛУЖЕБНАЯ ЗАПИСКА',
+    'Тело: Прошу провести оплату по счету № [номер] от [дата], выставленному от [Контрагент], за [предмет расходов]...',
+    'Пункты: 1. [Описание расхода в рамках договора № от дата] — [сумма] тенге.',
+    'Итог: Итого к оплате: [сумма цифрами] ([сумма прописью]) тенге.',
+    '',
+    'ВАЖНО:',
+    '1. Если речь идет об оплате счетов, аренде, услугах или закупках — классифицируй как "Оплата".',
+    '2. Если речь о кадрах, командировках, отпусках, премиях — "Кадровая".',
+    '3. Если хоз. нужды, инвентарь без стороннего счета — "Хозяйственная".',
+    '4. Сумму обязательно переведи в формат цифр и официальную пропись на русском языке (например: 500 000 (пятьсот тысяч) тенге).',
+    '5. Сформируй рекомендуемый маршрут согласования с обязательным включением:',
+    '   - Непосредственный руководитель сотрудника',
+    '   - Директор блока',
+    '   - Главный бухгалтер (Смагулова Алия) — ВСЕГДА, если тип "Оплата"!',
+    '   - Бизнес-ассистент (Бегалин Арсен) — ВСЕГДА ПЕРЕД ГЕНЕРАЛЬНЫМ ДИРЕКТОРОМ!',
+    '   - Генеральный директор (Кабидуллин Нурсултан) — финальное утверждение.',
+    '',
+    'Верни ТОЛЬКО валидный JSON без markdown-разметки следующей структуры:',
+    '{',
+    '  "type": "Оплата" | "Хозяйственная" | "Кадровая" | "Административная",',
+    '  "title": "Краткая тема служебки (например: Оплата аренды склада Астана за ноябрь)",',
+    '  "recipient": "Генеральному директору JANAMEN Кабидуллину Н.Н.",',
+    '  "body": "Официальный текст тела служебной записки в деловом стиле...",',
+    '  "amount": 500000,',
+    '  "amountInWords": "пятьсот тысяч тенге 00 тиын",',
+    '  "counterparty": "ИП/ТОО или наименование контрагента",',
+    '  "contract": "№82 от 01.09.2026 г.",',
+    '  "invoice": "№ 3 от 01.11.2026 г.",',
+    '  "requiresPayment": true,',
+    '  "suggestedRoute": [',
+    '    {"role": "Непосредственный руководитель", "stepName": "Согласование руководителя"},',
+    '    {"role": "Директор блока", "stepName": "Согласование директора блока"},',
+    '    {"name": "Смагулова Алия Сагинтаевна", "role": "Главный бухгалтер", "stepName": "Финансовый контроль и оплата", "isPaymentStep": true},',
+    '    {"name": "Бегалин Арсен Кайратович", "role": "Бизнес-ассистент", "stepName": "Проверка ассистентом перед шефом"},',
+    '    {"name": "Кабидуллин Нурсултан Нурланович", "role": "Генеральный директор", "stepName": "Утверждение шефом"}',
+    '  ]',
+    '}'
+  ].join('\n');
+
+  var promptText = [
+    'Автор СЗ: ' + authorName + ' (' + authorRole + ', ' + authorDept + ')',
+    'Сырое описание сотрудника: ' + rawText,
+    attachmentsInfo ? ('Прикрепленные документы/счета: ' + attachmentsInfo) : ''
+  ].join('\n');
+
+  var payload = {
+    system_instruction: { parts: [{ text: systemInstruction }] },
+    contents: [{ role: 'user', parts: [{ text: promptText }] }],
+    generationConfig: {
+      temperature: 0.1,
+      response_mime_type: 'application/json'
+    }
+  };
+
+  for (var i = 0; i < CONFIG.MODELS.length; i++) {
+    var model = CONFIG.MODELS[i];
+    try {
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + CONFIG.GEMINI_API_KEY;
+      var response = UrlFetchApp.fetch(url, {
+        method: 'POST',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+
+      var resJson = JSON.parse(response.getContentText());
+      if (resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts) {
+        var rawAnswer = resJson.candidates[0].content.parts[0].text;
+        var clean = rawAnswer.replace(/```json/gi, '').replace(/```/g, '').trim();
+        var parsed = JSON.parse(clean);
+        return { ok: true, data: parsed };
+      }
+    } catch(err) {
+      Logger.log('Gemini model ' + model + ' error: ' + err.toString());
+    }
+  }
+
+  // Fallback, если Gemini временно недоступен
+  return {
+    ok: true,
+    data: {
+      type: /оплат/i.test(rawText) ? 'Оплата' : 'Хозяйственная',
+      title: 'Служебная записка: ' + rawText.substring(0, 60) + '...',
+      recipient: 'Генеральному директору JANAMEN Кабидуллину Н.Н.',
+      body: 'Прошу согласовать: ' + rawText,
+      amount: 0,
+      amountInWords: '',
+      counterparty: '',
+      contract: '',
+      invoice: '',
+      requiresPayment: /оплат/i.test(rawText),
+      suggestedRoute: [
+        { name: CONFIG.BUSINESS_ASSISTANT, role: 'Бизнес-ассистент', stepName: 'Проверка ассистентом' },
+        { name: CONFIG.GENERAL_DIRECTOR, role: 'Генеральный директор', stepName: 'Утверждение шефом' }
+      ]
+    }
+  };
+}
+
+/**
+ * ============================================================================
+ * 3. СОЗДАНИЕ СЛУЖЕБНОЙ ЗАПИСКИ И ГЕНЕРАЦИЯ GOOGLE DOC
+ * ============================================================================
+ */
+
+function createNewSZ(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) {
+    setupEDOSpreadsheet();
+    sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  }
+
+  // 1. Генерация уникального номера СЗ
+  var year = new Date().getFullYear();
+  var lastRow = sheet.getLastRow();
+  var nextIndex = Math.max(1, lastRow); // за вычетом шапки
+  var szNumber = 'СЗ-' + year + '-' + ('0000' + nextIndex).slice(-4);
+
+  var now = new Date();
+  var tz = Session.getScriptTimeZone() || 'GMT+5';
+  var dateStr = Utilities.formatDate(now, tz, 'dd.MM.yyyy HH:mm');
+
+  var dept = data.department || 'Операционный блок';
+  var initiator = data.initiator || 'Сотрудник';
+  var coExecutors = Array.isArray(data.coExecutors) ? data.coExecutors.join(', ') : (data.coExecutors || '');
+  var szType = data.type || 'Оплата';
+  var title = data.title || 'Служебная записка';
+  var body = data.body || '';
+  var amount = Number(data.amount) || 0;
+  var counterparty = data.counterparty || '';
+  var contract = data.contract || '';
+  var route = data.route || []; // массив согласующих
+
+  // 2. Создание изолированной папки на Google Диске
+  var folderInfo = getOrCreateSZDriveFolder(dept, szNumber, title);
+  
+  // 3. Сохранение прикрепленных файлов в папку СЗ
+  var attachedFileUrls = [];
+  if (data.attachments && Array.isArray(data.attachments)) {
+    for (var a = 0; a < data.attachments.length; a++) {
+      var att = data.attachments[a];
+      if (att.base64 && att.name) {
+        var fileBlob = Utilities.newBlob(Utilities.base64Decode(att.base64), att.mimeType || 'application/pdf', att.name);
+        var savedFile = folderInfo.folder.createFile(fileBlob);
+        attachedFileUrls.push({ name: att.name, url: savedFile.getUrl() });
+      }
+    }
+  }
+
+  // 4. Генерация официального Google Doc по бланку Jana Men
+  var docUrl = generateSZGoogleDoc(szNumber, data, dateStr, folderInfo.folder);
+
+  // 5. Определение первого согласующего
+  var firstApprover = route.length > 0 ? (route[0].name || route[0].role) : CONFIG.BUSINESS_ASSISTANT;
+  var statusApproval = 'На согласовании: ' + firstApprover;
+  var statusPayment = (data.requiresPayment || amount > 0) ? 'Ожидает визы' : 'Не требуется';
+  var legalStatus = 'Ожидает подписанный скан';
+
+  var routeDisplay = route.map(function(r) { return r.name || r.role; }).join(' ➡️ ');
+
+  // 6. Запись в Реестр СЗ
+  var rowData = [
+    szNumber,
+    dateStr,
+    dept,
+    initiator,
+    coExecutors,
+    szType,
+    title,
+    amount,
+    counterparty,
+    contract,
+    statusApproval,
+    statusPayment,
+    legalStatus,
+    firstApprover,
+    routeDisplay,
+    docUrl,
+    '', // Ссылка на подписанный скан пока пустая
+    folderInfo.folder.getUrl()
+  ];
+  sheet.appendRow(rowData);
+
+  // 7. Запись в журнал согласований
+  logApprovalEvent(szNumber, 'Создание СЗ', initiator, 'Запущено согласование', '');
+
+  // 8. Отправка уведомления первому согласующему
+  notifyApproverInTelegram(firstApprover, szNumber, initiator, title, amount);
+
+  return {
+    ok: true,
+    szNumber: szNumber,
+    docUrl: docUrl,
+    folderUrl: folderInfo.folder.getUrl(),
+    message: 'Служебная записка ' + szNumber + ' успешно создана и направлена на согласование!'
+  };
+}
+
+/**
+ * Создание Google Doc с динамическим листом согласования
+ */
+function generateSZGoogleDoc(szNumber, data, dateStr, folder) {
+  var doc = DocumentApp.create(szNumber + ' - ' + (data.title || 'Служебная записка'));
+  var docFile = DriveApp.getFileById(doc.getId());
+  folder.addFile(docFile);
+  DriveApp.getRootFolder().removeFile(docFile); // убираем из корня
+
+  var docBody = doc.getBody();
+  docBody.setMarginTop(54);
+  docBody.setMarginBottom(54);
+  docBody.setMarginLeft(72);
+  docBody.setMarginRight(54);
+
+  // Шапка справа
+  var pRecipient = docBody.appendParagraph('Генеральному директору JANAMEN\nКабидуллину Н.Н.');
+  pRecipient.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+  pRecipient.setHeading(DocumentApp.ParagraphHeading.NORMAL);
+  pRecipient.setFontSize(11);
+  pRecipient.setBold(true);
+
+  docBody.appendParagraph('');
+
+  // Заголовок СЛУЖЕБНАЯ ЗАПИСКА
+  var pTitle = docBody.appendParagraph('СЛУЖЕБНАЯ ЗАПИСКА\n' + szNumber);
+  pTitle.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+  pTitle.setFontSize(14);
+  pTitle.setBold(true);
+  pTitle.setSpacingAfter(14);
+
+  // Основной текст
+  var pBody = docBody.appendParagraph(data.body || '');
+  pBody.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
+  pBody.setFontSize(11);
+  pBody.setLineSpacing(1.15);
+  pBody.setSpacingAfter(12);
+
+  if (data.amount && Number(data.amount) > 0) {
+    var pAmount = docBody.appendParagraph('Итого к оплате: ' + Number(data.amount).toLocaleString('ru-RU') + ' (' + (data.amountInWords || '') + ') тенге.');
+    pAmount.setFontSize(11);
+    pAmount.setBold(true);
+    pAmount.setSpacingAfter(16);
+  }
+
+  // Подписи инициаторов
+  var pExec = docBody.appendParagraph('Исп: ' + data.initiator + (data.coExecutors ? (', ' + data.coExecutors) : '') + '\nДата: ' + dateStr);
+  pExec.setFontSize(10);
+  pExec.setItalic(true);
+  pExec.setSpacingAfter(20);
+
+  // ТАБЛИЦА: ДИНАМИЧЕСКИЙ ЛИСТ СОГЛАСОВАНИЯ
+  docBody.appendHorizontalRule();
+  var pAuditTitle = docBody.appendParagraph('ЛИСТ СОГЛАСОВАНИЯ И ВИЗИРОВАНИЯ:');
+  pAuditTitle.setFontSize(10);
+  pAuditTitle.setBold(true);
+  pAuditTitle.setSpacingAfter(6);
+
+  var tableData = [
+    ['Этап', 'Согласующий', 'Статус', 'Дата и время']
+  ];
+
+  var route = data.route || [];
+  for (var r = 0; r < route.length; r++) {
+    var step = route[r];
+    tableData.push([
+      step.stepName || ('Этап ' + (r + 1)),
+      step.name || step.role,
+      (r === 0 ? '⏳ Ожидает решения' : 'В очереди'),
+      ''
+    ]);
+  }
+
+  var table = docBody.appendTable(tableData);
+  table.setBorderColor('#cbd5e1');
+  table.getRow(0).editAsText().setBold(true);
+
+  doc.saveAndClose();
+  return doc.getUrl();
+}
+
+/**
+ * ============================================================================
+ * 4. СОГЛАСОВАНИЕ, ОТКЛОНЕНИЕ И ОБНОВЛЕНИЕ ЛИСТА СОГЛАСОВАНИЯ В GOOGLE DOC
+ * ============================================================================
+ */
+
+function approveSZ(szNumber, approverFio, comment, decision) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) return { ok: false, error: 'Лист Реестр СЗ не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  var targetRow = -1;
+  var szData = null;
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(szNumber).trim()) {
+      targetRow = i + 1;
+      szData = rows[i];
+      break;
+    }
+  }
+
+  if (targetRow === -1) return { ok: false, error: 'СЗ ' + szNumber + ' не найдена' };
+
+  var now = new Date();
+  var tz = Session.getScriptTimeZone() || 'GMT+5';
+  var dateStr = Utilities.formatDate(now, tz, 'dd.MM.yyyy HH:mm');
+
+  var docUrl = szData[15];
+  var currentStatus = szData[10];
+
+  var isApproved = (decision !== 'reject');
+  var actionTitle = isApproved ? 'Согласовано' : 'Отклонено';
+
+  // 1. Логируем в журнал согласований
+  logApprovalEvent(szNumber, actionTitle, approverFio, comment || '', isApproved ? 'Одобрено' : 'Отклонено');
+
+  // 2. Обновляем статус в Google Doc
+  if (docUrl) {
+    try {
+      var docId = docUrl.match(/[-\w]{25,}/);
+      if (docId) {
+        var doc = DocumentApp.openById(docId[0]);
+        var body = doc.getBody();
+        var tables = body.getTables();
+        if (tables.length > 0) {
+          var auditTable = tables[tables.length - 1]; // последняя таблица - лист виз
+          for (var rowIdx = 1; rowIdx < auditTable.getNumRows(); rowIdx++) {
+            var cellApprover = auditTable.getCell(rowIdx, 1).getText();
+            if (cellApprover.indexOf(approverFio) !== -1 || approverFio.indexOf(cellApprover) !== -1) {
+              auditTable.getCell(rowIdx, 2).setText(isApproved ? '✅ Согласовано' : '❌ Отклонено');
+              auditTable.getCell(rowIdx, 3).setText(dateStr);
+              break;
+            }
+          }
+        }
+        doc.saveAndClose();
+      }
+    } catch(docErr) {
+      Logger.log('Error updating Doc audit table: ' + docErr);
+    }
+  }
+
+  // 3. Если отклонено — останавливаем маршрут
+  if (!isApproved) {
+    sheet.getRange(targetRow, 11).setValue('Отклонено (' + approverFio + ')');
+    sheet.getRange(targetRow, 14).setValue('-');
+    notifyInitiatorSZStatus(szData[3], szNumber, '❌ Ваша СЗ отклонена (' + approverFio + '): ' + (comment || 'Без комментария'));
+    return { ok: true, message: 'СЗ ' + szNumber + ' отклонена' };
+  }
+
+  // 4. Продвижение по маршруту
+  // Если согласовал Главный бухгалтер — одобряем статус оплаты
+  if (approverFio.indexOf('Смагулова') !== -1 || approverFio === CONFIG.CHIEF_ACCOUNTANT) {
+    sheet.getRange(targetRow, 12).setValue('Одобрено к оплате');
+  }
+
+  // Если утвердил Шеф (Кабидуллин Нурсултан) — СЗ УТВЕРЖДЕНА!
+  if (approverFio.indexOf('Кабидуллин') !== -1 || approverFio === CONFIG.GENERAL_DIRECTOR) {
+    sheet.getRange(targetRow, 11).setValue('Утверждено Шефом');
+    sheet.getRange(targetRow, 13).setValue('Ожидает подписанный скан (Оригинал)');
+    sheet.getRange(targetRow, 14).setValue('Завершено (Ожидание скана)');
+    
+    notifyInitiatorSZStatus(szData[3], szNumber, '🎉 СЗ утверждена Генеральным директором! Пожалуйста, подпишите оригинал и загрузите скан в Mini App.');
+    return { ok: true, message: 'СЗ ' + szNumber + ' успешно утверждена Генеральным директором!' };
+  }
+
+  // Динамический переход к следующему согласующему по цепочке маршрута
+  var routeStr = String(szData[14] || '');
+  var steps = routeStr.split(' ➡️ ').map(function(s) { return s.trim(); });
+  var currentIdx = -1;
+  for (var sIdx = 0; sIdx < steps.length; sIdx++) {
+    if (steps[sIdx].indexOf(approverFio) !== -1 || approverFio.indexOf(steps[sIdx]) !== -1) {
+      currentIdx = sIdx;
+      break;
+    }
+  }
+
+  var nextApprover = (currentIdx !== -1 && currentIdx + 1 < steps.length) ? steps[currentIdx + 1] : CONFIG.GENERAL_DIRECTOR;
+  sheet.getRange(targetRow, 11).setValue('На согласовании: ' + nextApprover);
+  sheet.getRange(targetRow, 14).setValue(nextApprover);
+  notifyApproverInTelegram(nextApprover, szNumber, szData[3], szData[6], szData[7]);
+
+  return { ok: true, message: 'Согласование принято. СЗ передана следующему согласующему: ' + nextApprover };
+}
+
+/**
+ * Отметка об оплате (Главный бухгалтер) — независимый трек!
+ */
+function markSZPaid(szNumber, payerFio, paymentOrder, paymentDate) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) return { ok: false, error: 'Лист Реестр СЗ не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(szNumber).trim()) {
+      var rowIdx = i + 1;
+      var paidNote = 'Оплачено (п/п ' + (paymentOrder || 'б/н') + ' от ' + (paymentDate || Utilities.formatDate(new Date(), 'GMT+5', 'dd.MM.yyyy')) + ')';
+      sheet.getRange(rowIdx, 12).setValue(paidNote);
+      logApprovalEvent(szNumber, 'Оплата проведена', payerFio, 'Платежное поручение: ' + paymentOrder, 'Оплачено');
+      notifyInitiatorSZStatus(rows[i][3], szNumber, '💳 Бухгалтерия провела оплату по СЗ ' + szNumber + ' (' + paidNote + ')');
+      return { ok: true, message: 'Оплата успешно зафиксирована!' };
+    }
+  }
+  return { ok: false, error: 'СЗ не найдена' };
+}
+
+/**
+ * Обязательный финальный юридический этап — загрузка скана подписанного оригинала
+ */
+function uploadSignedScan(szNumber, uploaderFio, fileBase64, fileName) {
+  if (!fileBase64) return { ok: false, error: 'Файл скана отсутствует' };
+
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) return { ok: false, error: 'Лист Реестр СЗ не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  var rowIdx = -1;
+  var szData = null;
+
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(szNumber).trim()) {
+      rowIdx = i + 1;
+      szData = rows[i];
+      break;
+    }
+  }
+
+  if (rowIdx === -1) return { ok: false, error: 'СЗ ' + szNumber + ' не найдена' };
+
+  // Сохранение скана в папку СЗ на Google Диске
+  var folderUrl = szData[17];
+  var targetFolder = null;
+  if (folderUrl) {
+    try {
+      var folderId = folderUrl.match(/[-\w]{25,}/);
+      if (folderId) targetFolder = DriveApp.getFolderById(folderId[0]);
+    } catch(e) {}
+  }
+  if (!targetFolder) targetFolder = DriveApp.getRootFolder();
+
+  var cleanName = szNumber + '_ПОДПИСАННЫЙ_ОРИГИНАЛ_' + (fileName || 'scan.pdf');
+  var blob = Utilities.newBlob(Utilities.base64Decode(fileBase64), 'application/pdf', cleanName);
+  var scanFile = targetFolder.createFile(blob);
+
+  // Обновляем юридический статус
+  sheet.getRange(rowIdx, 13).setValue('Сдан в архив (Скан прикреплен)');
+  sheet.getRange(rowIdx, 17).setValue(scanFile.getUrl());
+
+  logApprovalEvent(szNumber, 'Сдан оригинал', uploaderFio, 'Прикреплен скан подписанного документа: ' + scanFile.getUrl(), 'Архивировано');
+
+  // Уведомляем Арсена Бегалина
+  notifyApproverInTelegram(CONFIG.BUSINESS_ASSISTANT, szNumber, uploaderFio, 'Скан подписанного оригинала сдан в архив!', 0);
+
+  return {
+    ok: true,
+    fileUrl: scanFile.getUrl(),
+    message: 'Скан подписанной СЗ успешно принят в архив!'
+  };
+}
+
+/**
+ * ============================================================================
+ * 5. ИЗОЛИРОВАННЫЕ АРХИВЫ ПО ОТДЕЛАМ (ДОГОВОРЫ И СЛУЖЕБНЫЕ ЗАПИСКИ)
+ * ============================================================================
+ */
+
+function getSZList(department, userFio, userRole) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) return { ok: true, list: [] };
+
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return { ok: true, list: [] };
+
+  var isSuperUser = (
+    userFio === CONFIG.GENERAL_DIRECTOR || 
+    userFio === CONFIG.BUSINESS_ASSISTANT || 
+    userFio === CONFIG.CHIEF_ACCOUNTANT ||
+    /генеральный|ассистент|главный бухгалтер/i.test(userRole)
+  );
+
+  var list = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    var rDept = String(r[2]).trim();
+    var rInitiator = String(r[3]).trim();
+    var rCurrentApprover = String(r[13]).trim();
+
+    // Изоляция: обычный сотрудник видит только свой отдел
+    if (!isSuperUser && department && rDept.toLowerCase() !== department.toLowerCase()) {
+      continue;
+    }
+
+    list.push({
+      number: r[0],
+      date: r[1],
+      department: r[2],
+      initiator: r[3],
+      coExecutors: r[4],
+      type: r[5],
+      title: r[6],
+      amount: r[7],
+      counterparty: r[8],
+      contract: r[9],
+      statusApproval: r[10],
+      statusPayment: r[11],
+      statusLegal: r[12],
+      currentApprover: r[13],
+      route: r[14],
+      docUrl: r[15],
+      scanUrl: r[16],
+      folderUrl: r[17],
+      isMyApprovalWaiting: (rCurrentApprover.indexOf(userFio) !== -1)
+    });
+  }
+
+  return { ok: true, list: list.reverse() }; // свежие первыми
+}
+
+function getContractsList(department) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACTS);
+  if (!sheet) return { ok: true, contracts: [] };
+
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return { ok: true, contracts: [] };
+
+  var list = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    var cDept = String(r[1]).trim();
+    if (department && department !== 'Все' && cDept.toLowerCase() !== department.toLowerCase()) {
+      continue;
+    }
+    list.push({
+      id: r[0],
+      department: r[1],
+      number: r[2],
+      date: r[3],
+      validUntil: r[4],
+      counterparty: r[5],
+      bin: r[6],
+      subject: r[7],
+      amount: r[8],
+      manager: r[9],
+      status: r[10],
+      scanUrl: r[11]
+    });
+  }
+
+  return { ok: true, contracts: list };
+}
+
+function createNewContract(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACTS);
+  if (!sheet) return { ok: false, error: 'Лист Реестр Договоров не найден' };
+
+  var nextId = Math.max(1, sheet.getLastRow());
+  var dept = data.department || 'Операционный блок';
+  
+  // Сохранение скана договора на Диске в изолированную папку
+  var folder = getOrCreateContractDriveFolder(dept);
+  var fileUrl = '';
+  if (data.fileBase64 && data.fileName) {
+    var blob = Utilities.newBlob(Utilities.base64Decode(data.fileBase64), 'application/pdf', (data.number || 'Договор') + '_' + data.fileName);
+    var savedFile = folder.createFile(blob);
+    fileUrl = savedFile.getUrl();
+  }
+
+  var row = [
+    nextId,
+    dept,
+    data.number || 'б/н',
+    data.date || Utilities.formatDate(new Date(), 'GMT+5', 'dd.MM.yyyy'),
+    data.validUntil || 'Бессрочный',
+    data.counterparty || '',
+    data.bin || '',
+    data.subject || '',
+    data.amount || '',
+    data.manager || '',
+    data.status || 'Действует',
+    fileUrl
+  ];
+
+  sheet.appendRow(row);
+  return { ok: true, message: 'Договор успешно добавлен в архив отдела ' + dept, fileUrl: fileUrl };
+}
+
+/**
+ * ============================================================================
+ * 6. ПАПКИ НА GOOGLE ДИСКЕ ПО ОТДЕЛАМ
+ * ============================================================================
+ */
+
+function getOrCreateArchiveRoot() {
+  if (CONFIG.ARCHIVE_ROOT_FOLDER_ID && CONFIG.ARCHIVE_ROOT_FOLDER_ID.trim() !== '') {
+    try {
+      return DriveApp.getFolderById(CONFIG.ARCHIVE_ROOT_FOLDER_ID.trim());
+    } catch(e) {
+      Logger.log('Could not open folder by ID: ' + e);
+    }
+  }
+  var folders = DriveApp.getFoldersByName(CONFIG.ARCHIVE_ROOT_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(CONFIG.ARCHIVE_ROOT_NAME);
+}
+
+function getOrCreateSZDriveFolder(department, szNumber, title) {
+  var root = getOrCreateArchiveRoot();
+  
+  // 1. Папка Отделы
+  var deptsFolder = getSubFolder(root, '🏢 Отделы');
+  // 2. Папка конкретного отдела
+  var deptFolder = getSubFolder(deptsFolder, department);
+  // 3. Папка Служебные записки
+  var szFolder = getSubFolder(deptFolder, '📂 Служебные записки');
+  // 4. Папка Года
+  var yearFolder = getSubFolder(szFolder, String(new Date().getFullYear()));
+  // 5. Папка Месяца
+  var monthNames = ['01. Январь', '02. Февраль', '03. Март', '04. Апрель', '05. Май', '06. Июнь', '07. Июль', '08. Август', '09. Сентябрь', '10. Октябрь', '11. Ноябрь', '12. Декабрь'];
+  var monthFolder = getSubFolder(yearFolder, monthNames[new Date().getMonth()]);
+  // 6. Папка конкретной СЗ
+  var safeTitle = (title || 'Документ').replace(/[\/\\?%*:|"<>]/g, '_').substring(0, 40);
+  var targetFolder = getSubFolder(monthFolder, szNumber + ' (' + safeTitle + ')');
+
+  return { folder: targetFolder };
+}
+
+function getOrCreateContractDriveFolder(department) {
+  var root = getOrCreateArchiveRoot();
+  var deptsFolder = getSubFolder(root, '🏢 Отделы');
+  var deptFolder = getSubFolder(deptsFolder, department);
+  return getSubFolder(deptFolder, '📂 Договоры');
+}
+
+function getSubFolder(parent, name) {
+  var it = parent.getFoldersByName(name);
+  if (it.hasNext()) return it.next();
+  return parent.createFolder(name);
+}
+
+/**
+ * ============================================================================
+ * 7. БАЗА СОТРУДНИКОВ, СТРУКТУРА И ДИНАМИЧЕСКАЯ РЕГИСТРАЦИЯ
+ * ============================================================================
+ */
+
+function getEmployeesList() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
+  if (!sheet) return { ok: true, employees: [] };
+
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return { ok: true, employees: [] };
+
+  var emps = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    emps.push({
+      id: r[0],
+      telegramId: r[1],
+      name: r[2],
+      department: r[3],
+      role: r[4],
+      manager: r[5],
+      director: r[6],
+      username: r[7],
+      phone: r[8],
+      edoRole: r[9]
+    });
+  }
+  return { ok: true, employees: emps };
+}
+
+function getUserProfile(userId) {
+  if (!userId) return { ok: false, error: 'User ID не передан' };
+  var emps = getEmployeesList().employees;
+  var uIdStr = String(userId).trim();
+
+  for (var i = 0; i < emps.length; i++) {
+    if (String(emps[i].telegramId).trim() === uIdStr || String(emps[i].id).trim() === uIdStr) {
+      return { ok: true, employee: emps[i] };
+    }
+  }
+  return { ok: false, error: 'Сотрудник не найден' };
+}
+
+function registerEmployeeDynamic(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
+  if (!sheet) {
+    setupEDOSpreadsheet();
+    sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
+  }
+
+  var nextId = Math.max(1, sheet.getLastRow());
+  var tz = Session.getScriptTimeZone() || 'GMT+5';
+  var dateStr = Utilities.formatDate(new Date(), tz, 'dd.MM.yyyy');
+
+  var row = [
+    nextId,
+    data.telegramId || '',
+    data.fio || '',
+    data.department || 'Операционный блок',
+    data.role || 'Сотрудник',
+    data.manager || CONFIG.BUSINESS_ASSISTANT,
+    data.director || CONFIG.GENERAL_DIRECTOR,
+    data.username || '',
+    data.phone || '',
+    data.edoRole || 'Исполнитель',
+    dateStr
+  ];
+
+  sheet.appendRow(row);
+  return {
+    ok: true,
+    message: 'Сотрудник ' + data.fio + ' успешно зарегистрирован в системе!',
+    user: {
+      id: nextId,
+      name: data.fio,
+      department: data.department,
+      role: data.role
+    }
+  };
+}
+
+/**
+ * ============================================================================
+ * 8. ЖУРНАЛ АУДИТА И УВЕДОМЛЕНИЯ TELEGRAM
+ * ============================================================================
+ */
+
+function logApprovalEvent(szNumber, eventName, author, details, status) {
+  try {
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName(CONFIG.SHEETS.AUDIT_LOG);
+    if (!sheet) return;
+
+    var dateStr = Utilities.formatDate(new Date(), 'GMT+5', 'dd.MM.yyyy HH:mm:ss');
+    sheet.appendRow([
+      sheet.getLastRow(),
+      szNumber,
+      eventName,
+      author,
+      details,
+      status,
+      dateStr
+    ]);
+  } catch(e) {
+    Logger.log('logApprovalEvent error: ' + e);
+  }
+}
+
+function notifyApproverInTelegram(approverName, szNumber, initiator, title, amount) {
+  // Находим Telegram ID согласующего
+  var emps = getEmployeesList().employees;
+  var targetTgId = null;
+  for (var i = 0; i < emps.length; i++) {
+    if (emps[i].name.indexOf(approverName) !== -1 || approverName.indexOf(emps[i].name) !== -1) {
+      targetTgId = emps[i].telegramId;
+      break;
+    }
+  }
+
+  if (!targetTgId) return;
+
+  var msg = [
+    '📑 *НА СОГЛАСОВАНИЕ ПОСТУПИЛА СЗ*',
+    '',
+    'Номер: *' + szNumber + '*',
+    'Инициатор: ' + initiator,
+    'Тема: ' + title,
+    amount > 0 ? ('Сумма: *' + Number(amount).toLocaleString('ru-RU') + ' ₸*') : '',
+    '',
+    'Выберите действие или откройте в Mini App:'
+  ].filter(Boolean).join('\n');
+
+  var keyboard = {
+    inline_keyboard: [
+      [
+        { text: '🚀 Открыть в Mini App', web_app: { url: getMiniAppUrl() } }
+      ],
+      [
+        { text: '✅ Согласовать', callback_data: 'approve:' + szNumber },
+        { text: '❌ Отклонить', callback_data: 'reject:' + szNumber }
+      ]
+    ]
+  };
+
+  sendTelegramMessageWithKeyboard(targetTgId, msg, keyboard);
+}
+
+function notifyInitiatorSZStatus(initiatorName, szNumber, message) {
+  var emps = getEmployeesList().employees;
+  var targetTgId = null;
+  for (var i = 0; i < emps.length; i++) {
+    if (emps[i].name.indexOf(initiatorName) !== -1 || initiatorName.indexOf(emps[i].name) !== -1) {
+      targetTgId = emps[i].telegramId;
+      break;
+    }
+  }
+  if (targetTgId) {
+    sendTelegramMessage(targetTgId, '📢 *Служебная записка ' + szNumber + '*\n\n' + message);
+  }
+}
+
+function sendTelegramMessage(chatId, text) {
+  if (!CONFIG.BOT_TOKEN || !chatId) return;
+  try {
+    var url = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/sendMessage';
+    UrlFetchApp.fetch(url, {
+      method: 'POST',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: 'Markdown'
+      }),
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log('sendTelegramMessage error: ' + e);
+  }
+}
+
+/**
+ * ============================================================================
+ * 9. ИНИЦИАЛИЗАЦИЯ И НАСТРОЙКА ВСЕХ ТАБЛИЦ И СТРУКТУРЫ ЯНДЕКС/GOOGLE СВЯЗКИ
+ * ============================================================================
+ */
+
+function setupEDOSpreadsheet() {
+  var ss = getSpreadsheet();
+  
+  // 1. Лист «Реестр СЗ»
+  var szSheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!szSheet) szSheet = ss.insertSheet(CONFIG.SHEETS.SZ_REGISTRY);
+  var shouldInitHeaders = (szSheet.getLastRow() === 0);
+  if (shouldInitHeaders) {
+  var szHeaders = [
+    '№ СЗ', 'Дата создания', 'Блок / Отдел', 'Инициатор', 'Со-исполнители', 
+    'Тип СЗ', 'Краткая суть', 'Сумма (KZT)', 'Контрагент / Основание', '№ Договора', 
+    'Статус согласования', 'Статус оплаты', 'Юридический статус (Оригинал)', 
+    'Текущий согласующий', 'Маршрут согласования', 'Ссылка на Google Doc', 
+    'Ссылка на подписанный скан', 'Папка на Google Диске'
+  ];
+  szSheet.getRange(1, 1, 1, szHeaders.length).setValues([szHeaders]);
+  szSheet.getRange(1, 1, 1, szHeaders.length)
+    .setFontWeight('bold')
+    .setBackground('#0f172a')
+    .setFontColor('#ffffff');
+  szSheet.setFrozenRows(1);
+  }
+
+  // 2. Лист «Сотрудники»
+  var empSheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
+  if (!empSheet) empSheet = ss.insertSheet(CONFIG.SHEETS.EMPLOYEES);
+  empSheet.clear();
+  var empHeaders = [
+    'ID', 'Telegram ID', 'ФИО сотрудника', 'Блок / Отдел', 'Должность', 
+    'Непосредственный руководитель', 'Директор блока', 'Username', 'Номер телефона', 'Роль в ЭДО', 'Дата регистрации'
+  ];
+  empSheet.getRange(1, 1, 1, empHeaders.length).setValues([empHeaders]);
+  empSheet.getRange(1, 1, 1, empHeaders.length)
+    .setFontWeight('bold')
+    .setBackground('#0284c7')
+    .setFontColor('#ffffff');
+  empSheet.setFrozenRows(1);
+
+  // 3. Лист «Реестр Договоров»
+  var conSheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACTS);
+  if (!conSheet) conSheet = ss.insertSheet(CONFIG.SHEETS.CONTRACTS);
+  conSheet.clear();
+  var conHeaders = [
+    'ID', 'Блок / Отдел', '№ Договора', 'Дата договора', 'Срок действия', 
+    'Контрагент', 'БИН / ИИН', 'Предмет договора', 'Сумма / Условия', 'Ответственный', 
+    'Статус', 'Ссылка на скан договора'
+  ];
+  conSheet.getRange(1, 1, 1, conHeaders.length).setValues([conHeaders]);
+  conSheet.getRange(1, 1, 1, conHeaders.length)
+    .setFontWeight('bold')
+    .setBackground('#059669')
+    .setFontColor('#ffffff');
+  conSheet.setFrozenRows(1);
+
+  // 4. Лист «Журнал согласований»
+  var logSheet = ss.getSheetByName(CONFIG.SHEETS.AUDIT_LOG);
+  if (!logSheet) logSheet = ss.insertSheet(CONFIG.SHEETS.AUDIT_LOG);
+  logSheet.clear();
+  var logHeaders = [
+    'ID', '№ СЗ', 'Действие', 'Автор действия', 'Детали / Комментарий', 'Результат', 'Дата и время'
+  ];
+  logSheet.getRange(1, 1, 1, logHeaders.length).setValues([logHeaders]);
+  logSheet.getRange(1, 1, 1, logHeaders.length)
+    .setFontWeight('bold')
+    .setBackground('#475569')
+    .setFontColor('#ffffff');
+  logSheet.setFrozenRows(1);
+
+  // 5. Заполняем базу сотрудников из структуры Jana Men
+  populateDefaultEmployees(empSheet);
+
+  return '✅ База данных ЭДО Jana Men успешно настроена!';
+}
+
+/**
+ * Заполнение базы 50 сотрудниками из структуры Jana Men
+ */
+function populateDefaultEmployees(sheet) {
+  var data = [
+    [1, '', 'Кабидуллин Нурсултан Нурланович', 'Административный блок', 'Генеральный директор', '-', '-', '@nursultan', '', 'Генеральный директор', '04.11.2026'],
+    [2, '', 'Бегалин Арсен Кайратович', 'Административный блок', 'Бизнес-ассистент', 'Кабидуллин Нурсултан Нурланович', 'Кабидуллин Нурсултан Нурланович', '@arsen_begalin', '', 'Бизнес-ассистент', '04.11.2026'],
+    [3, '', 'Жәнібек Жансая Жәнібекқызы', 'Административный блок', 'Офис менеджер', 'Бегалин Арсен Кайратович', 'Кабидуллин Нурсултан Нурланович', '', '', 'Исполнитель', '04.11.2026'],
+    [4, '', 'Шынәсіл Әділет Жолдыбекұлы', 'Операционный блок', 'Операционный директор', 'Кабидуллин Нурсултан Нурланович', 'Кабидуллин Нурсултан Нурланович', '@adilet_sh', '', 'Директор блока', '04.11.2026'],
+    [5, '', 'Кабимулданова Динара Тлеукановна', 'Операционный блок', 'Юрист', 'Шынәсіл Әділет Жолдыбекұлы', 'Шынәсіл Әділет Жолдыбекұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [6, '', 'Құрманғалиев Фархат Айсерікұлы', 'Операционный блок', 'Продуктолог', 'Шынәсіл Әділет Жолдыбекұлы', 'Шынәсіл Әділет Жолдыбекұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [7, '', 'Койчибекова Жулдыз Ермековна', 'Операционный блок', 'Менеджер по кадрам', 'Шынәсіл Әділет Жолдыбекұлы', 'Шынәсіл Әділет Жолдыбекұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [8, '', 'Аманбаев Арман Ауезханұлы', 'Операционный блок', 'Заведующий складом', 'Шынәсіл Әділет Жолдыбекұлы', 'Шынәсіл Әділет Жолдыбекұлы', '@arman_amanbayev', '', 'Исполнитель', '04.11.2026'],
+    [9, '', 'Байсейтов Рамазан Алтымбаевич', 'Операционный блок', 'Оператор склада', 'Аманбаев Арман Ауезханұлы', 'Шынәсіл Әділет Жолдыбекұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [10, '', 'Абенова Дана Талгатовна', 'Отдел логистики', 'Руководитель отдела логистики', 'Шынәсіл Әділет Жолдыбекұлы', 'Шынәсіл Әділет Жолдыбекұлы', '@dana_abenova', '', 'Руководитель отдела', '04.11.2026'],
+    [11, '', 'Курбангалиева Акзере Раильевна', 'Отдел логистики', 'Логист', 'Абенова Дана Талгатовна', 'Шынәсіл Әділет Жолдыбекұлы', '@akzere_k', '', 'Исполнитель', '04.11.2026'],
+    [12, '', 'Сейлханова Алия Төлегенқызы', 'Отдел логистики', 'Логист', 'Абенова Дана Талгатовна', 'Шынәсіл Әділет Жолдыбекұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [13, '', 'Каримова Адель', 'Отдел логистики', 'Логист', 'Абенова Дана Талгатовна', 'Шынәсіл Әділет Жолдыбекұлы', '@adel_karimova', '', 'Исполнитель', '04.11.2026'],
+    [14, '', 'Смагулова Алия Сагинтаевна', 'Финансовый блок', 'Главный бухгалтер', 'Кабидуллин Нурсултан Нурланович', 'Кабидуллин Нурсултан Нурланович', '@aliya_smagulova', '', 'Главный бухгалтер', '04.11.2026'],
+    [15, '', 'Абылкасымова Махаббат Рыспекқызы', 'Финансовый блок', 'Финансовый менеджер', 'Смагулова Алия Сагинтаевна', 'Кабидуллин Нурсултан Нурланович', '', '', 'Исполнитель', '04.11.2026'],
+    [16, '', 'Сматаева Ақерке Мұратқызы', 'Финансовый блок', 'Бухгалтер', 'Смагулова Алия Сагинтаевна', 'Кабидуллин Нурсултан Нурланович', '', '', 'Исполнитель', '04.11.2026'],
+    [17, '', 'Ерболұлы Нурслан', 'Финансовый блок', 'Бухгалтер', 'Смагулова Алия Сагинтаевна', 'Кабидуллин Нурсултан Нурланович', '', '', 'Исполнитель', '04.11.2026'],
+    [18, '', 'Қыпшақбаев Темірлан Қайратұлы', 'Отдел маркетинга', 'Директор по маркетингу', 'Кабидуллин Нурсултан Нурланович', 'Кабидуллин Нурсултан Нурланович', '@temirlan_k', '', 'Директор блока', '04.11.2026'],
+    [19, '', 'Абай Медина Маратқызы', 'Отдел маркетинга', 'Project manager', 'Қыпшақбаев Темірлан Қайратұлы', 'Қыпшақбаев Темірлан Қайратұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [20, '', 'Альбеков Алдияр Биржанович', 'Отдел маркетинга', 'Project manager', 'Қыпшақбаев Темірлан Қайратұлы', 'Қыпшақбаев Темірлан Қайратұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [21, '', 'Ахметов Мирас Еликович', 'Отдел маркетинга', 'Графический дизайнер', 'Қыпшақбаев Темірлан Қайратұлы', 'Қыпшақбаев Темірлан Қайратұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [22, '', 'Нурашева Алуа Маратовна', 'Отдел маркетинга', 'Инфлюенс-менеджер', 'Қыпшақбаев Темірлан Қайратұлы', 'Қыпшақбаев Темірлан Қайратұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [23, '', 'Асылбекова Алина Мухаммедовна', 'Отдел маркетинга', 'SMM-специалист', 'Қыпшақбаев Темірлан Қайратұлы', 'Қыпшақбаев Темірлан Қайратұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [24, '', 'Сайдуллаев Куанышбек Галымович', 'Отдел маркетинга', 'IT-специалист', 'Қыпшақбаев Темірлан Қайратұлы', 'Қыпшақбаев Темірлан Қайратұлы', '@kuanyshbek', '', 'Исполнитель', '04.11.2026'],
+    [25, '', 'Айдарәлі Райымбек Сәкенұлы', 'Коммерческий блок', 'Коммерческий директор', 'Кабидуллин Нурсултан Нурланович', 'Кабидуллин Нурсултан Нурланович', '@rayymbek_a', '', 'Директор блока', '04.11.2026'],
+    [26, '', 'Абаев Ернар Муратұлы', 'Коммерческий блок', 'Заместитель коммерческого директора', 'Айдарәлі Райымбек Сәкенұлы', 'Айдарәлі Райымбек Сәкенұлы', '', '', 'Руководитель отдела', '04.11.2026'],
+    [27, '', 'Турлыбекова Айдана Токтаркызы', 'Коммерческий блок', 'Методолог', 'Айдарәлі Райымбек Сәкенұлы', 'Айдарәлі Райымбек Сәкенұлы', '', '', 'Исполнитель', '04.11.2026'],
+    [28, '', 'Жомартбеков Дияр Маратұлы', 'Коммерческий блок', 'Директор по продажам', 'Айдарәлі Райымбек Сәкенұлы', 'Айдарәлі Райымбек Сәкенұлы', '', '', 'Руководитель отдела', '04.11.2026'],
+    [29, '', 'Баяхметов Ануар Маратович', 'Коммерческий блок', 'Директор по продажам', 'Айдарәлі Райымбек Сәкенұлы', 'Айдарәлі Райымбек Сәкенұлы', '', '', 'Руководитель отдела', '04.11.2026'],
+    [30, '', 'Мукушева Карина Асхатовна', 'Отдел HR', 'Руководитель отдела рекрутинга', 'Шынәсіл Әділет Жолдыбекұлы', 'Шынәсіл Әділет Жолдыбеклы', '', '', 'Руководитель отдела', '04.11.2026'],
+    [31, '', 'Касимова Макпал Жупаровна', 'Отдел заботы о клиентах (ОЗК)', 'Руководитель отдела заботы', 'Айдарәлі Райымбек Сәкенұлы', 'Айдарәлі Райымбек Сәкенұлы', '', '', 'Руководитель отдела', '04.11.2026'],
+    [32, '', 'Сабилянов Алматай Куантайұлы', 'Отдел трафика', 'Руководитель отдела трафика', 'Қыпшақбаев Темірлан Қайратұлы', 'Қыпшақбаев Темірлан Қайратұлы', '', '', 'Руководитель отдела', '04.11.2026']
+  ];
+
+  sheet.getRange(2, 1, data.length, data[0].length).setValues(data);
+}
+
+
+/**
+ * ============================================================================
+ * 10. ОБРАБОТЧИК TELEGRAM WEBHOOK И КНОПОК СОГЛАСОВАНИЯ В 1 КЛИК
+ * ============================================================================
+ */
+
+function handleTelegramUpdate(update) {
+  try {
+    // 1. Обработка Callback Query (нажатие кнопок [✅ Согласовать] / [❌ Отклонить])
+    if (update.callback_query) {
+      var cb = update.callback_query;
+      var data = cb.data || '';
+      var fromId = String(cb.from.id);
+      var fromUser = cb.from.first_name || 'Сотрудник';
+      var parts = data.split(':');
+      var actionType = parts[0];
+      var szNum = parts[1];
+
+      // Поиск ФИО сотрудника по Telegram ID
+      var empProfile = getUserProfile(fromId);
+      var approverFio = (empProfile.ok && empProfile.employee) ? empProfile.employee.name : fromUser;
+
+      if (actionType === 'approve') {
+        var resApprove = approveSZ(szNum, approverFio, 'Согласовано через Telegram', 'approve');
+        answerCallbackQuery(cb.id, '✅ СЗ ' + szNum + ' согласована!');
+        editTelegramMessage(cb.message.chat.id, cb.message.message_id, cb.message.text + '\n\n✅ *СОГЛАСОВАНО* (' + approverFio + ')');
+      } else if (actionType === 'reject') {
+        var resReject = approveSZ(szNum, approverFio, 'Отклонено через Telegram', 'reject');
+        answerCallbackQuery(cb.id, '❌ СЗ ' + szNum + ' отклонена');
+        editTelegramMessage(cb.message.chat.id, cb.message.message_id, cb.message.text + '\n\n❌ *ОТКЛОНЕНО* (' + approverFio + ')');
+      }
+      return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 2. Обработка текстовых команд (/start, /help, /status)
+    if (update.message && update.message.text) {
+      var msg = update.message;
+      var chatId = msg.chat.id;
+      var text = msg.text.trim();
+      var senderTgId = String(msg.from.id);
+      var senderName = ((msg.from.first_name || '') + ' ' + (msg.from.last_name || '')).trim();
+      var senderUsername = msg.from.username ? ('@' + msg.from.username) : '';
+
+      // Проверяем, зарегистрирован ли сотрудник
+      var profile = getUserProfile(senderTgId);
+      
+      // Авто-привязка Telegram ID, если совпал username
+      if ((!profile.ok || !profile.employee) && senderUsername) {
+        bindTelegramIdByUsername(senderTgId, senderUsername);
+        profile = getUserProfile(senderTgId);
+      }
+
+      if (text.indexOf('/start') === 0) {
+        var welcomeLines = [
+          '👋 *Добро пожаловать в корпоративный ЭДО Jana Men!*',
+          '',
+          profile.ok ? ('👤 Вы авторизованы: *' + profile.employee.name + '*\n🏢 Отдел: ' + profile.employee.department + '\n💼 Должность: ' + profile.employee.role) : '⚠️ Вы еще не зарегистрированы в системе.',
+          '',
+          'Здесь вы можете:',
+          '• Составлять служебные записки с помощью *Gemini 2.5 AI*',
+          '• Отслеживать согласование у руководителей, Арсена Бегалина и Шефа',
+          '• Смотреть изолированный архив договоров вашего отдела',
+          '• Прикреплять сканы подписанных оригиналов'
+        ];
+
+        var keyboard = {
+          inline_keyboard: [
+            [{ text: '🚀 Открыть Jana Men ЭДО', web_app: { url: getMiniAppUrl() } }]
+          ]
+        };
+
+        sendTelegramMessageWithKeyboard(chatId, welcomeLines.join('\n'), keyboard);
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    Logger.log('handleTelegramUpdate error: ' + err);
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Установка вебхука для @janamen_docs_bot
+ */
+function setTelegramWebhook(customUrl) {
+  var url = customUrl || ScriptApp.getService().getUrl();
+  if (!url) {
+    throw new Error('Сначала выполните Deploy веб-приложения, чтобы получить URL!');
+  }
+  var tgUrl = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/setWebhook?url=' + encodeURIComponent(url);
+  var res = UrlFetchApp.fetch(tgUrl, { muteHttpExceptions: true });
+  Logger.log('Webhook result: ' + res.getContentText());
+  return res.getContentText();
+}
+
+function getMiniAppUrl() {
+  var props = PropertiesService.getScriptProperties().getProperty('MINIAPP_URL');
+  return props || 'https://janamen-edo.vercel.app';
+}
+
+function sendTelegramMessageWithKeyboard(chatId, text, keyboard) {
+  if (!CONFIG.BOT_TOKEN || !chatId) return;
+  try {
+    var url = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/sendMessage';
+    UrlFetchApp.fetch(url, {
+      method: 'POST',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      }),
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log('sendTelegramMessageWithKeyboard error: ' + e);
+  }
+}
+
+function answerCallbackQuery(callbackQueryId, text) {
+  if (!CONFIG.BOT_TOKEN || !callbackQueryId) return;
+  try {
+    var url = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/answerCallbackQuery';
+    UrlFetchApp.fetch(url, {
+      method: 'POST',
+      contentType: 'application/json',
+      payload: JSON.stringify({ callback_query_id: callbackQueryId, text: text }),
+      muteHttpExceptions: true
+    });
+  } catch(e) {}
+}
+
+function editTelegramMessage(chatId, messageId, text) {
+  if (!CONFIG.BOT_TOKEN) return;
+  try {
+    var url = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/editMessageText';
+    UrlFetchApp.fetch(url, {
+      method: 'POST',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        parse_mode: 'Markdown'
+      }),
+      muteHttpExceptions: true
+    });
+  } catch(e) {}
+}
+
+function bindTelegramIdByUsername(tgId, username) {
+  try {
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
+    if (!sheet || sheet.getLastRow() <= 1) return;
+    var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+    var cleanUser = username.toLowerCase().replace('@', '');
+    for (var i = 0; i < rows.length; i++) {
+      var rowUser = String(rows[i][7] || '').toLowerCase().replace('@', '');
+      if (rowUser === cleanUser) {
+        sheet.getRange(i + 2, 2).setValue(String(tgId));
+        break;
+      }
+    }
+  } catch(e) {}
+}
+
+function testConnection() {
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  Logger.log('Opened: ' + ss.getName());
+  return 'OK: ' + ss.getName();
+}
+
+
+function getCompanyStructure() {
+  return {
+    ok: true,
+    structure: [
+      {
+        id: "admin",
+        name: "Административный блок",
+        head: "Кабидуллин Нурсултан Нурланович",
+        employees: [
+          { id: "1", name: "Кабидуллин Нурсултан Нурланович", role: "Генеральный директор", is_boss: true },
+          { id: "2", name: "Бегалин Арсен Кайратович", role: "Бизнес-ассистент", is_assistant: true },
+          { id: "3", name: "Жәнібек Жансая Жәнібекқызы", role: "Офис менеджер" }
+        ]
+      },
+      {
+        id: "operations",
+        name: "Операционный блок",
+        head: "Кыпшакбаев Темірлан Қайратұлы",
+        employees: [
+          { id: "4", name: "Кыпшакбаев Темірлан Қайратұлы", role: "Руководитель операционного блока", is_boss: true },
+          { id: "5", name: "Есеналин Ильяс Омирбекулы", role: "Руководитель филиала Алматы" },
+          { id: "6", name: "Султанов Оралбек", role: "Руководитель филиала Астана" },
+          { id: "7", name: "Раимкулов Асылбек", role: "Старший кладовщик Алматы" },
+          { id: "8", name: "Сейдазим Ерасыл Рустемулы", role: "Сборщик Алматы" },
+          { id: "9", name: "Болатова Айдана Болаткызы", role: "Сборщик Алматы" },
+          { id: "10", name: "Аманжолова Аида", role: "Сборщик Алматы" },
+          { id: "11", name: "Хуандык Айдын", role: "Сборщик Алматы" },
+          { id: "12", name: "Ахметов Азамат", role: "Сборщик Астана" },
+          { id: "13", name: "Абиш Айбек", role: "Сборщик Астана" },
+          { id: "14", name: "Болатов Арман", role: "Сборщик Астана" }
+        ]
+      },
+      {
+        id: "sales",
+        name: "Отдел продаж",
+        head: "Байсейітов Рамазан Алтымбаевич",
+        employees: [
+          { id: "15", name: "Байсейітов Рамазан Алтымбаевич", role: "Руководитель отдела продаж", is_boss: true },
+          { id: "16", name: "Кабдуалиев Батырхан Жаксылыкулы", role: "Тимлид B2C продаж" },
+          { id: "17", name: "Акзекенова Аяулым Дулатовна", role: "Менеджер по продажам (B2C)" },
+          { id: "18", name: "Кенжебаева Адель Сериковна", role: "Менеджер по продажам (B2C)" },
+          { id: "19", name: "Маликова Амина Талгатовна", role: "Менеджер по продажам (B2C)" },
+          { id: "20", name: "Сабитов Султан Маратович", role: "Менеджер по продажам (B2B)" },
+          { id: "21", name: "Ермеков Даурен Ерланулы", role: "Менеджер по продажам (B2B)" }
+        ]
+      },
+      {
+        id: "marketing",
+        name: "Отдел маркетинга",
+        head: "Аманбаев Арман Ауезханұлы",
+        employees: [
+          { id: "22", name: "Аманбаев Арман Ауезханұлы", role: "Руководитель отдела маркетинга", is_boss: true },
+          { id: "23", name: "Сайдуллаев Куанышбек Галымович", role: "IT-специалист" },
+          { id: "24", name: "Омарова Дана Кайратовна", role: "Таргетолог / Трафик-менеджер" },
+          { id: "25", name: "Серік Аружан Бауыржанқызы", role: "Контент-мейкер / Мобилограф" },
+          { id: "26", name: "Жумабеков Дидар", role: "Графический дизайнер" }
+        ]
+      },
+      {
+        id: "finance",
+        name: "Финансовый блок",
+        head: "Смагулова Алия Сагинтаевна",
+        employees: [
+          { id: "27", name: "Смагулова Алия Сагинтаевна", role: "Главный бухгалтер / Фин. контролер", is_boss: true },
+          { id: "28", name: "Нурланова Асем Нурлановна", role: "Бухгалтер по первичной документации" },
+          { id: "29", name: "Калиева Гульназ Мухтаровна", role: "Кассир / Операционист" }
+        ]
+      }
+    ]
+  };
+}

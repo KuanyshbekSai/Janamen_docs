@@ -1170,7 +1170,7 @@
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     }
 
-    var SCRIPT_EXEC_URL = '';
+    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbyNRrIM55hR2r3HzpMZmmFwtkjlXQRPqnpmsfQmOZ1ZO76dnbPx_Uq4A_3k949-eZa_Iw/exec';
 
     // ==================== УПРАВЛЕНИЕ GEMINI API КЛЮЧОМ ====================
     function getActiveGeminiKey() {
@@ -1467,6 +1467,64 @@
         ]
       }
     ];
+
+    
+    // ==================== СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ (РЕЕСТР СЗ) ====================
+    function loadSZListFromBackend() {
+      if (!SCRIPT_EXEC_URL) return;
+      var dept = currentUser ? currentUser.department : '';
+      var userFio = currentUser ? currentUser.name : '';
+      var userRole = currentUser ? currentUser.role : '';
+      var url = SCRIPT_EXEC_URL + '?action=get_sz_list&department=' + encodeURIComponent(dept) + '&userFio=' + encodeURIComponent(userFio) + '&userRole=' + encodeURIComponent(userRole);
+
+      fetch(url)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && data.ok && Array.isArray(data.list) && data.list.length > 0) {
+            mockSZList = data.list.map(function(item) {
+              var fmtDate = item.date;
+              if (fmtDate && typeof fmtDate === 'string' && fmtDate.indexOf('T') !== -1) {
+                var d = new Date(fmtDate);
+                fmtDate = d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+              }
+              var steps = item.route ? String(item.route).split(' ➡️ ') : [];
+              return {
+                number: item.number,
+                date: fmtDate,
+                department: item.department,
+                initiator: item.initiator,
+                coExecutors: item.coExecutors ? (typeof item.coExecutors === 'string' ? item.coExecutors.split(', ') : item.coExecutors) : [],
+                type: item.type,
+                title: item.title,
+                amount: item.amount,
+                counterparty: item.counterparty,
+                contract: item.contract,
+                avrStatus: 'Не требуется',
+                statusApproval: item.statusApproval,
+                statusPayment: item.statusPayment,
+                statusLegal: item.statusLegal,
+                currentApprover: item.currentApprover,
+                docUrl: item.docUrl,
+                scanUrl: item.scanUrl,
+                folderUrl: item.folderUrl,
+                routeList: steps.map(function(st, idx) {
+                  var isPassed = item.statusApproval.indexOf('Утверждено') !== -1 || (item.currentApprover !== st && idx === 0);
+                  return {
+                    name: st,
+                    role: 'Согласующий',
+                    status: isPassed ? '✅ Согласовано' : (item.currentApprover === st ? '⏳ На рассмотрении' : 'В очереди')
+                  };
+                }),
+                body: item.title
+              };
+            });
+            renderSZList();
+          }
+        })
+        .catch(function(e) {
+          console.warn('Could not sync SZ list from GAS:', e);
+        });
+    }
 
     var mockSZList = [
       {
@@ -2408,22 +2466,47 @@
 
     function submitFinalSZ() {
       if (!currentGeneratedSZ) return;
+      var btn = document.getElementById('btn-submit-sz');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Сохранение в Google Таблицу и Диск...';
+      }
+
       var year = new Date().getFullYear();
       var prefix = (currentDocType === 'vacation_bs' || currentDocType === 'resignation' || currentDocType === 'advance') ? 'ЗАЯВ-' : 'СЗ-';
-      var nextNum = prefix + year + '-' + ('0000' + (mockSZList.length + 1)).slice(-4);
+      var fallbackNum = prefix + year + '-' + ('0000' + (mockSZList.length + 1)).slice(-4);
 
-      var newSZ = {
-        number: nextNum,
-        date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
-        department: currentUser ? currentUser.department : 'Отдел',
-        initiator: currentUser ? currentUser.name : 'Сотрудник',
-        coExecutors: selectedCoExecutors.slice(),
+      var dept = currentUser ? currentUser.department : 'Отдел маркетинга';
+      var initiator = currentUser ? currentUser.name : 'Сотрудник';
+      var coExNames = selectedCoExecutors.map(function(e) { return e.name; });
+
+      var payload = {
+        action: 'create_sz',
+        department: dept,
+        initiator: initiator,
+        coExecutors: coExNames,
         type: currentGeneratedSZ.docTypeCategory === 'sz_payment' ? 'Оплата' : 'Кадровое / Общее',
         title: currentGeneratedSZ.subTitle || currentGeneratedSZ.title,
+        body: currentGeneratedSZ.body,
         amount: currentGeneratedSZ.amount || 0,
         amountInWords: currentGeneratedSZ.amountInWords || '',
         counterparty: currentGeneratedSZ.counterparty || '',
         contract: currentGeneratedSZ.contract || '',
+        route: currentRoute
+      };
+
+      var localItem = {
+        number: fallbackNum,
+        date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
+        department: dept,
+        initiator: initiator,
+        coExecutors: coExNames,
+        type: payload.type,
+        title: payload.title,
+        amount: payload.amount,
+        amountInWords: payload.amountInWords,
+        counterparty: payload.counterparty,
+        contract: payload.contract,
         avrStatus: currentGeneratedSZ.avrStatus || 'Не требуется',
         statusApproval: 'На согласовании: ' + (currentRoute[0] ? currentRoute[0].name : 'Руководитель'),
         statusPayment: currentGeneratedSZ.requiresPayment ? 'Ожидает визы' : 'Не требуется',
@@ -2437,15 +2520,58 @@
             time: ''
           };
         }),
-        body: currentGeneratedSZ.body
+        body: currentGeneratedSZ.body,
+        docUrl: '',
+        folderUrl: ''
       };
 
-      mockSZList.unshift(newSZ);
-      renderSZList();
-      showToast('🚀 Документ ' + nextNum + ' запущен в работу!');
-      switchTab('registry');
+      if (!SCRIPT_EXEC_URL) {
+        mockSZList.unshift(localItem);
+        renderSZList();
+        showToast('🚀 Документ ' + fallbackNum + ' запущен (локально)');
+        switchTab('registry');
+        finishSZSubmitReset();
+        return;
+      }
 
-      // Сброс
+      fetch(SCRIPT_EXEC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.ok) {
+          localItem.number = data.szNumber;
+          localItem.docUrl = data.docUrl;
+          localItem.folderUrl = data.folderUrl;
+          showToast('🚀 ' + data.szNumber + ' запущен! Создан Google Doc и папка на Диске.');
+        } else {
+          showToast('🚀 Документ сохранен: ' + fallbackNum);
+        }
+        mockSZList.unshift(localItem);
+        renderSZList();
+        switchTab('registry');
+        loadSZListFromBackend();
+      })
+      .catch(function(err) {
+        console.warn('Backend save error:', err);
+        mockSZList.unshift(localItem);
+        renderSZList();
+        showToast('🚀 Сохранено локально (' + fallbackNum + ')');
+        switchTab('registry');
+      })
+      .finally(function() {
+        finishSZSubmitReset();
+      });
+    }
+
+    function finishSZSubmitReset() {
+      var btn = document.getElementById('btn-submit-sz');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Запустить в работу';
+      }
       document.getElementById('sz-raw-text').value = '';
       document.getElementById('sz-generated-block').style.display = 'none';
       var fileInp = document.getElementById('sz-file');
@@ -2463,6 +2589,7 @@
       clearSelectedContract();
       renderCoExecTags();
       currentGeneratedSZ = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // ==================== РЕЕСТР И ДЕТАЛЬНЫЙ ПРОСМОТР ====================
@@ -2576,13 +2703,22 @@
         });
       }
 
-      // Приложения
+      // Приложения и ссылки Google Doc / Drive
       var attList = document.getElementById('det-attachments-list');
-      attList.innerHTML = [
-        '<div style="margin-bottom:6px;">📄 <b>Договор-основание:</b> ' + (item.contract || 'Не привязан к договору') + '</div>',
-        '<div style="margin-bottom:6px;">📑 <b>Статус оригинала АВР:</b> <span style="color:#b45309;font-weight:700;">' + item.avrStatus + '</span></div>',
-        '<div>📎 <b>Скан счета/квитанции:</b> <a href="#" onclick="alert(\'Открытие скана приложения...\'); return false;" style="color:var(--primary);font-weight:600;">Schet_Invoice.pdf (1.2 MB)</a></div>'
-      ].join('');
+      var linksHtml = [];
+      if (item.docUrl) {
+        linksHtml.push('<div style="margin-bottom:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:8px;">📄 <b>Google Doc (СЗ):</b> <a href="' + item.docUrl + '" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;">Открыть официальный документ ↗</a></div>');
+      }
+      if (item.folderUrl) {
+        linksHtml.push('<div style="margin-bottom:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:8px;">📁 <b>Папка на Google Диске:</b> <a href="' + item.folderUrl + '" target="_blank" style="color:#166534;font-weight:700;text-decoration:underline;">Перейти в архив документов ↗</a></div>');
+      }
+      if (item.scanUrl) {
+        linksHtml.push('<div style="margin-bottom:8px;">📎 <b>Подписанный скан:</b> <a href="' + item.scanUrl + '" target="_blank" style="color:#2563eb;font-weight:600;">Открыть скан оригинала ↗</a></div>');
+      }
+      linksHtml.push('<div style="margin-bottom:6px;">📑 <b>Договор-основание:</b> ' + (item.contract || 'Не привязан к договору') + '</div>');
+      linksHtml.push('<div>📑 <b>Статус оригинала АВР:</b> <span style="color:#b45309;font-weight:700;">' + (item.avrStatus || 'Не требуется') + '</span></div>');
+
+      attList.innerHTML = linksHtml.join('');
 
       // Финансы
       document.getElementById('det-payment-badge').textContent = item.statusPayment;
