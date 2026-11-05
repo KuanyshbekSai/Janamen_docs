@@ -756,9 +756,6 @@
       </div>
     </div>
     <div style="display: flex; gap: 6px; align-items: center;">
-      <button class="btn-switch-user" onclick="openGeminiKeyModal()" title="Статус и настройки ИИ" style="padding: 6px 10px; background: #f0fdf4; border-color: #bbf7d0; color: #166534;">
-        <span>⚡ ИИ</span>
-      </button>
       <button class="btn-switch-user" onclick="openSwitchAccountModal()">
         <span>🔄</span> <span>Сменить</span>
       </button>
@@ -936,7 +933,6 @@
 
           <div class="card-title">
             <span>🛣 Маршрут согласования</span>
-            <span style="font-size: 11px; color: var(--text-muted);">Без Арсена Бегалина</span>
           </div>
           <div id="route-steps-container"></div>
 
@@ -1239,19 +1235,38 @@
         Договор: <b>№82 — ИП «Алдажуманова А.Т.»</b>
       </div>
 
-      <div class="field" style="margin-bottom: 10px;">
-        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Номер и дата АВР: *</label>
-        <input type="text" id="avr-modal-number" class="input-text" placeholder="например: Акт № 15 от 04.11.2026">
-      </div>
-
-      <div class="field" style="margin-bottom: 10px;">
-        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Сумма по АВР: *</label>
-        <input type="text" id="avr-modal-amount" class="input-text" placeholder="например: 500 000 ₸">
-      </div>
-
+      <!-- Прикрепление документа с ИИ-распознаванием -->
       <div class="field" style="margin-bottom: 12px;">
-        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Скан / фото документа АВР:</label>
-        <input type="file" id="avr-modal-file" class="input-text" accept="image/*,.pdf">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text); display: flex; justify-content: space-between; align-items: center;">
+          <span>Скан / фото (АВР, счет, накладная):</span>
+          <span style="font-size: 11px; color: var(--primary); font-weight: 700;">✨ ИИ авто-чтение</span>
+        </label>
+        
+        <input type="file" id="avr-modal-file" style="display: none;" accept="image/*,.pdf" onchange="onAvrFileSelected(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px;">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('avr-modal-file').click()" style="font-size: 12px; padding: 9px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>📷 Камера</span>
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('avr-modal-file').click()" style="font-size: 12px; padding: 9px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>🖼️ Галерея / PDF</span>
+          </button>
+        </div>
+
+        <div id="avr-ai-status" style="display: none; margin-top: 8px; padding: 8px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 12px; color: #1e40af;">
+          <span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span>
+          <span id="avr-ai-status-text">🧠 Gemini 3.8 Flash считывает реквизиты документа...</span>
+        </div>
+        <div id="avr-file-name" style="font-size: 11px; color: var(--success); font-weight: 600; margin-top: 5px; display: none;"></div>
+      </div>
+
+      <div class="field" style="margin-bottom: 10px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Номер и дата документа: *</label>
+        <input type="text" id="avr-modal-number" class="input-text" placeholder="например: Акт № 30 от 05.11.2026">
+      </div>
+
+      <div class="field" style="margin-bottom: 10px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text);">Сумма по документу: *</label>
+        <input type="text" id="avr-modal-amount" class="input-text" placeholder="например: 205 040 ₸">
       </div>
 
       <div class="field" style="margin-bottom: 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
@@ -1958,40 +1973,35 @@
     // ==================== МУЛЬТИ-ФОТО И ПРИКРЕПЛЕНИЕ ПАЧКОЙ (СЗ / ЗАЯВЛЕНИЯ) ====================
     var szUploadedFiles = []; // [{ id, name, size, type, dataUrl, base64 }]
 
-    function onSZPhotosAdded(event) {
+    async function onSZPhotosAdded(event) {
       var files = event.target.files;
       if (!files || files.length === 0) return;
 
       var fileArray = Array.from(files);
-      var pending = fileArray.length;
+      showToast('📷 Обработка прикрепленных файлов (' + fileArray.length + ' шт.)...');
 
-      fileArray.forEach(function(file) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          var dataUrl = e.target.result;
-          var base64 = dataUrl.split(',')[1] || '';
+      for (var i = 0; i < fileArray.length; i++) {
+        var file = fileArray[i];
+        var compressed = await compressImageFileToJpeg(file, 1200, 0.8);
+        if (compressed) {
           szUploadedFiles.push({
             id: 'sz_f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             name: file.name,
-            size: file.size,
-            type: file.type || 'image/jpeg',
-            dataUrl: dataUrl,
-            base64: base64
+            size: Math.round(compressed.base64.length * 0.75),
+            type: compressed.mimeType,
+            dataUrl: compressed.dataUrl,
+            base64: compressed.base64
           });
-          pending--;
-          if (pending === 0) {
-            renderSZPhotosGallery();
-          }
-        };
-        reader.onerror = function() {
-          pending--;
-          if (pending === 0) renderSZPhotosGallery();
-        };
-        reader.readAsDataURL(file);
-      });
+        }
+      }
 
-      // Сбрасываем инпут, чтобы можно было сразу сделать следующее фото
       event.target.value = '';
+      renderSZPhotosGallery();
+
+      var rawInput = document.getElementById('sz-raw-text');
+      if (rawInput && !rawInput.value.trim()) {
+        showToast('✨ Скан прикреплен! Нажмите «Сформировать документ», и ИИ прочитает счет/накладную/АВР');
+      }
     }
 
     function removeSZPhoto(id) {
@@ -2281,16 +2291,16 @@
 
     function generateSmartSZ() {
       var raw = document.getElementById('sz-raw-text').value.trim();
-      if (!raw) {
-        alert('Пожалуйста, опишите суть документа!');
+      if (!raw && szUploadedFiles.length === 0) {
+        alert('Пожалуйста, опишите суть документа или прикрепите фото счета / накладной / АВР!');
         return;
       }
 
       var btn = document.getElementById('btn-run-gemini');
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ ИИ анализирует текст, рассчитывает суммы и составляет документ...</span>';
+      btn.innerHTML = '<span>⏳ ИИ считывает документы, рассчитывает суммы и составляет СЗ...</span>';
 
-      // Пробуем вызвать Gemini API, при ошибке/лимите мгновенно используем встроенный компилятор
+      // Пробуем вызвать Gemini API с учетом прикрепленных сканов (счета, накладные, АВР)
       callGeminiDocComposer(raw, function(geminiResult) {
         btn.disabled = false;
         btn.innerHTML = '<span>✨ Сформировать официальный документ</span>';
@@ -2311,31 +2321,55 @@
       }
 
       var promptText = [
-        'Ты корпоративный юрист компании JANAMEN.',
-        'Проанализируй черновик служебной записки или заявления и составь идеальный официальный документ.',
-        'Если в тексте перечислены позиции с количеством и ценой (канцелярия, материалы, оборудование):',
-        '1. Обязательно математически перемножь количество на цену по каждой позиции и сложи ИТОГО!',
-        '2. Сформируй официальный перечень: 1. Наименование — Кол-во шт. × Цена ₸ = Сумма ₸.',
-        '3. Выведи точную итоговую сумму цифрами и прописью на русском языке.',
-        '4. Сформулируй деловое обоснование закупа (для чего нужно компании).',
-        'Верни ТОЛЬКО валидный JSON без markdown следующей структуры:',
+        'Ты — старший юрист и финансовый контролер компании JANAMEN.',
+        'Составь краткую, строгую, официально-деловую служебную записку (СЗ).',
+        '',
+        'ТРЕБОВАНИЯ К ТЕКСТУ (СТРОГО):',
+        '1. СТИЛЬ: Сухой, деловой, предельно лаконичный. БЕЗ «воды» и высокопарных слов.',
+        '   ЗАПРЕЩЕНО писать: «для обеспечения непрерывной текущей операционной деятельности», «настоящим уведомляю», «прошу принять к сведению».',
+        '   ЗАПРЕЩЕНО дублировать: «Прошу согласовать... Обоснование: Прошу согласовать...».',
+        '2. Если прикреплены изображения (счет на оплату, накладная, АВР, чеки): обязательно считай номер счета/акта, дату, контрагента, список позиций и точную сумму!',
+        '3. Если есть перечень позиций с ценой и количеством: математически перемножь и выведи аккуратный нумерованный список: 1. Наименование — Кол-во шт. × Цена ₸ = Сумма ₸.',
+        '4. СТРУКТУРА body:',
+        '   - Одно краткое первое предложение (о чем просьба, кому и краткая цель).',
+        '   - Список позиций с расчетом (если есть).',
+        '   - Ссылка на счет/акт/договор (если есть).',
+        '   - «Подтверждающие документы прилагаются.»',
+        '5. amount — точная сумма числом, amountInWords — официальная сумма прописью на русском языке (например: "четырнадцать тысяч девятьсот пятьдесят тенге 00 тиын").',
+        '',
+        'Верни ТОЛЬКО валидный JSON следующей структуры:',
         '{',
         '  "title": "СЛУЖЕБНАЯ ЗАПИСКА",',
-        '  "subTitle": "Тема документа",',
-        '  "body": "Полный официальный текст...",',
+        '  "subTitle": "Краткая тема (до 6-7 слов)",',
+        '  "body": "Лаконичный текст служебной записки...",',
         '  "amount": 14950,',
         '  "amountInWords": "четырнадцать тысяч девятьсот пятьдесят тенге 00 тиын",',
         '  "currency": "тенге (KZT)",',
-        '  "counterparty": "",',
+        '  "counterparty": "Контрагент",',
         '  "requiresPayment": true',
         '}'
       ].join('\n');
 
+      var parts = [];
+      if (szUploadedFiles && szUploadedFiles.length > 0) {
+        szUploadedFiles.forEach(function(item) {
+          if (item.base64 && item.type && item.type.indexOf('image') !== -1) {
+            parts.push({
+              inlineData: {
+                mimeType: item.type || 'image/jpeg',
+                data: item.base64
+              }
+            });
+          }
+        });
+      }
+      parts.push({
+        text: promptText + '\n\nЧерновик/описание от сотрудника:\n' + (raw || '(пользователь прикрепил скан документа счета/накладной/АВР, извлеки данные напрямую из изображения)')
+      });
+
       var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + GEMINI_API_KEY;
       var bodyPayload = {
-        contents: [{
-          parts: [{ text: promptText + '\n\nЧерновик пользователя:\n' + raw }]
-        }],
+        contents: [{ parts: parts }],
         generationConfig: {
           temperature: 0.1,
           responseMimeType: "application/json"
@@ -2402,18 +2436,20 @@
           ? "Закуп канцелярии для сборки продукции"
           : "Закуп расходных материалов";
 
+        var leadPhrase = "Прошу согласовать закуп канцелярских принадлежностей для ускорения сборки готовой продукции:";
         var tableLines = purchase.items.map(function(it, idx) {
-          return (idx + 1) + '. ' + it.name + ' — ' + it.qty + ' шт. × ' + it.price.toLocaleString('ru-RU') + ' ₸ = ' + it.subtotal.toLocaleString('ru-RU') + ' ₸;';
+          return (idx + 1) + '. ' + it.name + ' — ' + it.qty + ' шт. × ' + it.price.toLocaleString('ru-RU') + ' ₸ = ' + it.subtotal.toLocaleString('ru-RU') + ' ₸';
         }).join('\n');
 
         body = [
-          "Для обеспечения сборки готовой продукции прошу согласовать закуп следующих принадлежностей:",
+          leadPhrase,
           "",
           tableLines,
           "",
           "Итого к оплате: " + amount.toLocaleString('ru-RU') + " (" + amountInWords + ").",
-          "Подтверждающие чеки и накладные прилагаются."
-        ].join('\n');
+          contractNum ? ("В рамках договора: " + contractNum + " (" + counterparty + ").") : "",
+          "Подтверждающие документы прилагаются."
+        ].filter(Boolean).join('\n');
       }
       // Б) ЗАЯВЛЕНИЕ НА ОТПУСК БС
       else if (currentDocType === 'vacation_bs') {
@@ -2468,7 +2504,7 @@
       }
       // Е) СТАНДАРТНАЯ СЛУЖЕБНАЯ ЗАПИСКА
       else {
-        var cleanRaw = raw.replace(/итого[\s\S]*/i, '').trim();
+        var cleanRaw = raw.replace(/итого[\s\S]*/i, '').replace(/[:\s]+$/, '').trim();
         var tengeMatch = raw.match(/(\d+[\s\d]*)\s*(тенге|тг|kzt)/i) || raw.match(/(\d+[\s\d]*)/);
         if (tengeMatch) {
           amount = parseInt((tengeMatch[1] || tengeMatch[0]).replace(/\s+/g, ''), 10);
@@ -2478,11 +2514,11 @@
 
         title = "СЛУЖЕБНАЯ ЗАПИСКА";
         subTitle = "Согласование платежа (" + dept + ")";
+        var mainStatement = /^прошу/i.test(cleanRaw) ? (cleanRaw + '.') : ("Прошу согласовать: " + cleanRaw + ".");
         body = [
-          "Прошу согласовать проведение платежа по операционной деятельности (" + dept + ").",
-          "Основание: " + cleanRaw + ".",
-          contractNum ? ("Договор: " + contractNum + " (" + counterparty + ").") : "",
-          "Подтверждающие документы прикреплены."
+          mainStatement,
+          contractNum ? ("В рамках договора: " + contractNum + " (" + counterparty + ").") : "",
+          "Подтверждающие документы прилагаются."
         ].filter(Boolean).join('\n');
       }
 
@@ -3721,7 +3757,9 @@
       }
     }
 
-    // ==================== МОДАЛЬНОЕ ОКНО ПРИКРЕПЛЕНИЯ АВР ====================
+    // ==================== МОДАЛЬНОЕ ОКНО ПРИКРЕПЛЕНИЯ АВР / ЗАКРЫВАЮЩИХ ДОКУМЕНТОВ ====================
+    var currentAvrAttachedFile = null;
+
     function attachAvrModal(contractId) {
       var c = mockContracts.find(function(item) { return item.id === contractId; });
       if (!c) return;
@@ -3729,12 +3767,130 @@
       currentAvrContractId = contractId;
       var displayTitle = c.title || (c.counterparty + ' — ' + c.subject);
       document.getElementById('avr-contract-info').innerHTML = 'Договор: <b>' + displayTitle + '</b> (' + c.number + ')';
-      document.getElementById('avr-modal-number').value = 'Акт № ' + (Math.floor(Math.random() * 80) + 1) + ' от ' + new Date().toLocaleDateString('ru-RU');
-      document.getElementById('avr-modal-amount').value = c.amount || '500 000 ₸';
+      
+      document.getElementById('avr-modal-number').value = '';
+      document.getElementById('avr-modal-amount').value = '';
       document.getElementById('avr-modal-submitted').checked = false;
       document.getElementById('avr-modal-file').value = '';
+      
+      var statusBox = document.getElementById('avr-ai-status');
+      if (statusBox) statusBox.style.display = 'none';
+      var fnBox = document.getElementById('avr-file-name');
+      if (fnBox) { fnBox.style.display = 'none'; fnBox.textContent = ''; }
+      currentAvrAttachedFile = null;
 
       document.getElementById('modal-attach-avr').style.display = 'flex';
+    }
+
+    async function onAvrFileSelected(event) {
+      var file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      var statusBox = document.getElementById('avr-ai-status');
+      var statusText = document.getElementById('avr-ai-status-text');
+      var fnBox = document.getElementById('avr-file-name');
+
+      if (statusBox) statusBox.style.display = 'block';
+      if (statusText) statusText.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> 📷 Подготовка изображения...';
+      if (fnBox) {
+        fnBox.style.display = 'block';
+        fnBox.textContent = '📎 Выбран файл: ' + file.name;
+      }
+
+      var compressed = await compressImageFileToJpeg(file, 1200, 0.8);
+      currentAvrAttachedFile = {
+        name: file.name,
+        mimeType: compressed ? compressed.mimeType : (file.type || 'image/jpeg'),
+        base64: compressed ? compressed.base64 : '',
+        dataUrl: compressed ? compressed.dataUrl : ''
+      };
+
+      if (!GEMINI_API_KEY) {
+        if (statusBox) statusBox.style.display = 'none';
+        return;
+      }
+
+      if (statusText) statusText.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> 🧠 Gemini 3.8 Flash считывает реквизиты документа...';
+
+      var prompt = [
+        'Ты старший бухгалтер компании JANAMEN.',
+        'Внимательно прочитай скан документа (это может быть Акт выполненных работ / АВР, Счет на оплату, Товарная накладная, ЭСФ или Чек).',
+        'Извлеки реквизиты:',
+        '1. docType: тип документа (например: "Акт выполненных работ", "Счет на оплату", "Накладная").',
+        '2. number: номер документа (без лишних слов, например "30", "154/К", "82").',
+        '3. date: дата документа (ДД.ММ.ГГГГ).',
+        '4. amount: итоговая сумма документа (число, например 205040).',
+        '5. formattedAmount: сумма с валютой (например "205 040 ₸").',
+        '6. counterparty: наименование поставщика/исполнителя.',
+        '7. subject: кратко предмет работ или поставки.',
+        '',
+        'Верни ТОЛЬКО валидный JSON следующей структуры:',
+        '{',
+        '  "docType": "Акт выполненных работ",',
+        '  "number": "30",',
+        '  "date": "05.11.2026",',
+        '  "amount": 205040,',
+        '  "formattedAmount": "205 040 ₸",',
+        '  "counterparty": "ТОО ...",',
+        '  "subject": "Услуги связи"',
+        '}'
+      ].join('\n');
+
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + GEMINI_API_KEY;
+      var bodyPayload = {
+        contents: [{
+          parts: [
+            {
+              inlineData: {
+                mimeType: currentAvrAttachedFile.mimeType,
+                data: currentAvrAttachedFile.base64
+              }
+            },
+            { text: prompt }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json'
+        }
+      };
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload)
+      })
+      .then(function(res) {
+        if (!res.ok) throw new Error('Код API: ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        var rawText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
+        if (rawText) {
+          var clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+          var parsed = JSON.parse(clean);
+
+          var dt = parsed.docType || 'Акт';
+          var num = (parsed.number || '').trim();
+          var dDate = (parsed.date || '').trim();
+          var fullNum = dt + (num ? (' № ' + num) : '') + (dDate ? (' от ' + dDate) : '');
+          var amtStr = parsed.formattedAmount || (parsed.amount ? (Number(parsed.amount).toLocaleString('ru-RU') + ' ₸') : '');
+
+          if (fullNum) document.getElementById('avr-modal-number').value = fullNum;
+          if (amtStr) document.getElementById('avr-modal-amount').value = amtStr;
+
+          if (statusText) {
+            statusText.innerHTML = '✅ <b style="color:#15803d;">Документ распознан:</b> ' + fullNum + ' (' + amtStr + ')';
+          }
+          showToast('✅ Реквизиты ' + dt + ' считаны!');
+        }
+      })
+      .catch(function(err) {
+        console.warn('AVR scan error:', err);
+        if (statusText) {
+          statusText.innerHTML = '⚠️ <span style="color:#b91c1c;">Не удалось авто-распознать, укажите данные вручную</span>';
+        }
+      });
     }
 
     function submitAttachAvr() {
@@ -3746,7 +3902,7 @@
       var isSubmitted = document.getElementById('avr-modal-submitted').checked;
 
       if (!num) {
-        alert('Пожалуйста, введите номер и дату АВР!');
+        alert('Пожалуйста, укажите номер и дату документа!');
         return;
       }
 
@@ -3755,12 +3911,13 @@
         number: num,
         amount: amount || '',
         originalSubmitted: isSubmitted,
-        date: new Date().toLocaleDateString('ru-RU')
+        date: new Date().toLocaleDateString('ru-RU'),
+        fileName: currentAvrAttachedFile ? currentAvrAttachedFile.name : null
       });
 
       renderContractsList();
       closeModal('modal-attach-avr');
-      showToast('📑 АВР успешно прикреплен к договору!');
+      showToast('📑 ' + num + ' успешно прикреплен к договору!');
     }
   </script>
 
