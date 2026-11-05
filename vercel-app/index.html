@@ -1197,8 +1197,8 @@
     /* Канбан доска реестра СЗ */
     .kanban-view-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
       align-items: flex-start;
       margin-top: 12px;
       overflow-x: auto;
@@ -1206,7 +1206,7 @@
     }
     @media (min-width: 1200px) {
       .kanban-view-container {
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(6, 1fr);
       }
     }
     .kanban-column {
@@ -1682,6 +1682,7 @@
 
           <select id="filter-status" class="select-text" onchange="renderSZList()">
             <option value="all">⚖️ Все статусы согласования</option>
+            <option value="in_progress">🛠️ В работе</option>
             <option value="pending">⏳ В согласовании</option>
             <option value="approved">✅ Утверждено Шефом</option>
             <option value="paid">💳 Оплачено казначейством</option>
@@ -4526,7 +4527,8 @@
         }
 
         // Фильтр по статусу
-        if (filterStatus === 'pending' && (item.statusApproval || '').indexOf('На согласовании') === -1) return false;
+        if (filterStatus === 'in_progress' && getSZKanbanStage(item) !== 'in_progress') return false;
+        if (filterStatus === 'pending' && getSZKanbanStage(item) !== 'pending') return false;
         if (filterStatus === 'approved' && (item.statusApproval || '').indexOf('Утверждено') === -1) return false;
         if (filterStatus === 'paid' && (item.statusPayment || '').indexOf('Оплачено') === -1) return false;
         if (filterStatus === 'scan_waiting' && (item.statusLegal || '').indexOf('Ожидает') === -1) return false;
@@ -4627,19 +4629,30 @@
       var appr = (item.statusApproval || '').toLowerCase();
       var pay = (item.statusPayment || '').toLowerCase();
       var leg = (item.statusLegal || '').toLowerCase();
+      var init = (item.initiator || '').trim().toLowerCase();
+      var curr = (item.currentApprover || '').trim().toLowerCase();
 
+      // 1. Архив / Завершено
       if (appr.indexOf('отклонено') !== -1 || leg.indexOf('сдан в архив') !== -1 || leg.indexOf('в архиве') !== -1) {
         return 'archive';
       }
+      // 2. Ожидает оригинал
       if (leg.indexOf('ожидает') !== -1 && (appr.indexOf('утверждено') !== -1 || pay.indexOf('оплачено') !== -1)) {
         return 'waiting_scan';
       }
+      // 3. Оплачено
       if (pay.indexOf('оплачено') !== -1) {
         return 'paid';
       }
+      // 4. Утверждено Шефом
       if (appr.indexOf('утверждено') !== -1) {
         return 'approved';
       }
+      // 5. В работе (документ на этапе подготовки / черновика / у самого автора / только запущен в работу)
+      if (appr.indexOf('в работе') !== -1 || appr.indexOf('черновик') !== -1 || appr.indexOf('формируется') !== -1 || (init && curr && (init === curr || init.indexOf(curr) !== -1 || curr.indexOf(init) !== -1))) {
+        return 'in_progress';
+      }
+      // 6. На согласовании (передан другим согласующим по маршруту)
       return 'pending';
     }
 
@@ -4648,6 +4661,7 @@
       if (!container) return;
 
       var columns = [
+        { id: 'in_progress', title: '🛠️ В работе', color: '#0284c7', bg: '#f0f9ff', items: [] },
         { id: 'pending', title: '⏳ На согласовании', color: '#E87411', bg: '#fff7ed', items: [] },
         { id: 'approved', title: '✅ Утверждено Шефом', color: '#16a34a', bg: '#f0fdf4', items: [] },
         { id: 'paid', title: '💳 Оплачено', color: '#2563eb', bg: '#eff6ff', items: [] },
