@@ -1606,9 +1606,14 @@
               </div>
             </div>
 
-            <button class="btn btn-ai" id="btn-run-gemini" onclick="generateSmartSZ()">
-              <span>✨ Сформировать официальный документ</span>
-            </button>
+            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+              <button class="btn btn-ai" id="btn-run-gemini" onclick="generateSmartSZ()" style="flex: 2; min-width: 200px;">
+                <span>✨ Сформировать официальный документ</span>
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="saveSZAsDraft()" style="flex: 1; min-width: 140px; font-size: 12px; font-weight: 700; padding: 10px 12px; border: 1.5px solid var(--border-strong);">
+                <span>💾 Сохранить черновик</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1702,9 +1707,14 @@
                 </button>
               </div>
 
-              <button class="btn btn-success" id="btn-submit-sz" onclick="submitFinalSZ()">
-                🚀 Запустить в работу
-              </button>
+              <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" id="btn-save-draft-sz" onclick="saveSZAsDraft()" style="flex: 1; min-width: 180px; padding: 11px; font-size: 13px; font-weight: 700; border: 1.5px solid var(--border-strong);">
+                  💾 Сохранить в работе (Черновик)
+                </button>
+                <button class="btn btn-success" id="btn-submit-sz" onclick="submitFinalSZ()" style="flex: 1.3; min-width: 200px; padding: 11px; font-size: 13.5px; font-weight: 800;">
+                  🚀 Запустить на согласование
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1827,12 +1837,17 @@
   <!-- ==================== ПОЛНОЦЕННОЕ ИНФОРМАТИВНОЕ ОКНО КАРТОЧКИ СЗ / ЗАЯВЛЕНИЯ ==================== -->
   <div id="modal-detail" class="modal-overlay">
     <div class="modal-content" style="max-width: 1400px; width: 96vw; max-height: 94vh;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap; gap: 8px;">
         <div>
           <span class="status-badge badge-pending" id="det-type-badge">Служебная записка</span>
           <h3 id="det-number" style="font-size: 17px; font-weight: 800; color: var(--text); margin-top: 4px;">СЗ</h3>
         </div>
-        <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; padding: 4px;">✕</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="copySZAsTemplate(activeDetailItem)" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; font-weight: 700;" title="Создать новую похожую СЗ на основе этой">
+            <span style="font-size: 14px;">📋</span> <span>Скопировать / Создать похожую СЗ</span>
+          </button>
+          <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; padding: 4px;">✕</button>
+        </div>
       </div>
 
       <div class="detail-desktop-split">
@@ -4944,6 +4959,12 @@
               : '';
 
             var moveDownBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); moveKanbanCardDown(\'' + item.number + '\')" title="Переместить карточку в самый низ колонки">⬇ Вниз</button>';
+            var copyBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); copySZAsTemplateByNumber(\'' + item.number + '\')" title="Создать похожую СЗ на основе этой">📋 Копия</button>';
+
+            var isDraft = col.id === 'in_progress';
+            var editDraftBtn = isDraft 
+              ? ('<button type="button" class="btn-card-move-down" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;font-weight:700;" onclick="event.stopPropagation(); copySZAsTemplateByNumber(\'' + item.number + '\')" title="Продолжить редактирование черновика">✏️ Черновик</button>') 
+              : '';
 
             html.push('<div class="kanban-card" draggable="true" ondragstart="onKanbanDragStart(event, \'' + item.number + '\')" ondragover="onKanbanDragOver(event)" ondrop="onKanbanDrop(event, \'' + item.number + '\')" ondragend="onKanbanDragEnd(event)" onclick="openSZDetailByNumber(\'' + item.number + '\')">');
             html.push('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">');
@@ -4963,7 +4984,7 @@
             } else {
               html.push('<div></div>');
             }
-            html.push('<div style="display:flex;gap:4px;flex-shrink:0;">' + resubmitBtn + moveDownBtn + '</div>');
+            html.push('<div style="display:flex;gap:4px;flex-shrink:0;">' + editDraftBtn + resubmitBtn + copyBtn + moveDownBtn + '</div>');
             html.push('</div>');
 
             html.push('</div>');
@@ -5176,6 +5197,216 @@
           })
         }).catch(function(e) { console.warn('Resubmit SZ sync error:', e); });
       }
+    }
+
+    function saveSZAsDraft() {
+      var raw = document.getElementById('sz-raw-text') ? document.getElementById('sz-raw-text').value.trim() : '';
+      if (!currentGeneratedSZ && !raw && szUploadedFiles.length === 0) {
+        alert('Пожалуйста, введите суть служебной записки или прикрепите документ для сохранения черновика!');
+        return;
+      }
+
+      if (!currentGeneratedSZ) {
+        var defaultTitle = raw.length > 50 ? (raw.substring(0, 47) + '...') : (raw || 'Черновик служебной записки');
+        currentGeneratedSZ = {
+          title: defaultTitle,
+          subTitle: defaultTitle,
+          body: raw || 'Черновик служебной записки в процессе формирования пакета документов.',
+          amount: 0,
+          amountInWords: '',
+          counterparty: selectedContract ? selectedContract.counterparty : '',
+          contract: selectedContract ? (selectedContract.number + ' — ' + (selectedContract.counterparty || selectedContract.title)) : '',
+          avrStatus: selectedContract ? '⏳ Ожидается сдача оригинала АВР' : 'Не требуется',
+          docTypeCategory: currentDocType,
+          requiresPayment: currentDocType === 'sz_payment'
+        };
+        buildDefaultRoute();
+      }
+
+      var btn = document.getElementById('btn-save-draft-sz');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Сохранение черновика...';
+      }
+
+      var year = new Date().getFullYear();
+      var prefix = (currentDocType === 'vacation_bs' || currentDocType === 'resignation' || currentDocType === 'advance') ? 'ЗАЯВ-' : 'СЗ-';
+      var fallbackNum = prefix + year + '-' + ('0000' + (mockSZList.length + 1)).slice(-4);
+
+      var dept = currentUser ? currentUser.department : 'Отдел маркетинга';
+      var initiator = currentUser ? currentUser.name : 'Сотрудник';
+      var coExNames = selectedCoExecutors.map(function(e) { return e.name; });
+      var chosenContract = (selectedContract ? (selectedContract.number + ' — ' + (selectedContract.counterparty || selectedContract.title || selectedContract.subject)) : '') || (currentGeneratedSZ && currentGeneratedSZ.contract) || '';
+      var chosenAvr = (currentGeneratedSZ && currentGeneratedSZ.avrStatus) ? currentGeneratedSZ.avrStatus : (selectedContract ? "⏳ Ожидается сдача оригинала АВР" : "Не требуется");
+
+      var draftItem = {
+        number: fallbackNum,
+        date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}),
+        department: dept,
+        initiator: initiator,
+        coExecutors: coExNames,
+        type: currentGeneratedSZ.docTypeCategory === 'sz_payment' ? 'Оплата' : 'Кадровое / Общее',
+        title: currentGeneratedSZ.subTitle || currentGeneratedSZ.title || 'Черновик документа',
+        amount: currentGeneratedSZ.amount || 0,
+        amountInWords: currentGeneratedSZ.amountInWords || '',
+        counterparty: currentGeneratedSZ.counterparty || (selectedContract ? selectedContract.counterparty : ''),
+        contract: chosenContract,
+        avrStatus: chosenAvr,
+        statusApproval: '🛠️ В работе (Черновик)',
+        statusPayment: 'Черновик',
+        statusLegal: 'Формирование пакета документов',
+        currentApprover: initiator,
+        routeList: currentRoute.map(function(r) {
+          return {
+            name: r.name,
+            role: r.role,
+            status: 'В очереди',
+            time: ''
+          };
+        }),
+        body: currentGeneratedSZ.body,
+        attachments: szUploadedFiles.map(function(f) { return { name: f.name, data: f.data || f.base64, size: f.size }; }),
+        docUrl: '',
+        folderUrl: ''
+      };
+
+      mockSZList.unshift(draftItem);
+      renderSZList();
+      switchTab('registry');
+      finishSZSubmitReset();
+      showToast('💾 Документ сохранен в разделе «🛠️ В работе»! Вы сможете дополнить его в любое время.');
+
+      if (SCRIPT_EXEC_URL) {
+        fetch(SCRIPT_EXEC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'create_sz',
+            department: dept,
+            initiator: initiator,
+            coExecutors: coExNames,
+            type: draftItem.type,
+            title: draftItem.title,
+            body: draftItem.body,
+            amount: draftItem.amount,
+            amountInWords: draftItem.amountInWords,
+            counterparty: draftItem.counterparty,
+            contract: chosenContract,
+            avrStatus: chosenAvr,
+            route: currentRoute,
+            statusApproval: '🛠️ В работе (Черновик)',
+            currentApprover: initiator,
+            attachments: szUploadedFiles.map(function(f) { return { name: f.name, mimeType: f.type, base64: f.base64 }; })
+          })
+        }).catch(function(e) { console.warn('Draft save sync error:', e); });
+      }
+    }
+
+    function copySZAsTemplate(item) {
+      if (!item) return;
+      closeModal('modal-detail');
+
+      // 1. Переключаем на вкладку создания
+      switchTab('create');
+
+      // 2. Устанавливаем тип документа
+      var docType = 'sz_payment';
+      if (item.number && item.number.indexOf('ЗАЯВ-') !== -1) {
+        if (/отпуск/i.test(item.title)) docType = 'vacation_bs';
+        else if (/аванс/i.test(item.title)) docType = 'advance';
+        else if (/увольнен/i.test(item.title)) docType = 'resignation';
+        else docType = 'sz_general';
+      } else {
+        if (item.amount && item.amount > 0) docType = 'sz_payment';
+        else docType = 'sz_general';
+      }
+      selectDocType(docType);
+
+      // 3. Заполняем суть СЗ
+      var rawInput = document.getElementById('sz-raw-text');
+      if (rawInput) {
+        rawInput.value = item.body || item.title || '';
+      }
+
+      // 4. Привязываем договор
+      if (item.contract && item.contract !== 'Не привязан к договору' && item.contract !== 'Нет' && item.contract !== 'б/н') {
+        var cleanC = (item.contract || '').toLowerCase();
+        var foundContract = mockContracts.find(function(c) {
+          return c.number && cleanC.indexOf(c.number.toLowerCase()) !== -1;
+        });
+        if (foundContract) {
+          selectContractForSZ(foundContract.id);
+        } else {
+          var sInp = document.getElementById('sz-contract-search');
+          if (sInp) sInp.value = item.contract;
+        }
+      } else {
+        clearSelectedContract();
+      }
+
+      // 5. Заполняем со-исполнителей
+      selectedCoExecutors = [];
+      if (item.coExecutors && item.coExecutors.length > 0) {
+        item.coExecutors.forEach(function(coName) {
+          selectedCoExecutors.push({ name: coName, role: 'Линейный специалист', department: item.department || '' });
+        });
+        renderCoExecTags();
+      }
+
+      // 6. Формируем объект СЗ
+      currentGeneratedSZ = {
+        title: item.title,
+        subTitle: item.title,
+        body: item.body || item.title,
+        amount: item.amount || 0,
+        amountInWords: item.amountInWords || (item.amount ? (Number(item.amount).toLocaleString('ru-RU') + ' тенге') : ''),
+        counterparty: item.counterparty || '',
+        contract: item.contract || '',
+        avrStatus: item.avrStatus || 'Не требуется',
+        docTypeCategory: docType,
+        requiresPayment: (item.amount && item.amount > 0)
+      };
+
+      // 7. Копируем маршрут
+      if (item.routeList && item.routeList.length > 0) {
+        currentRoute = item.routeList.map(function(st) {
+          return {
+            name: st.name,
+            role: st.role || 'Согласующий',
+            stepName: st.role || 'Согласование'
+          };
+        });
+      } else {
+        buildDefaultRoute();
+      }
+
+      // 8. Отрисовываем предпросмотр
+      document.getElementById('sz-desktop-placeholder').style.display = 'none';
+      document.getElementById('sz-generated-block').style.display = 'block';
+
+      document.getElementById('prev-doc-title').innerHTML = (currentDocType === 'vacation_bs' || currentDocType === 'resignation' || currentDocType === 'advance' ? 'ЗАЯВЛЕНИЕ' : 'СЛУЖЕБНАЯ ЗАПИСКА') + '<br><span style="font-size:11px;color:var(--text-muted);font-weight:normal;">[Будет присвоен новый номер при запуске]</span>';
+      document.getElementById('prev-body').textContent = currentGeneratedSZ.body;
+
+      if (currentGeneratedSZ.amount > 0) {
+        document.getElementById('prev-amount').textContent = 'Итого к оплате / возмещению: ' + Number(currentGeneratedSZ.amount).toLocaleString('ru-RU') + ' ₸ (' + (currentGeneratedSZ.amountInWords || '') + ').';
+        document.getElementById('prev-amount').style.display = 'block';
+      } else {
+        document.getElementById('prev-amount').style.display = 'none';
+      }
+
+      var coSign = (selectedCoExecutors.length > 0) ? (', ' + selectedCoExecutors.map(function(e){ return e.name; }).join(', ')) : '';
+      document.getElementById('prev-sign').textContent = 'Исп: ' + (currentUser ? currentUser.name : 'Сотрудник') + coSign + '\nДата: ' + new Date().toLocaleDateString('ru-RU');
+
+      renderRouteUI();
+
+      window.scrollTo({ top: 120, behavior: 'smooth' });
+
+      showToast('📋 Данные ' + item.number + ' успешно скопированы! Отредактируйте детали и нажмите «Запустить в работу».');
+    }
+
+    function copySZAsTemplateByNumber(num) {
+      var it = mockSZList.find(function(x) { return x.number === num; });
+      if (it) copySZAsTemplate(it);
     }
 
     function openSZDetailByNumber(num) {
