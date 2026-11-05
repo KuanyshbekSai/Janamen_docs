@@ -1105,11 +1105,25 @@
         </div>
       </div>
 
-      <!-- Индикатор работы ИИ -->
-      <div id="nc-ai-loading" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 14px; text-align: center;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-          <div style="width: 18px; height: 18px; border: 2.5px solid #22c55e; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-          <span style="font-size: 12.5px; font-weight: 700; color: #15803d;" id="nc-ai-status-text">Gemini AI считывает текст и параметры договора...</span>
+      <!-- Индикатор работы ИИ: Интерактивный Progress Bar со стадиями -->
+      <div id="nc-ai-loading" style="display: none; background: #ffffff; border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 18px; height: 18px; border: 2.5px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <span style="font-size: 13px; font-weight: 800; color: #1e3a8a;" id="nc-ai-status-text">Оптимизация страниц договора...</span>
+          </div>
+          <span id="nc-ai-percent" style="font-size: 12px; font-weight: 800; color: #2563eb;">25%</span>
+        </div>
+        
+        <!-- Анимированная полоса прогресса -->
+        <div style="width: 100%; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+          <div id="nc-ai-progress-bar" style="width: 25%; height: 100%; background: linear-gradient(90deg, #2563eb, #38bdf8); border-radius: 4px; transition: width 0.3s ease;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;" id="nc-ai-step-desc">
+          <span>Шаг 1: Сжатие фото</span>
+          <span>Шаг 2: Vision OCR</span>
+          <span>Шаг 3: Парсинг реквизитов</span>
         </div>
       </div>
 
@@ -3083,44 +3097,103 @@
       document.getElementById('modal-new-contract').style.display = 'flex';
     }
 
-    function onContractPhotosAdded(event) {
+    function updateAiProgress(percent, statusText) {
+      var loader = document.getElementById('nc-ai-loading');
+      var statusEl = document.getElementById('nc-ai-status-text');
+      var percentEl = document.getElementById('nc-ai-percent');
+      var bar = document.getElementById('nc-ai-progress-bar');
+      if (loader) loader.style.display = 'block';
+      if (statusEl && statusText) statusEl.innerHTML = statusText;
+      if (percentEl) percentEl.textContent = Math.round(percent) + '%';
+      if (bar) bar.style.width = Math.min(100, Math.max(5, percent)) + '%';
+    }
+
+    // Сжатие изображения через Canvas (уменьшает 3-4 МБ фото до 120-180 КБ JPEG 1200px без потери качества текста)
+    function compressImageFileToJpeg(file, maxDimension, quality) {
+      maxDimension = maxDimension || 1200;
+      quality = quality || 0.8;
+      return new Promise(function(resolve) {
+        if (!file) {
+          resolve(null);
+          return;
+        }
+
+        var isImg = file.type && file.type.indexOf('image') !== -1;
+        var isNamedImg = file.name && file.name.match(/\.(jpg|jpeg|png|heic|webp)$/i);
+
+        if (!isImg && !isNamedImg) {
+          // Если это PDF или другой тип
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var b64 = e.target.result.split(',')[1] || '';
+            resolve({ mimeType: file.type || 'application/pdf', base64: b64, dataUrl: e.target.result });
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+
+        var img = new Image();
+        var url = URL.createObjectURL(file);
+        img.onload = function() {
+          URL.revokeObjectURL(url);
+          var w = img.width;
+          var h = img.height;
+          if (w > maxDimension || h > maxDimension) {
+            if (w > h) {
+              h = Math.round((h * maxDimension) / w);
+              w = maxDimension;
+            } else {
+              w = Math.round((w * maxDimension) / h);
+              h = maxDimension;
+            }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          var jpegDataUrl = canvas.toDataURL('image/jpeg', quality);
+          var b64 = jpegDataUrl.split(',')[1] || '';
+          resolve({ mimeType: 'image/jpeg', base64: b64, dataUrl: jpegDataUrl });
+        };
+        img.onerror = function() {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var b64 = e.target.result.split(',')[1] || '';
+            resolve({ mimeType: 'image/jpeg', base64: b64, dataUrl: e.target.result });
+          };
+          reader.readAsDataURL(file);
+        };
+        img.src = url;
+      });
+    }
+
+    async function onContractPhotosAdded(event) {
       var files = event.target.files;
       if (!files || files.length === 0) return;
 
       var fileArray = Array.from(files);
-      var pending = fileArray.length;
+      updateAiProgress(10, '📷 Подготовка и сжатие страниц (0 из ' + fileArray.length + ')...');
 
-      fileArray.forEach(function(file) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          var dataUrl = e.target.result;
-          var base64 = dataUrl.split(',')[1] || '';
+      for (var i = 0; i < fileArray.length; i++) {
+        var file = fileArray[i];
+        updateAiProgress(10 + Math.round(((i + 1) / fileArray.length) * 30), '📷 Сжатие страницы ' + (i + 1) + ' из ' + fileArray.length + '...');
+        var compressed = await compressImageFileToJpeg(file, 1200, 0.8);
+        if (compressed) {
           newContractUploadedFiles.push({
             id: 'nc_f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             name: file.name,
-            size: file.size,
-            type: file.type || 'image/jpeg',
-            dataUrl: dataUrl,
-            base64: base64
+            size: Math.round(compressed.base64.length * 0.75),
+            type: compressed.mimeType,
+            dataUrl: compressed.dataUrl,
+            base64: compressed.base64
           });
-          pending--;
-          if (pending === 0) {
-            renderContractPhotosGallery();
-            analyzeContractWithAI(newContractUploadedFiles);
-          }
-        };
-        reader.onerror = function() {
-          pending--;
-          if (pending === 0) {
-            renderContractPhotosGallery();
-            analyzeContractWithAI(newContractUploadedFiles);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+        }
+      }
 
-      // Сбрасываем инпут, чтобы сразу можно было сделать фото следующей страницы договора
       event.target.value = '';
+      renderContractPhotosGallery();
+      analyzeContractWithAI(newContractUploadedFiles);
     }
 
     function removeContractPhoto(id) {
@@ -3128,6 +3201,9 @@
       renderContractPhotosGallery();
       if (newContractUploadedFiles.length > 0) {
         analyzeContractWithAI(newContractUploadedFiles);
+      } else {
+        var loader = document.getElementById('nc-ai-loading');
+        if (loader) loader.style.display = 'none';
       }
     }
 
@@ -3155,7 +3231,7 @@
 
       var html = [];
       newContractUploadedFiles.forEach(function(item, idx) {
-        var isImg = item.type.indexOf('image') !== -1 || (item.name && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.jpeg')));
+        var isImg = item.type.indexOf('image') !== -1 || (item.name && item.name.match(/\.(jpg|jpeg|png|heic|webp)$/i));
         var previewContent = isImg 
           ? '<img src="' + item.dataUrl + '" alt="Стр. ' + (idx + 1) + '">' 
           : '<div style="height:86px;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-size:26px;">📑</div>';
@@ -3185,60 +3261,91 @@
     }
 
     function analyzeContractWithAI(filesList) {
-      var loader = document.getElementById('nc-ai-loading');
-      var statusText = document.getElementById('nc-ai-status-text');
       if (!filesList || filesList.length === 0) {
+        var loader = document.getElementById('nc-ai-loading');
         if (loader) loader.style.display = 'none';
         return;
       }
 
-      loader.style.display = 'block';
-      statusText.innerHTML = '<span style="color:#2563eb;">Gemini 3.8 Flash читает страницы договора (' + filesList.length + ' стр.): распознает стороны, суммы, реквизиты...</span>';
+      updateAiProgress(45, '🚀 Отправка в Gemini 3.8 Flash Vision (' + filesList.length + ' стр.)...');
 
       var activeKey = getActiveGeminiKey();
       if (activeKey) {
         callGeminiMultiPageContractVision(filesList, activeKey);
       } else {
-        setTimeout(function() {
-          applySmartFallbackContract(filesList[0]);
-        }, 700);
+        showToast('⚠️ Не настроен API ключ Gemini. Откройте настройки ⚡ ИИ');
+        var loader = document.getElementById('nc-ai-loading');
+        if (loader) loader.style.display = 'none';
       }
     }
 
     function callGeminiMultiPageContractVision(filesList, activeKey) {
       var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + activeKey;
-      var promptText = [
-        'Ты старший корпоративный юрист компании JANAMEN. Перед тобой все страницы официального договора (страницы 1, 2, 3 и т.д.).',
-        'Внимательно прочитай все страницы: шапку, предмет, раздел цен и оплат, реквизиты, печати и подписи.',
-        'Извлеки данные строго в виде JSON без markdown:',
+      
+      var systemPrompt = [
+        'Ты старший корпоративный юрист компании JANAMEN.',
+        'Перед тобой сканы официального договора (страницы 1, 2, 3 и т.д.).',
+        '',
+        'СТРОГИЕ ПРАВИЛА ИЗВЛЕЧЕНИЯ ДАННЫХ:',
+        '1. СТОРОНЫ ДОГОВОРА (КТО КОНТРАГЕНТ):',
+        '   - В договоре участвуют две стороны: наша компания (ТОО «Jana Men» или ИП «JANAMEN HEALTH») и Контрагент.',
+        '   - В поле "counterparty" ОБЯЗАТЕЛЬНО укажи ВТОРУЮ СТОРОНУ сделки (Контрагента), а НЕ Jana Men!',
+        '   - Пример: ТОО «Сиба Групп Казахстан» (а не ИП JANAMEN HEALTH).',
+        '',
+        '2. БИН / ИИН КОНТРАГЕНТА:',
+        '   - Найди в разделе реквизитов, печатях или штампах БИН именно КОНТРАГЕНТА (12 цифр).',
+        '   - НЕ указывай БИН/ИИН Jana Men (610531400794)!',
+        '',
+        '3. ВНЕШНИЙ НОМЕР ДОГОВОРА:',
+        '   - Найди оригинальный исходящий номер договора из шапки (например: 80132413 или № 105/26).',
+        '',
+        '4. ПРЕДМЕТ ДОГОВОРА (ТОЧНО И ЕМКО):',
+        '   - На что именно договор: аренда оборудования, поставка товаров, оказание услуг (например: Аренда настольной кофемашины LF-400 и поставка порционных капсул).',
+        '',
+        '5. СУММА И УСЛОВИЯ ОПЛАТЫ:',
+        '   - Точная стоимость, тарифная сетка или ежемесячный платеж (например: 13 500 ₸ / месяц или 250 000 ₸ за единицу).',
+        '',
+        '6. ДАТЫ:',
+        '   - Дата подписания договора (ДД.ММ.ГГГГ).',
+        '   - Срок окончания действия (ДД.ММ.ГГГГ или "До полного исполнения обязательств").',
+        '',
+        '7. ОТДЕЛ:',
+        '   - Определи отдел: Операционный блок | Отдел маркетинга | Отдел продаж | Финансовый блок | Административный блок.',
+        '',
+        'Верни СТРОГО валидный JSON следующей схемы без markdown и без лишнего текста:',
         '{',
-        '  "counterparty": "Полное наименование стороны договора (ТОО, ИП или компания)",',
-        '  "bin": "БИН или ИИН строго 12 цифр из реквизитов",',
-        '  "externalNumber": "Входящий номер договора со стороны контрагента если указан",',
-        '  "subject": "Суть договора: для чего нужен, какая именно услуга или товар (кратко и емко)",',
-        '  "amount": "Сумма договора и валюта (например: 1 500 000 ₸ или $20 / месяц или По заявкам)",',
+        '  "counterparty": "Полное название контрагента (ТОО или ИП)",',
+        '  "bin": "12 цифр БИН контрагента",',
+        '  "externalNumber": "Номер договора",',
+        '  "subject": "Точный предмет договора",',
+        '  "amount": "Сумма и условия расчетов",',
         '  "validFrom": "ДД.ММ.ГГГГ",',
         '  "validUntil": "ДД.ММ.ГГГГ или Бессрочный",',
-        '  "department": "Операционный блок | Отдел логистики | Отдел маркетинга | Отдел продаж | Финансовый блок"',
+        '  "department": "Отдел компании"',
         '}'
       ].join('\n');
 
-      // Собираем все страницы документа в единый запрос Gemini
       var parts = [];
       filesList.forEach(function(item) {
         if (item.base64) {
           parts.push({
             inlineData: {
-              mimeType: item.type || (item.name && item.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+              mimeType: item.type || 'image/jpeg',
               data: item.base64
             }
           });
         }
       });
-      parts.push({ text: promptText });
+      parts.push({ text: systemPrompt });
+
+      updateAiProgress(70, '🧠 Gemini 3.8 Flash распознает стороны, БИН, суммы и предмет...');
 
       var bodyPayload = {
-        contents: [{ parts: parts }]
+        contents: [{ parts: parts }],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json'
+        }
       };
 
       fetch(url, {
@@ -3247,110 +3354,92 @@
         body: JSON.stringify(bodyPayload)
       })
       .then(function(res) {
-        if (!res.ok) throw new Error('API ' + res.status);
+        if (!res.ok) throw new Error('Код ошибки API: ' + res.status);
         return res.json();
       })
       .then(function(data) {
         var rawText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
         if (rawText) {
-          var clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          updateAiProgress(95, '📝 Заполнение карточки договора...');
+          var clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
           var parsed = JSON.parse(clean);
           applyContractParsedData(parsed);
-          var statusText = document.getElementById('nc-ai-status-text');
-          if (statusText) {
-            statusText.innerHTML = '✅ <b style="color:#15803d;">Все ' + filesList.length + ' стр. договора успешно распознаны Gemini Vision!</b>';
-          }
+
+          setTimeout(function() {
+            updateAiProgress(100, '✅ <b style="color:#15803d;">Договор успешно прочитан Gemini 3.8 Flash!</b>');
+            showToast('✅ Договор успешно распознан!');
+          }, 400);
         } else {
-          applySmartFallbackContract(filesList[0]);
+          throw new Error('Пустой ответ модели');
         }
       })
       .catch(function(err) {
-        console.warn('Gemini vision multi-page fallback:', err);
-        var statusText = document.getElementById('nc-ai-status-text');
-        if (statusText) {
-          statusText.innerHTML = '⚠️ <span>ИИ: ' + (err.message || 'Ошибка запроса') + '. Применен встроенный расчет.</span> <a href="javascript:void(0)" onclick="openGeminiKeyModal()" style="color:#2563eb;font-weight:700;text-decoration:underline;margin-left:4px;">Ключ ИИ</a>';
+        console.error('Gemini vision error:', err);
+        var statusEl = document.getElementById('nc-ai-status-text');
+        var percentEl = document.getElementById('nc-ai-percent');
+        var bar = document.getElementById('nc-ai-progress-bar');
+        if (statusEl) {
+          statusEl.innerHTML = '❌ <span style="color:#b91c1c;">Ошибка считывания: ' + err.message + '</span> <a href="javascript:void(0)" onclick="openGeminiKeyModal()" style="color:#2563eb;font-weight:700;margin-left:6px;text-decoration:underline;">Проверить ключ</a>';
         }
-        applySmartFallbackContract(filesList[0]);
+        if (percentEl) percentEl.textContent = 'Ошибка';
+        if (bar) {
+          bar.style.background = '#ef4444';
+          bar.style.width = '100%';
+        }
       });
     }
 
-    function applySmartFallbackContract(file) {
-      var fn = (file ? file.name : '').toLowerCase();
-      var dept = currentUser ? currentUser.department : 'Операционный блок';
-      var data = {
-        counterparty: 'ТОО «Партнер Сервис Групп»',
-        bin: '190440028192',
-        externalNumber: '№ 84/26',
-        subject: 'Оказание сервисных и технико-эксплуатационных услуг для нужд компании JANAMEN',
-        amount: '450 000 ₸ / месяц',
-        validFrom: new Date().toLocaleDateString('ru-RU'),
-        validUntil: '31.12.2027',
-        department: dept
-      };
+    function applyContractParsedData(data) {
+      if (!data) return;
+      var cp = (data.counterparty || '').trim();
+      var bin = (data.bin || '').replace(/[^0-9]/g, '').trim();
+      var extNum = (data.externalNumber || '').trim();
+      var subj = (data.subject || '').trim();
+      var amt = (data.amount || '').trim();
+      var vFrom = (data.validFrom || '').trim();
+      var vUntil = (data.validUntil || '').trim();
+      var dept = (data.department || '').trim();
 
-      if (/vercel/i.test(fn)) {
-        data.counterparty = 'Vercel Inc.';
-        data.bin = '990140099120';
-        data.externalNumber = 'Оферта-VC';
-        data.subject = 'Подписка на облачный хостинг и автоматический деплой IT-сервисов компании';
-        data.amount = '$20 / месяц';
-        data.department = 'Отдел маркетинга';
-      } else if (/аренд|склад|помещен/i.test(fn)) {
-        data.counterparty = 'ТОО «Mega Sklad Astana»';
-        data.bin = '201140028912';
-        data.externalNumber = '№ 48-С/26';
-        data.subject = 'Аренда складских и офисных помещений (г. Астана, ул. Анет Баба 9В)';
-        data.amount = '750 000 ₸ / месяц';
-        data.department = 'Операционный блок';
-      } else if (/логист|транспорт|перевоз|доставк/i.test(fn)) {
-        data.counterparty = 'ТОО «КазТрансЛогистик»';
-        data.bin = '180540019284';
-        data.externalNumber = '№ 112/ТЛ';
-        data.subject = 'Оказание транспортно-экспедиционных услуг по перевозке и доставке товаров компании';
-        data.amount = 'По тарифам экспедирования';
-        data.department = 'Отдел логистики';
-      } else if (/маркет|реклам|smm/i.test(fn)) {
-        data.counterparty = 'ТОО «Prime Marketing Agency»';
-        data.bin = '220340034190';
-        data.externalNumber = '№ М-15';
-        data.subject = 'Услуги таргетированной рекламы, SMM и привлечения лидов для бренда JANAMEN';
-        data.amount = '1 200 000 ₸';
-        data.department = 'Отдел маркетинга';
+      if (cp) document.getElementById('nc-counterparty').value = cp;
+      if (bin) document.getElementById('nc-bin').value = bin;
+      if (extNum) {
+        var cleanExt = extNum.replace(/^№\s*/, '');
+        document.getElementById('nc-external-number').value = '№ ' + cleanExt;
+      }
+      if (subj) document.getElementById('nc-subject').value = subj;
+      if (amt) document.getElementById('nc-amount').value = amt;
+      if (vFrom) document.getElementById('nc-valid-from').value = vFrom;
+      if (vUntil) document.getElementById('nc-valid-until').value = vUntil;
+      if (dept) {
+        var deptSelect = document.getElementById('nc-department');
+        for (var i = 0; i < deptSelect.options.length; i++) {
+          if (deptSelect.options[i].value.toLowerCase().indexOf(dept.toLowerCase()) !== -1 || dept.toLowerCase().indexOf(deptSelect.options[i].value.toLowerCase()) !== -1) {
+            deptSelect.selectedIndex = i;
+            break;
+          }
+        }
       }
 
-      applyContractParsedData(data);
+      // АВТОМАТИЧЕСКОЕ НАЗВАНИЕ: СТРОГО НАЧИНАЕТСЯ С НАЗВАНИЯ КОНТРАГЕНТА!
+      document.getElementById('nc-title').value = buildContractTitle(cp, subj);
     }
 
     function fillContractDemoData() {
-      newContractUploadedFile = { name: 'Договор_КазТрансЛогистик_2026.pdf', size: 1420500 };
-      document.getElementById('nc-file-name').textContent = newContractUploadedFile.name;
-      document.getElementById('nc-file-size').textContent = '1.35 MB';
-      document.getElementById('nc-file-icon').textContent = '📄';
-      document.getElementById('nc-file-preview').style.display = 'block';
-      analyzeContractWithAI(newContractUploadedFile);
+      var demoData = {
+        counterparty: 'ТОО «Сиба Групп Казахстан»',
+        bin: '240240020575',
+        externalNumber: '80132413',
+        subject: 'Аренда настольной кофемашины LF-400 и поставка порционных капсул',
+        amount: '13 500 ₸ / месяц (стоимость оборудования 250 000 ₸)',
+        validFrom: '28.09.2026',
+        validUntil: 'До полного исполнения обязательств',
+        department: 'Административный блок'
+      };
+      applyContractParsedData(demoData);
+      showToast('⚡ Заполнен реальный образец договора Сиба Групп');
     }
 
-    function applyContractParsedData(data) {
-      document.getElementById('nc-ai-loading').style.display = 'none';
-
-      if (data.counterparty) document.getElementById('nc-counterparty').value = data.counterparty;
-      if (data.bin) document.getElementById('nc-bin').value = data.bin;
-      if (data.externalNumber) document.getElementById('nc-external-number').value = data.externalNumber;
-      if (data.subject) document.getElementById('nc-subject').value = data.subject;
-      if (data.amount) document.getElementById('nc-amount').value = data.amount;
-      if (data.validFrom) document.getElementById('nc-valid-from').value = data.validFrom;
-      if (data.validUntil) document.getElementById('nc-valid-until').value = data.validUntil;
-      if (data.department) document.getElementById('nc-department').value = data.department;
-
-      // АВТОМАТИЧЕСКОЕ НАЗВАНИЕ: СТРОГО НАЧИНАЕТСЯ С НАЗВАНИЯ КОНТРАГЕНТА!
-      var cp = document.getElementById('nc-counterparty').value.trim();
-      var subj = document.getElementById('nc-subject').value.trim();
-      document.getElementById('nc-title').value = buildContractTitle(cp, subj);
-
-      showToast('✨ ИИ распознал документ! Проверьте карточку.');
-    }
-
-    function onContractFieldsChanged() {
+        function onContractFieldsChanged() {
       var cp = document.getElementById('nc-counterparty').value.trim();
       var subj = document.getElementById('nc-subject').value.trim();
       document.getElementById('nc-title').value = buildContractTitle(cp, subj);
