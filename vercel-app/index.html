@@ -160,26 +160,45 @@
     textarea { resize: vertical; min-height: 95px; line-height: 1.5; }
 
     /* Type Selector Pills */
-    .type-pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 14px; padding-bottom: 4px; }
-    .type-pills::-webkit-scrollbar { display: none; }
+    .type-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
     .type-pill {
       flex: 0 0 auto;
-      padding: 8px 12px;
+      padding: 7px 11px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       background: #f1f5f9;
-      color: var(--text-muted);
+      color: var(--text);
       border: 1px solid var(--border);
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
     }
+    .type-pill:active { transform: scale(0.96); }
     .type-pill.active {
       background: var(--primary);
       color: #fff;
       border-color: var(--primary);
       box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Custom File Upload Box */
+    .file-upload-box {
+      background: #f8fafc;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .file-upload-box:active {
+      transform: scale(0.98);
+      background: #f1f5f9;
     }
 
     /* Searchable Autocomplete Dropdown */
@@ -425,6 +444,114 @@
       pointer-events: none;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(-5px); }
+
+    /* ==================== АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ ==================== */
+    @media (max-width: 540px) {
+      body {
+        font-size: 13px;
+      }
+      .top-bar {
+        padding: 9px 12px;
+      }
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+      }
+      .user-details h4 {
+        font-size: 12.5px;
+        max-width: 175px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .user-details p {
+        font-size: 11px;
+        max-width: 175px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .btn-switch-user {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+      .nav-tabs-wrapper {
+        padding: 6px 10px;
+        top: 55px;
+      }
+      .nav-tabs {
+        padding: 3px;
+        gap: 3px;
+      }
+      .nav-tab {
+        padding: 8px 6px;
+        font-size: 11px;
+        min-width: 0;
+      }
+      .container {
+        padding: 10px 10px max(34px, env(safe-area-inset-bottom, 24px)) 10px;
+      }
+      .card {
+        padding: 14px 12px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+      }
+      .card-title {
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+      .field {
+        margin-bottom: 12px;
+      }
+      .field label {
+        font-size: 11.5px;
+        margin-bottom: 5px;
+      }
+      .input-text, .select-text, textarea {
+        padding: 10px 11px;
+        font-size: 13px;
+      }
+      textarea {
+        min-height: 80px;
+      }
+      .type-pill {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+      .btn-ai {
+        padding: 13px 14px;
+        font-size: 13.5px;
+      }
+      .doc-preview {
+        padding: 16px 12px;
+      }
+      .doc-preview-head {
+        font-size: 11px;
+      }
+      .doc-preview-title {
+        font-size: 13.5px;
+        margin: 10px 0;
+      }
+      .doc-preview-body {
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .doc-preview-amount {
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+      .modal-content {
+        padding: 16px 14px;
+        max-height: 94vh;
+        border-radius: 14px;
+      }
+      /* На мобильных экранные сетки в модалках разворачиваем в 1 колонку */
+      #modal-new-contract [style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -549,8 +676,8 @@
 
   <div class="nav-tabs-wrapper">
     <div class="nav-tabs">
-      <div class="nav-tab active" data-tab="create" onclick="switchTab('create')">📝 Новый документ</div>
-      <div class="nav-tab" data-tab="registry" onclick="switchTab('registry')">📑 Реестр документов</div>
+      <div class="nav-tab active" data-tab="create" onclick="switchTab('create')">📝 Создать СЗ</div>
+      <div class="nav-tab" data-tab="registry" onclick="switchTab('registry')">📑 Реестр</div>
       <div class="nav-tab" data-tab="contracts" onclick="switchTab('contracts')">📂 Договоры</div>
     </div>
   </div>
@@ -561,19 +688,24 @@
     <div id="tab-create" class="tab-pane active">
       <div class="card">
         <div class="card-title">
-          <span>✨ Инициация документа</span>
-          <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);" id="initiator-badge"></span>
+          <div style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 15px; font-weight: 800; color: var(--text);">✨ Инициация документа</span>
+              <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 10.5px; padding: 2px 8px;">Gemini 2.5 AI</span>
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;" id="initiator-badge"></div>
+          </div>
         </div>
 
         <!-- Выбор типа документа -->
         <div class="field">
           <label>Тип документа:</label>
           <div class="type-pills">
-            <div class="type-pill active" onclick="selectDocType('sz_payment')">📝 Служебная записка (Оплата / Счета)</div>
-            <div class="type-pill" onclick="selectDocType('sz_general')">📋 СЗ общая (Хозяйственная)</div>
-            <div class="type-pill" onclick="selectDocType('vacation_bs')">🏖 Заявление на отпуск (БС / трудовой)</div>
-            <div class="type-pill" onclick="selectDocType('advance')">💵 Заявление на аванс</div>
-            <div class="type-pill" onclick="selectDocType('resignation')">📄 Заявление на увольнение</div>
+            <div class="type-pill active" onclick="selectDocType('sz_payment')">💳 СЗ на оплату</div>
+            <div class="type-pill" onclick="selectDocType('sz_general')">📋 Общая СЗ</div>
+            <div class="type-pill" onclick="selectDocType('vacation_bs')">🏖 Отпуск БС</div>
+            <div class="type-pill" onclick="selectDocType('advance')">💵 Аванс</div>
+            <div class="type-pill" onclick="selectDocType('resignation')">📄 Увольнение</div>
           </div>
         </div>
 
@@ -605,8 +737,17 @@
 
         <!-- Прикрепление файлов / сканов / инвойсов / АВР -->
         <div class="field">
-          <label id="label-file">Прикрепить скан заявления / счет / инвойс / АВР (PDF или фото):</label>
-          <input type="file" id="sz-file" class="input-text" accept=".pdf,image/*">
+          <label id="label-file">Прикрепить подтверждающий документ (PDF или фото):</label>
+          <input type="file" id="sz-file" accept=".pdf,image/*" style="display: none;" onchange="onSZAttachmentChange(event)">
+          <div class="file-upload-box" onclick="document.getElementById('sz-file').click()" id="sz-file-box">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+              <span style="font-size: 22px;" id="sz-file-icon">📎</span>
+              <div style="text-align: left;">
+                <div id="sz-file-name" style="font-size: 12.5px; font-weight: 700; color: var(--primary);">Сделать фото или прикрепить файл</div>
+                <div id="sz-file-sub" style="font-size: 11px; color: var(--text-muted);">PDF, JPG, PNG до 20 МБ</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Чекбокс сдачи оригинала АВР (если прикреплен договор) -->
@@ -1559,6 +1700,20 @@
       }
     }
 
+    function onSZAttachmentChange(event) {
+      var file = event.target.files && event.target.files[0];
+      if (file) {
+        document.getElementById('sz-file-icon').textContent = '📄';
+        document.getElementById('sz-file-name').textContent = '✅ ' + file.name;
+        document.getElementById('sz-file-sub').textContent = (file.size / 1024 / 1024).toFixed(2) + ' МБ • Нажмите для замены';
+        var box = document.getElementById('sz-file-box');
+        if (box) {
+          box.style.borderColor = 'var(--success)';
+          box.style.background = 'var(--success-light)';
+        }
+      }
+    }
+
     // ==================== ВЫБОР ДОГОВОРА СВОЕГО ОТДЕЛА ====================
     function onContractSearchFocus() {
       onContractSearchInput(document.getElementById('sz-contract-search').value);
@@ -2207,6 +2362,17 @@
       // Сброс
       document.getElementById('sz-raw-text').value = '';
       document.getElementById('sz-generated-block').style.display = 'none';
+      var fileInp = document.getElementById('sz-file');
+      if (fileInp) fileInp.value = '';
+      var fileNameEl = document.getElementById('sz-file-name');
+      if (fileNameEl) fileNameEl.textContent = 'Сделать фото или прикрепить файл';
+      var fileSubEl = document.getElementById('sz-file-sub');
+      if (fileSubEl) fileSubEl.textContent = 'PDF, JPG, PNG до 20 МБ';
+      var fileBox = document.getElementById('sz-file-box');
+      if (fileBox) {
+        fileBox.style.borderColor = '#cbd5e1';
+        fileBox.style.background = '#f8fafc';
+      }
       selectedCoExecutors = [];
       clearSelectedContract();
       renderCoExecTags();
