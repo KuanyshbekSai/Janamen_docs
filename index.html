@@ -865,7 +865,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       width: 100%;
-      max-width: 560px;
+      max-width: 860px;
       max-height: 92vh;
       overflow-y: auto;
       padding: 22px;
@@ -1039,20 +1039,34 @@
       .game-banner {
         max-width: 1600px;
         width: 96%;
-        margin: 16px auto 18px auto;
-        padding: 22px 28px;
-        border-radius: var(--radius-lg);
+        margin: 8px auto 12px auto;
+        padding: 10px 18px;
+        border-radius: var(--radius);
       }
       .game-avatar-ring {
-        width: 52px;
-        height: 52px;
-        font-size: 24px;
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
       }
       .game-user-name {
-        font-size: 17px;
+        font-size: 14.5px;
       }
       .game-user-role {
-        font-size: 13px;
+        font-size: 12px;
+      }
+      .game-banner-top {
+        margin-bottom: 6px;
+      }
+      .game-progress-bar-wrap {
+        margin-bottom: 6px;
+        height: 5px;
+      }
+      .game-quests-row {
+        gap: 6px;
+      }
+      .game-quest-pill {
+        padding: 2px 8px;
+        font-size: 11px;
       }
       .nav-tabs-wrapper {
         padding: 10px 0;
@@ -1160,6 +1174,80 @@
       .detail-desktop-split {
         display: block;
       }
+    }
+
+    /* На десктопе скрываем мобильные кнопки съемки с камеры */
+    @media (min-width: 768px) {
+      .btn-camera-trigger {
+        display: none !important;
+      }
+    }
+
+    /* Анимации для интеллектуального распознавания документов */
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(232, 116, 17, 0.4); }
+      50% { box-shadow: 0 0 16px 4px rgba(232, 116, 17, 0.25); }
+      100% { box-shadow: 0 0 0 0 rgba(232, 116, 17, 0.4); }
+    }
+    @keyframes shimmerBar {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    /* Канбан доска реестра СЗ */
+    .kanban-view-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      align-items: flex-start;
+      margin-top: 12px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+    }
+    @media (min-width: 1200px) {
+      .kanban-view-container {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+    .kanban-column {
+      background: var(--card-sub);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      min-height: 480px;
+      display: flex;
+      flex-direction: column;
+    }
+    .kanban-col-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .kanban-col-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+    .kanban-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .kanban-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--primary);
     }
   </style>
 </head>
@@ -1407,16 +1495,16 @@
               <input type="file" id="sz-camera-input" accept="image/*" capture="environment" style="display: none;" onchange="onSZPhotosAdded(event)">
               <input type="file" id="sz-gallery-input" accept="image/*,application/pdf" multiple style="display: none;" onchange="onSZPhotosAdded(event)">
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <div class="file-upload-box" onclick="document.getElementById('sz-camera-input').click()" style="text-align: center; padding: 10px 8px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+                <div class="file-upload-box btn-camera-trigger" onclick="document.getElementById('sz-camera-input').click()" style="text-align: center; padding: 10px 8px;">
                   <div style="font-size: 20px; margin-bottom: 2px;">📷</div>
                   <div style="font-size: 12px; font-weight: 700; color: var(--primary);">Снять на камеру</div>
                   <div style="font-size: 10.5px; color: var(--text-muted);">Поочередно стр. 1, 2...</div>
                 </div>
                 <div class="file-upload-box" onclick="document.getElementById('sz-gallery-input').click()" style="text-align: center; padding: 10px 8px;">
-                  <div style="font-size: 20px; margin-bottom: 2px;">🖼️ 📑</div>
-                  <div style="font-size: 12px; font-weight: 700; color: var(--primary);">Выбрать пачкой</div>
-                  <div style="font-size: 10.5px; color: var(--text-muted);">Из галереи или PDF</div>
+                  <div style="font-size: 20px; margin-bottom: 2px;">📁 📑</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--primary);">Загрузить файлы / скан</div>
+                  <div style="font-size: 10.5px; color: var(--text-muted);">Пачка фото или PDF</div>
                 </div>
               </div>
 
@@ -1512,6 +1600,7 @@
                 </div>
                 <div class="doc-preview-body" id="prev-body"></div>
                 <div class="doc-preview-amount" id="prev-amount"></div>
+                <div id="sz-amount-warning" style="display: none; background: #fff5f5; border: 1.5px solid #feb2b2; border-radius: 8px; padding: 10px 14px; margin: 10px 0; font-size: 12px; color: #9b2c2c; font-weight: 600;"></div>
                 <div class="doc-preview-sign" id="prev-sign"></div>
 
                 <div class="doc-preview-audit">
@@ -1549,9 +1638,15 @@
             <span style="font-size: 15px; font-weight: 800; color: var(--text);">📑 Реестр служебных записок и заявлений</span>
             <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 11px;" id="registry-count-badge">0 документов</span>
           </div>
-          <button class="btn btn-secondary" onclick="loadSZListFromBackend(); showToast('🔄 Синхронизация с реестром...');" style="font-size: 11.5px; padding: 6px 12px;">
-            🔄 Синхронизировать
-          </button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: inline-flex; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 2px;">
+              <button id="btn-view-kanban" class="btn" onclick="switchRegistryView('kanban')" style="padding: 5px 12px; font-size: 11.5px; border: none; font-weight: 700; background: var(--primary); color: #fff; border-radius: 6px;">📊 Канбан</button>
+              <button id="btn-view-list" class="btn" onclick="switchRegistryView('list')" style="padding: 5px 12px; font-size: 11.5px; border: none; font-weight: 700; background: transparent; color: var(--text); border-radius: 6px;">📋 Список</button>
+            </div>
+            <button class="btn btn-secondary" onclick="loadSZListFromBackend(); showToast('🔄 Синхронизация с реестром...');" style="font-size: 11.5px; padding: 6px 12px;">
+              🔄 Синхронизировать
+            </button>
+          </div>
         </div>
 
         <!-- Сквозной поиск и мульти-фильтры (отделы, типы, исполнители, статусы) -->
@@ -1595,7 +1690,8 @@
         </div>
       </div>
 
-      <div id="sz-list-container"></div>
+      <div id="sz-kanban-container" class="kanban-view-container"></div>
+      <div id="sz-list-container" style="display: none;"></div>
     </div>
 
     <!-- ==================== ВКЛАДКА 3: ЭЛЕКТРОННЫЙ АРХИВ ДОГОВОРОВ ==================== -->
@@ -1641,7 +1737,7 @@
 
   <!-- ==================== ПОЛНОЦЕННОЕ ИНФОРМАТИВНОЕ ОКНО КАРТОЧКИ СЗ / ЗАЯВЛЕНИЯ ==================== -->
   <div id="modal-detail" class="modal-overlay">
-    <div class="modal-content" style="max-width: 1100px; width: 95vw; max-height: 94vh;">
+    <div class="modal-content" style="max-width: 1400px; width: 96vw; max-height: 94vh;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
         <div>
           <span class="status-badge badge-pending" id="det-type-badge">Служебная записка</span>
@@ -1666,6 +1762,7 @@
               <div class="doc-preview-body" id="det-view-body"></div>
               <div class="doc-preview-amount" id="det-view-amount" style="display: none;"></div>
               <div class="doc-preview-sign" id="det-view-sign"></div>
+              <div id="det-doc-iframe-wrap" style="display: none; margin-top: 12px;"></div>
             </div>
           </div>
 
@@ -1735,8 +1832,8 @@
             </button>
           </div>
 
-          <!-- 5. Скан подписанного оригинала -->
-          <div class="inspect-section" style="border: 1px dashed var(--warning); background: #fffbeb;">
+          <!-- 5. Скан подписанного оригинала (доступно инициатору после полного утверждения) -->
+          <div class="inspect-section" id="det-legal-section" style="display: none; border: 1px dashed var(--warning); background: #fffbeb;">
             <div class="inspect-section-title">
               <span style="color: #b45309;">⭐️ Финальный оригинал с подписями</span>
               <span id="det-legal-badge" class="status-badge badge-pending">Ожидается</span>
@@ -1747,15 +1844,27 @@
               <label style="color: var(--text); font-weight: 600;">Прикрепить скан/фото подписанного оригинала:</label>
               <input type="file" id="signed-scan-file" class="input-text" accept=".pdf,image/*">
             </div>
-            <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px;">
+            <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px; width: 100%;">
               📷 Загрузить скан подписанного документа
             </button>
           </div>
 
           <!-- Кнопки визирования для текущего согласующего -->
-          <div id="det-approval-actions" style="display: flex; gap: 8px; margin-top: 16px;">
-            <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5;">✅ Согласовать</button>
-            <button class="btn btn-secondary" onclick="makeApprovalDecision('reject')" style="flex: 1; color: var(--danger);">❌ Отклонить</button>
+          <div id="det-approval-actions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5;">✅ Согласовать</button>
+              <button class="btn btn-secondary" onclick="openRejectReasonBox()" style="flex: 1; color: var(--danger); font-weight: 700;">❌ Отклонить</button>
+            </div>
+            
+            <!-- Поле ввода обоснования к отказу -->
+            <div id="det-reject-box" style="display: none; background: #fff5f5; border: 1.5px solid #feb2b2; border-radius: 10px; padding: 12px; margin-top: 6px;">
+              <label style="font-size: 12px; font-weight: 700; color: #9b2c2c; display: block; margin-bottom: 6px;">Обоснование отказа / замечания (будут зафиксированы в листе виз и отправлены инициатору):</label>
+              <textarea id="det-reject-reason-input" class="input-text" rows="3" placeholder="Укажите, что именно нужно исправить (неверная сумма, нет закрывающего акта, прикрепить другой счет и т.д.)..."></textarea>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="btn" onclick="confirmRejectSZ()" style="flex: 1; background: #e53e3e; color: #fff; font-weight: 700; font-size: 12px; padding: 8px;">❌ Подтвердить отклонение</button>
+                <button class="btn btn-secondary" onclick="closeRejectReasonBox()" style="padding: 8px 14px; font-size: 12px;">Отмена</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1764,7 +1873,7 @@
 
   <!-- ==================== МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ ДОГОВОРА С ИИ-РАСПОЗНАВАНИЕМ ==================== -->
   <div id="modal-new-contract" class="modal-overlay">
-    <div class="modal-content" style="max-width: 620px;">
+    <div class="modal-content" style="max-width: 860px; width: 95vw;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
         <div>
           <span class="status-badge" style="background: var(--primary-light); color: var(--primary); font-weight: 700;">✨ ИИ-Регистрация договоров</span>
@@ -1786,14 +1895,11 @@
         <input type="file" id="nc-gallery-input" accept="image/*,application/pdf" multiple onchange="onContractPhotosAdded(event)" style="display: none;">
 
         <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-          <button type="button" class="btn btn-primary" onclick="document.getElementById('nc-camera-input').click()" style="padding: 9px 14px; font-size: 12px;">
+          <button type="button" class="btn btn-primary btn-camera-trigger" onclick="document.getElementById('nc-camera-input').click()" style="padding: 9px 14px; font-size: 12px;">
             📷 Снять страницу (Камера)
           </button>
           <button type="button" class="btn btn-secondary" onclick="document.getElementById('nc-gallery-input').click()" style="padding: 9px 14px; font-size: 12px; border-color: #cbd5e1;">
-            🖼️ Выбрать пачкой из галереи
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="fillContractDemoData()" style="padding: 9px 11px; font-size: 11.5px;">
-            ⚡ Демо-образец
+            📁 Выбрать пачкой / скан
           </button>
         </div>
 
@@ -1807,25 +1913,30 @@
         </div>
       </div>
 
-      <!-- Индикатор работы ИИ: Интерактивный Progress Bar со стадиями -->
-      <div id="nc-ai-loading" style="display: none; background: #ffffff; border: 1.5px solid var(--primary); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(30, 70, 43, 0.12);">
+      <!-- Индикатор работы ИИ: Интерактивный Progress Bar со стадиями и зацикленной анимацией -->
+      <div id="nc-ai-loading" style="display: none; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 50%, #fef3c7 100%); border: 1.5px solid var(--primary); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; box-shadow: 0 4px 18px rgba(232, 116, 17, 0.2); animation: pulseGlow 2.5s ease-in-out infinite;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 18px; height: 18px; border: 2.5px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-            <span style="font-size: 13px; font-weight: 800; color: var(--primary);" id="nc-ai-status-text">Оптимизация страниц договора...</span>
+            <div style="width: 20px; height: 20px; border: 3px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <span style="font-size: 13.5px; font-weight: 800; color: var(--primary);" id="nc-ai-status-text">Оптимизация страниц договора...</span>
           </div>
-          <span id="nc-ai-percent" style="font-size: 12px; font-weight: 800; color: var(--gold);">25%</span>
+          <span id="nc-ai-percent" style="font-size: 12px; font-weight: 800; color: var(--primary-dark);">25%</span>
         </div>
         
-        <!-- Анимированная полоса прогресса -->
-        <div style="width: 100%; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-          <div id="nc-ai-progress-bar" style="width: 25%; height: 100%; background: linear-gradient(90deg, #1E462B, #967438); border-radius: 4px; transition: width 0.3s ease;"></div>
+        <!-- Анимированная полоса прогресса со скользящим градиентом -->
+        <div style="width: 100%; height: 7px; background: #fed7aa; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+          <div id="nc-ai-progress-bar" style="width: 25%; height: 100%; background: linear-gradient(90deg, #E87411, #F59E0B, #E87411); background-size: 200% 100%; border-radius: 4px; transition: width 0.3s ease; animation: shimmerBar 1.5s linear infinite;"></div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;" id="nc-ai-step-desc">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #78350f; font-weight: 600;" id="nc-ai-step-desc">
           <span>Шаг 1: Сжатие фото</span>
           <span>Шаг 2: Vision OCR</span>
           <span>Шаг 3: Парсинг реквизитов</span>
+        </div>
+
+        <!-- Ротирующийся карусель умных советов по договорам -->
+        <div id="nc-ai-tips" style="margin-top: 10px; padding: 8px 12px; background: rgba(232, 116, 17, 0.08); border-radius: 8px; font-size: 11.5px; color: #9a3412; font-weight: 600; display: flex; align-items: center; gap: 8px; min-height: 34px; transition: opacity 0.3s ease;">
+          💡 Анализ документа нейросетью...
         </div>
       </div>
 
@@ -3861,6 +3972,27 @@
         document.getElementById('prev-amount').style.display = 'none';
       }
 
+      var warningEl = document.getElementById('sz-amount-warning');
+      if (warningEl) {
+        if (data.amountMismatch || (data.parsedInvoiceAmount && data.amount && Math.abs(Number(data.parsedInvoiceAmount) - Number(data.amount)) > 1)) {
+          var invAmt = Number(data.parsedInvoiceAmount || data.amount).toLocaleString('ru-RU');
+          var reqAmt = Number(data.requestedAmount || data.amount).toLocaleString('ru-RU');
+          warningEl.style.display = 'block';
+          warningEl.style.background = '#fff5f5';
+          warningEl.style.borderColor = '#feb2b2';
+          warningEl.style.color = '#9b2c2c';
+          warningEl.innerHTML = '⚠️ <b>Внимание: Обнаружено расхождение сумм!</b><br>В прикрепленном счете/накладной: <b>' + invAmt + ' ₸</b>, а в запросе сотрудника: <b>' + reqAmt + ' ₸</b>. Пожалуйста, проверьте и скорректируйте сумму перед запуском.';
+        } else if (data.parsedInvoiceAmount && Number(data.parsedInvoiceAmount) > 0) {
+          warningEl.style.display = 'block';
+          warningEl.style.background = '#f0fdf4';
+          warningEl.style.borderColor = '#bbf7d0';
+          warningEl.style.color = '#166534';
+          warningEl.innerHTML = '✅ <b>Сумма подтверждена сканом документа:</b> ' + Number(data.parsedInvoiceAmount).toLocaleString('ru-RU') + ' ₸ (без расхождений)';
+        } else {
+          warningEl.style.display = 'none';
+        }
+      }
+
       var coExecText = selectedCoExecutors.length > 0 ? (', ' + selectedCoExecutors.join(', ')) : '';
       document.getElementById('prev-sign').textContent = 'Исп: ' + (currentUser ? currentUser.name : 'Сотрудник') + coExecText + '\nДата: ' + new Date().toLocaleDateString('ru-RU');
 
@@ -4407,6 +4539,10 @@
         countBadge.textContent = filtered.length + ' из ' + mockSZList.length + ' документов';
       }
 
+      // Отрисовка Канбан-доски и списка
+      renderSZKanban(filtered);
+      switchRegistryView(currentRegistryView);
+
       if (filtered.length === 0) {
         cont.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text-muted);font-size:13px;grid-column:1 / -1;">Документов не найдено по заданным фильтрам.</div>';
         return;
@@ -4450,6 +4586,124 @@
       });
     }
 
+    // ==================== КАНБАН-ДОСКА РЕЕСТРА СЗ ====================
+    var currentRegistryView = localStorage.getItem('sz_registry_view') || 'kanban';
+
+    function switchRegistryView(mode) {
+      currentRegistryView = mode || 'kanban';
+      try { localStorage.setItem('sz_registry_view', currentRegistryView); } catch(e) {}
+
+      var btnKanban = document.getElementById('btn-view-kanban');
+      var btnList = document.getElementById('btn-view-list');
+      var kanbanCont = document.getElementById('sz-kanban-container');
+      var listCont = document.getElementById('sz-list-container');
+
+      if (currentRegistryView === 'kanban') {
+        if (btnKanban) {
+          btnKanban.style.background = 'var(--primary)';
+          btnKanban.style.color = '#ffffff';
+        }
+        if (btnList) {
+          btnList.style.background = 'transparent';
+          btnList.style.color = 'var(--text)';
+        }
+        if (kanbanCont) kanbanCont.style.display = 'grid';
+        if (listCont) listCont.style.display = 'none';
+      } else {
+        if (btnList) {
+          btnList.style.background = 'var(--primary)';
+          btnList.style.color = '#ffffff';
+        }
+        if (btnKanban) {
+          btnKanban.style.background = 'transparent';
+          btnKanban.style.color = 'var(--text)';
+        }
+        if (kanbanCont) kanbanCont.style.display = 'none';
+        if (listCont) listCont.style.display = 'grid';
+      }
+    }
+
+    function getSZKanbanStage(item) {
+      var appr = (item.statusApproval || '').toLowerCase();
+      var pay = (item.statusPayment || '').toLowerCase();
+      var leg = (item.statusLegal || '').toLowerCase();
+
+      if (appr.indexOf('отклонено') !== -1 || leg.indexOf('сдан в архив') !== -1 || leg.indexOf('в архиве') !== -1) {
+        return 'archive';
+      }
+      if (leg.indexOf('ожидает') !== -1 && (appr.indexOf('утверждено') !== -1 || pay.indexOf('оплачено') !== -1)) {
+        return 'waiting_scan';
+      }
+      if (pay.indexOf('оплачено') !== -1) {
+        return 'paid';
+      }
+      if (appr.indexOf('утверждено') !== -1) {
+        return 'approved';
+      }
+      return 'pending';
+    }
+
+    function renderSZKanban(filteredList) {
+      var container = document.getElementById('sz-kanban-container');
+      if (!container) return;
+
+      var columns = [
+        { id: 'pending', title: '⏳ На согласовании', color: '#E87411', bg: '#fff7ed', items: [] },
+        { id: 'approved', title: '✅ Утверждено Шефом', color: '#16a34a', bg: '#f0fdf4', items: [] },
+        { id: 'paid', title: '💳 Оплачено', color: '#2563eb', bg: '#eff6ff', items: [] },
+        { id: 'waiting_scan', title: '⭐️ Ожидает оригинал', color: '#d97706', bg: '#fffbeb', items: [] },
+        { id: 'archive', title: '📦 Архив / Завершено', color: '#64748b', bg: '#f8fafc', items: [] }
+      ];
+
+      filteredList.forEach(function(item) {
+        var stageId = getSZKanbanStage(item);
+        var col = columns.find(function(c) { return c.id === stageId; });
+        if (col) col.items.push(item);
+      });
+
+      var html = [];
+      columns.forEach(function(col) {
+        html.push('<div class="kanban-column">');
+        html.push('<div class="kanban-col-header" style="border-bottom-color:' + col.color + ';">');
+        html.push('<span style="color:' + col.color + ';">' + col.title + '</span>');
+        html.push('<span class="status-badge" style="background:' + col.bg + ';color:' + col.color + ';font-size:11px;font-weight:800;">' + col.items.length + '</span>');
+        html.push('</div>');
+        html.push('<div class="kanban-col-cards">');
+
+        if (col.items.length === 0) {
+          html.push('<div style="text-align:center;padding:24px 8px;color:var(--text-muted);font-size:11.5px;border:1px dashed var(--border);border-radius:6px;">Нет документов на этом этапе</div>');
+        } else {
+          col.items.forEach(function(item) {
+            var coExec = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 ' + item.coExecutors.join(', ')) : '';
+            var amountStr = (item.amount && item.amount > 0) ? ('<div style="font-size:12px;font-weight:800;color:var(--primary);margin-top:4px;">💰 ' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</div>') : '';
+            
+            html.push('<div class="kanban-card" onclick="openSZDetailByNumber(\'' + item.number + '\')">');
+            html.push('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">');
+            html.push('<span style="font-weight:800;font-size:12.5px;color:var(--primary);">' + item.number + '</span>');
+            html.push('<span style="font-size:10.5px;color:var(--text-muted);">' + item.date + '</span>');
+            html.push('</div>');
+            html.push('<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.35;">' + item.title + '</div>');
+            html.push('<div style="font-size:11px;color:var(--text-muted);line-height:1.4;">👤 ' + item.initiator + ' (' + item.department + ')' + coExec + '</div>');
+            html.push(amountStr);
+            if (item.currentApprover && item.currentApprover !== '-' && item.currentApprover !== 'Завершено') {
+              html.push('<div style="margin-top:6px;font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);">⏳ Виза: <b>' + item.currentApprover + '</b></div>');
+            }
+            html.push('</div>');
+          });
+        }
+
+        html.push('</div>');
+        html.push('</div>');
+      });
+
+      container.innerHTML = html.join('');
+    }
+
+    function openSZDetailByNumber(num) {
+      var it = mockSZList.find(function(x) { return x.number === num; });
+      if (it) openSZDetail(it);
+    }
+
     // ==================== ИНФОРМАТИВНЫЙ ДЕТАЛЬНЫЙ ПРОСМОТР ====================
     var activeDetailItem = null;
 
@@ -4478,15 +4732,46 @@
       var coSign = (item.coExecutors && item.coExecutors.length > 0) ? (', ' + item.coExecutors.join(', ')) : '';
       document.getElementById('det-view-sign').textContent = 'Исп: ' + item.initiator + coSign + '\nДата регистрации: ' + item.date;
 
-      // Поиск привязанного договора
+      // Встроенный просмотр официального Google Doc (если ссылка сформирована)
+      var docWrap = document.getElementById('det-doc-iframe-wrap');
+      if (docWrap) {
+        if (item.docUrl) {
+          docWrap.style.display = 'block';
+          docWrap.innerHTML = '<div style="font-size:11.5px;font-weight:700;color:var(--primary);margin-bottom:6px;">Встроенный просмотр официального Google Doc:</div><iframe src="' + item.docUrl + '?embedded=true" style="width:100%;height:450px;border:1px solid var(--border);border-radius:8px;background:#fff;"></iframe>';
+        } else {
+          docWrap.style.display = 'none';
+          docWrap.innerHTML = '';
+        }
+      }
+
+      // Поиск привязанного договора с многофакторным скорингом (исключает ложные совпадения одинаковых номеров)
       var boundContract = null;
-      if (item.contract && item.contract !== 'Не привязан к договору' && item.contract !== 'Нет' && item.contract !== 'б/н') {
-        var cNorm = String(item.contract).toLowerCase();
-        boundContract = mockContracts.find(function(c) {
-          return (c.number && cNorm.indexOf(c.number.toLowerCase()) !== -1) ||
-                 (c.title && cNorm.indexOf(c.title.toLowerCase()) !== -1) ||
-                 (c.counterparty && cNorm.indexOf(c.counterparty.toLowerCase()) !== -1);
+      var cNorm = ((item.contract || '') + ' ' + (item.title || '') + ' ' + (item.counterparty || '')).toLowerCase().trim();
+      if (cNorm && cNorm !== 'не привязан к договору' && cNorm !== 'нет' && cNorm !== 'б/н' && cNorm !== 'не требуется') {
+        var bestScore = 0;
+        mockContracts.forEach(function(c) {
+          var score = 0;
+          var cp = (c.counterparty || '').toLowerCase().replace(/['"«»]/g, '').trim();
+          var bin = String(c.bin || '').trim();
+          var title = (c.title || '').toLowerCase().trim();
+          var num = (c.number || '').toLowerCase().trim();
+
+          if (cp && cNorm.indexOf(cp) !== -1) score += 60;
+          if (bin && cNorm.indexOf(bin) !== -1) score += 50;
+          if (title && cNorm.indexOf(title) !== -1) score += 30;
+          if (num && cNorm.indexOf(num) !== -1) score += 20;
+
+          if (score > bestScore) {
+            bestScore = score;
+            boundContract = c;
+          }
         });
+
+        if (!boundContract && item.contract) {
+          boundContract = mockContracts.find(function(c) {
+            return c.number && item.contract.toLowerCase().indexOf(c.number.toLowerCase()) !== -1;
+          });
+        }
       }
 
       // 2. АКТ ВЫПОЛНЕННЫХ РАБОТ (АВР)
@@ -4603,13 +4888,14 @@
         cBlock.style.display = 'block';
         cBadge.textContent = boundContract.number;
         var drivePreviewHtml = '';
-        if (boundContract.fileUrl) {
-          var previewUrl = boundContract.fileUrl.replace(/\/view(\?usp=drivesdk)?/i, '/preview');
+        var contractUrl = boundContract.scanUrl || boundContract.fileUrl || '';
+        if (contractUrl) {
+          var previewUrl = contractUrl.replace(/\/view(\?[^#]*)?/i, '/preview');
           drivePreviewHtml = [
             '<div style="margin-top:12px;">',
               '<div style="font-size:11.5px; font-weight:700; color:#166534; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">',
                 '<span>Встроенный просмотр договора:</span>',
-                '<a href="' + boundContract.fileUrl + '" target="_blank" style="color:#2563eb; text-decoration:underline;">Открыть в Google Диске ↗</a>',
+                '<a href="' + contractUrl + '" target="_blank" style="color:var(--primary); font-weight:700; text-decoration:underline;">Открыть в Google Диске ↗</a>',
               '</div>',
               '<iframe src="' + previewUrl + '" style="width:100%; height:450px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc;" allow="autoplay"></iframe>',
             '</div>'
@@ -4675,10 +4961,15 @@
         linksHtml.push('<div style="margin-bottom:8px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:10px 12px;">📎 <b>Подписанный скан:</b> <a href="' + item.scanUrl + '" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;margin-left:4px;">Открыть скан оригинала ↗</a></div>');
       }
 
-      // Договор-основание показываем ТОЛЬКО если договор действительно указан!
-      var hasContract = item.contract && String(item.contract).trim() && item.contract !== 'Не привязан к договору' && item.contract !== 'Нет' && item.contract !== 'б/н';
-      if (hasContract) {
-        linksHtml.push('<div style="margin-bottom:8px; background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px 12px;">📑 <b>Договор-основание:</b> <span style="font-weight:700; color:#854d0e; margin-left:4px;">' + item.contract + '</span></div>');
+      // Прямая ссылка на скан договора в разделе официальных файлов
+      if (boundContract && (boundContract.scanUrl || boundContract.fileUrl)) {
+        var cScan = boundContract.scanUrl || boundContract.fileUrl;
+        linksHtml.push('<div style="margin-bottom:8px; background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px 12px;">📄 <b>Скан договора (' + boundContract.number + '):</b> <a href="' + cScan + '" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;margin-left:4px;">Открыть скан договора ↗</a></div>');
+      } else {
+        var hasContract = item.contract && String(item.contract).trim() && item.contract !== 'Не привязан к договору' && item.contract !== 'Нет' && item.contract !== 'б/н';
+        if (hasContract) {
+          linksHtml.push('<div style="margin-bottom:8px; background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px 12px;">📑 <b>Договор-основание:</b> <span style="font-weight:700; color:#854d0e; margin-left:4px;">' + item.contract + '</span></div>');
+        }
       }
 
       // АВР показываем ТОЛЬКО если статус АВР реальный и требует внимания (не "Не требуется")!
@@ -4701,19 +4992,89 @@
       var isAccountant = currentUser && (currentUser.name.indexOf('Смагулова') !== -1 || /бухгалтер/i.test(currentUser.role));
       document.getElementById('btn-mark-paid').style.display = (isAccountant && item.statusPayment.indexOf('Оплачено') === -1) ? 'block' : 'none';
 
-      // Юр. статус
+      // Юр. статус и поле загрузки скана (ТОЛЬКО инициатору после полного утверждения)
       document.getElementById('det-legal-badge').textContent = item.statusLegal;
       document.getElementById('det-legal-status-text').textContent = item.statusLegal;
 
-      // Кнопки согласования
+      var isFullyApproved = (item.statusApproval || '').indexOf('Утверждено') !== -1;
+      var isInitiatorOrManager = currentUser && (
+        currentUser.name === item.initiator ||
+        (item.coExecutors || []).indexOf(currentUser.name) !== -1 ||
+        currentUser.isAdmin
+      );
+      var legalSec = document.getElementById('det-legal-section');
+      if (legalSec) {
+        legalSec.style.display = (isFullyApproved && isInitiatorOrManager) ? 'block' : 'none';
+      }
+
+      // Кнопки согласования (только согласующему по его очереди)
       var isMyTurn = currentUser && (item.currentApprover.indexOf(currentUser.name) !== -1);
       document.getElementById('det-approval-actions').style.display = isMyTurn ? 'flex' : 'none';
+      closeRejectReasonBox();
 
       document.getElementById('modal-detail').style.display = 'flex';
     }
 
+    function openRejectReasonBox() {
+      var box = document.getElementById('det-reject-box');
+      if (box) {
+        box.style.display = 'block';
+        var inp = document.getElementById('det-reject-reason-input');
+        if (inp) { inp.value = ''; inp.focus(); }
+      }
+    }
+
+    function closeRejectReasonBox() {
+      var box = document.getElementById('det-reject-box');
+      if (box) box.style.display = 'none';
+    }
+
+    function confirmRejectSZ() {
+      if (!activeDetailItem) return;
+      var reasonInput = document.getElementById('det-reject-reason-input');
+      var reason = reasonInput ? reasonInput.value.trim() : '';
+      if (!reason) {
+        alert('Пожалуйста, укажите причину отклонения документа!');
+        return;
+      }
+
+      var approverName = currentUser ? currentUser.name : 'Руководитель';
+      activeDetailItem.statusApproval = 'Отклонено (' + approverName + ')';
+      activeDetailItem.currentApprover = '-';
+      showToast('❌ Документ отклонен: ' + reason);
+
+      closeRejectReasonBox();
+      closeModal('modal-detail');
+      renderSZList();
+
+      // Отправка в Google Таблицу и Telegram
+      if (SCRIPT_EXEC_URL) {
+        fetch(SCRIPT_EXEC_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'approve_sz',
+            number: activeDetailItem.number,
+            user: approverName,
+            decision: 'reject',
+            comment: reason
+          })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          if (res && res.ok) {
+            showToast('📝 Отклонение зафиксировано в реестре и листе виз');
+          }
+        })
+        .catch(function(err) {
+          console.warn('Reject POST error:', err);
+        });
+      }
+    }
+
     function makeApprovalDecision(decision) {
       if (!activeDetailItem) return;
+      var approverName = currentUser ? currentUser.name : 'Руководитель';
+
       if (decision === 'approve') {
         awardGamificationXP(50, 'Подписано без единой правки', 'СЗ ' + activeDetailItem.number + ' согласована');
         awardGamificationXP(40, 'Скорость реакции на СЗ', 'Оперативное визирование за регламентное время');
@@ -4727,10 +5088,29 @@
           activeDetailItem.statusApproval = 'На согласовании: Кабидуллин Нурсултан';
           activeDetailItem.currentApprover = 'Кабидуллин Нурсултан Нурланович';
         }
-      } else {
-        activeDetailItem.statusApproval = 'Отклонено (' + (currentUser ? currentUser.name : 'Руководитель') + ')';
-        activeDetailItem.currentApprover = '-';
-        showToast('❌ Документ отклонен');
+        showToast('✅ Документ ' + activeDetailItem.number + ' согласован');
+
+        // Отправка согласования в Google Таблицу и Telegram
+        if (SCRIPT_EXEC_URL) {
+          fetch(SCRIPT_EXEC_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'approve_sz',
+              number: activeDetailItem.number,
+              user: approverName,
+              decision: 'approve'
+            })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            if (res && res.ok) {
+              showToast('📝 Согласование внесено в реестр Google Таблицы');
+            }
+          })
+          .catch(function(err) {
+            console.warn('Approve POST error:', err);
+          });
+        }
       }
 
       closeModal('modal-detail');
@@ -4758,7 +5138,12 @@
       setTimeout(function() { closeModal('modal-detail'); }, 1000);
     }
 
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function closeModal(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+      if (id === 'modal-new-contract') stopAiTipsCarousel();
+      if (id === 'modal-detail') closeRejectReasonBox();
+    }
 
     // ==================== РАЗДЕЛ ДОГОВОРОВ (С АВР И РОЛЬЮ ЮРИСТА) ====================
     function getNextContractNumber() {
@@ -4940,6 +5325,42 @@
       document.getElementById('modal-new-contract').style.display = 'flex';
     }
 
+    var aiTipsCarouselTimer = null;
+    var aiTipsList = [
+      "💡 <b>Совет юриста:</b> Сверяйте БИН контрагента по базе eGov перед первой оплатой",
+      "📜 <b>Регламент Jana Men:</b> Договоры свыше 500 000 ₸ требуют согласования генерального директора",
+      "⏳ <b>Сдача документов:</b> Закрывающие акты (АВР) необходимо сдать в бухгалтерию до 5 числа месяца",
+      "🛡️ <b>Безопасность:</b> Проверяйте пункт о конфиденциальности (NDA) при работе с подрядчиками",
+      "🎯 <b>Геймификация:</b> Своевременная сдача оригинала в архив приносит +100 XP в системе мотивации",
+      "🔍 <b>Авто-проверка:</b> ИИ автоматически находит БИН, сумму, предмет и сроки действия договора"
+    ];
+    var currentAiTipIdx = 0;
+
+    function startAiTipsCarousel() {
+      if (aiTipsCarouselTimer) return;
+      currentAiTipIdx = 0;
+      showNextAiTip();
+      aiTipsCarouselTimer = setInterval(showNextAiTip, 2500);
+    }
+
+    function stopAiTipsCarousel() {
+      if (aiTipsCarouselTimer) {
+        clearInterval(aiTipsCarouselTimer);
+        aiTipsCarouselTimer = null;
+      }
+    }
+
+    function showNextAiTip() {
+      var el = document.getElementById('nc-ai-tips');
+      if (!el) return;
+      el.style.opacity = '0';
+      setTimeout(function() {
+        el.innerHTML = aiTipsList[currentAiTipIdx % aiTipsList.length];
+        el.style.opacity = '1';
+        currentAiTipIdx++;
+      }, 200);
+    }
+
     function updateAiProgress(percent, statusText) {
       var loader = document.getElementById('nc-ai-loading');
       var statusEl = document.getElementById('nc-ai-status-text');
@@ -4949,6 +5370,13 @@
       if (statusEl && statusText) statusEl.innerHTML = statusText;
       if (percentEl) percentEl.textContent = Math.round(percent) + '%';
       if (bar) bar.style.width = Math.min(100, Math.max(5, percent)) + '%';
+      startAiTipsCarousel();
+
+      if (percent >= 100) {
+        setTimeout(function() {
+          stopAiTipsCarousel();
+        }, 1200);
+      }
     }
 
     // Сжатие изображения через Canvas (уменьшает 3-4 МБ фото до 120-180 КБ JPEG 1200px без потери качества текста)
@@ -5451,17 +5879,28 @@
         var posX = margin + (availWidth - renderWidth) / 2;
         var posY = margin + (availHeight - renderHeight) / 2;
 
-        doc.addImage(dataUrl, 'JPEG', posX, posY, renderWidth, renderHeight, undefined, 'FAST');
+        try {
+          doc.addImage(dataUrl, 'JPEG', posX, posY, renderWidth, renderHeight, undefined, 'FAST');
+        } catch(imgErr) {
+          console.warn('addImage error for page ' + (i + 1), imgErr);
+        }
       }
 
-      var pdfDataUri = doc.output('datauristring');
-      var pdfBase64 = pdfDataUri.split(',')[1] || '';
+      var pdfDataUri = '';
+      var pdfBase64 = '';
+      try {
+        pdfDataUri = doc.output('datauristring');
+        pdfBase64 = (pdfDataUri && pdfDataUri.indexOf(',') !== -1) ? pdfDataUri.split(',')[1] : '';
+      } catch(outErr) {
+        console.warn('doc.output error:', outErr);
+      }
 
+      var isRealPdf = (pdfBase64.indexOf('JVBERi0') === 0);
       return {
-        base64: pdfBase64,
-        dataUrl: pdfDataUri,
+        base64: isRealPdf ? pdfBase64 : uploadedFiles[0].base64,
+        dataUrl: isRealPdf ? pdfDataUri : uploadedFiles[0].dataUrl,
         pageCount: uploadedFiles.length,
-        isPdf: true
+        isPdf: isRealPdf
       };
     }
 
@@ -5489,19 +5928,21 @@
         title = buildContractTitle(cp, subj);
       }
 
-      var safeNum = internalNum.replace(/[\/\\?%*:|"<>]/g, '-');
-      var safeCp = cp.replace(/[\/\\?%*:|"<>]/g, '').trim();
-      var cleanFileName = safeNum + '_' + (newContractUploadedFiles.length > 1 ? (newContractUploadedFiles.length + '_страниц_') : '') + safeCp + '.pdf';
-
       var pdfResult = null;
       if (newContractUploadedFiles.length > 0) {
-        showToast('📄 Сборка официального PDF (' + newContractUploadedFiles.length + ' стр.)...');
+        showToast('📄 Сборка официального документа (' + newContractUploadedFiles.length + ' стр.)...');
         try {
           pdfResult = await generatePdfFromContractFiles(newContractUploadedFiles, internalNum, cp);
         } catch(pdfErr) {
           console.warn('PDF generate warning:', pdfErr);
         }
       }
+
+      var safeNum = internalNum.replace(/[\/\\?%*:|"<>]/g, '-');
+      var safeCp = cp.replace(/[\/\\?%*:|"<>]/g, '').trim();
+      var isPdfOutput = (pdfResult && pdfResult.isPdf);
+      var ext = isPdfOutput ? '.pdf' : '.jpg';
+      var cleanFileName = safeNum + '_' + (newContractUploadedFiles.length > 1 ? (newContractUploadedFiles.length + '_страниц_') : '') + safeCp + ext;
 
       var executorsList = selectedNcExecutors.map(function(x) { return x.name; });
       if (executorsList.length === 0 && currentUser) {

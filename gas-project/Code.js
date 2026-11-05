@@ -719,7 +719,12 @@ function cleanBase64(b64) {
   if (s.indexOf(',') !== -1) {
     s = s.split(',')[1];
   }
-  return s.replace(/\s/g, '');
+  s = s.replace(/ /g, '+');
+  s = s.replace(/[^A-Za-z0-9+/=]/g, '');
+  while (s.length % 4 !== 0) {
+    s += '=';
+  }
+  return s;
 }
 
 function getSZList(department, userFio, userRole) {
@@ -835,7 +840,7 @@ function createNewContract(data) {
     var rawB64 = cleanBase64(data.fileBase64);
     var rawName = String(data.fileName || 'договор.pdf').trim();
     var safeFileName = rawName.replace(/[\/\\?%*:|"<>]/g, '-');
-    var isRealPdf = (rawB64.indexOf('JVBERi0') === 0) || /\.pdf$/i.test(safeFileName);
+    var isRealPdf = (rawB64.indexOf('JVBERi0') === 0);
     var mimeType = isRealPdf ? 'application/pdf' : 'image/jpeg';
 
     if (isRealPdf && !safeFileName.toLowerCase().endsWith('.pdf')) {
