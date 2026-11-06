@@ -17,8 +17,6 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <!-- jsPDF for genuine multi-page PDF compilation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Confetti library for gamification celebrations -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   
   <style>
     /* ==================== ЭКСКЛЮЗИВНЫЙ ОРАНЖЕВО-БЕЛЫЙ ДИЗАЙН JANA MEN ==================== */
@@ -147,164 +145,65 @@
     }
     .btn-icon-action:active { transform: scale(0.94); background: var(--border); }
 
-    /* Gamified User XP Banner (Jana Men Espresso & Orange) */
-    .game-banner {
-      background: linear-gradient(135deg, #241408 0%, #3D220E 50%, #573014 100%);
-      color: #FFFFFF;
-      border: 1px solid rgba(232, 116, 17, 0.25);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      margin: 12px 16px 14px 16px;
-      box-shadow: 0 8px 24px rgba(80, 50, 20, 0.16);
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .game-banner:active { transform: scale(0.985); }
-    .game-banner::before {
-      content: '';
-      position: absolute;
-      top: -40px; right: -40px;
-      width: 140px; height: 140px;
-      background: radial-gradient(circle, rgba(232, 116, 17, 0.4) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .game-banner-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      position: relative;
-      z-index: 2;
-    }
-    .game-user-col {
+    /* User Profile Badge in Header (Clean Trust Me / Corporate Style) */
+    .user-profile-badge {
       display: flex;
       align-items: center;
-      gap: 12px;
-      min-width: 0;
+      gap: 9px;
+      background: var(--card-sub, #f8fafc);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 12px 3px 4px;
+      margin-right: 4px;
+      transition: all 0.2s;
     }
-    .game-avatar-ring {
-      width: 44px;
-      height: 44px;
+    .user-avatar-circle {
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #967438, #C4984F);
-      border: 2px solid #FFFFFF;
+      background: linear-gradient(135deg, var(--primary), #c2410c);
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 800;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      font-weight: 800;
-      color: #FFFFFF;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
       flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
     }
-    .game-user-meta {
-      min-width: 0;
-    }
-    .game-user-name {
-      font-size: 14.5px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #FFFFFF;
-    }
-    .game-user-role {
-      font-size: 11.5px;
-      color: rgba(255, 255, 255, 0.8);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 1px;
-    }
-    .game-xp-pill {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(6px);
-      padding: 6px 12px;
-      border-radius: 12px;
-      text-align: right;
-      flex-shrink: 0;
-    }
-    .game-level-tag {
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #FCD34D;
-    }
-    .game-xp-count {
-      font-size: 15px;
-      font-weight: 800;
-      color: #FFFFFF;
+    .user-info-text {
+      display: flex;
+      flex-direction: column;
       line-height: 1.2;
+      text-align: left;
     }
-    .game-xp-count small {
-      font-size: 10.5px;
-      font-weight: 600;
-      opacity: 0.85;
-    }
-
-    /* Progress bar */
-    .game-progress-wrapper {
-      position: relative;
-      z-index: 2;
-      margin-bottom: 10px;
-    }
-    .game-progress-bar {
-      height: 7px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .game-progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #FCD34D, #F59E0B);
-      border-radius: 999px;
-      box-shadow: 0 0 8px rgba(252, 211, 77, 0.7);
-      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .game-progress-labels {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 6px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.85);
-      font-weight: 600;
-    }
-
-    /* Quests pills row */
-    .game-quests-row {
-      display: flex;
-      gap: 6px;
-      position: relative;
-      z-index: 2;
-      overflow-x: auto;
-      scrollbar-width: none;
-      padding-top: 2px;
-    }
-    .game-quests-row::-webkit-scrollbar { display: none; }
-    .quest-pill {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 20px;
-      padding: 4px 9px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #FFFFFF;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    .user-name-title {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--text);
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
     }
-    .quest-pill.done {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: rgba(34, 197, 94, 0.4);
-      color: #86EFAC;
+    .user-dept-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+    @media (max-width: 600px) {
+      .user-info-text {
+        display: none;
+      }
+      .user-profile-badge {
+        padding: 2px;
+        background: transparent;
+        border: none;
+        margin-right: 0;
+      }
     }
 
     /* Navigation Tabs */
@@ -1036,52 +935,6 @@
         justify-content: space-between;
         align-items: center;
       }
-      .game-banner {
-        max-width: 1600px;
-        width: 96%;
-        margin: 6px auto 10px auto;
-        padding: 8px 18px;
-        border-radius: var(--radius);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .game-avatar-ring {
-        width: 34px;
-        height: 34px;
-        font-size: 15px;
-      }
-      .game-user-name {
-        font-size: 13.5px;
-      }
-      .game-user-role {
-        font-size: 11.5px;
-      }
-      .game-banner-top {
-        margin-bottom: 0;
-        flex: 0 0 auto;
-      }
-      .game-progress-wrapper {
-        flex: 1;
-        max-width: 300px;
-        margin: 0 10px;
-      }
-      .game-progress-bar {
-        height: 5px;
-        margin-bottom: 3px;
-      }
-      .game-xp-next {
-        font-size: 10px;
-      }
-      .game-quests-row {
-        flex: 0 0 auto;
-        gap: 6px;
-      }
-      .game-quest-pill {
-        padding: 3px 8px;
-        font-size: 10.5px;
-      }
       .nav-tabs-wrapper {
         padding: 10px 0;
       }
@@ -1493,23 +1346,29 @@
 
   <!-- ==================== ОСНОВНОЕ РАБОЧЕЕ ПРОСТРАНСТВО ==================== -->
   
-  <!-- Верхняя бренд-панель с официальным логотипом Jana Men -->
-  <div class="brand-bar">
+  <!-- Верхняя панель Jana Men ЭДО (Стиль Trust Me) -->
+  <header class="brand-bar">
     <div class="brand-bar-inner">
-      <div class="brand-left" onclick="openAchievementsModal()">
+      <div class="brand-left">
         <img src="logo-jm.png" alt="Jana Men Logo" class="brand-logo-img" style="height: 32px; width: auto;" onerror="this.src='logo.png';">
         <span id="brand-fallback-text" style="display:none; font-weight:900; font-size:16px; color:var(--primary); letter-spacing:-0.03em;">JANA MEN</span>
         <span class="brand-badge">ЭДО ПРОТОКОЛ</span>
       </div>
       <div class="brand-actions">
-        <!-- Кнопка Режима Администратора (видна только Куанышбеку Сайдуллаеву / Администратору) -->
+        <!-- Блок профиля текущего сотрудника -->
+        <div class="user-profile-badge" title="Текущий профиль сотрудника">
+          <div class="user-avatar-circle" id="u-avatar">👤</div>
+          <div class="user-info-text">
+            <div class="user-name-title" id="u-name">Загрузка профиля...</div>
+            <div class="user-dept-subtitle" id="u-role">Определение отдела...</div>
+          </div>
+        </div>
+
+        <!-- Кнопка Режима Администратора -->
         <button id="btn-admin-toggle" class="btn-admin-toggle" onclick="toggleAdminMode()" title="Режим Администратора: удаление документов, управление архивом" style="display: none;">
-          <span id="admin-toggle-icon">🛡️</span> <span id="admin-toggle-text">Режим Администратора</span>
+          <span id="admin-toggle-icon">🛡️</span> <span id="admin-toggle-text">Администратор</span>
         </button>
 
-        <button class="btn-streak-pill" onclick="openAchievementsModal()" title="Серия дней без задержек">
-          <span>🔥</span> <span id="u-streak-num">5</span> дн
-        </button>
         <button class="btn-icon-action" onclick="testMyTelegramBotConnection()" title="Проверить уведомления в Telegram">
           <span>🔔</span>
         </button>
@@ -1518,46 +1377,7 @@
         </button>
       </div>
     </div>
-  </div>
-
-  <!-- Карточка геймификации: XP, уровень и квесты сотрудника -->
-  <div class="game-banner" onclick="openAchievementsModal()">
-    <div class="game-banner-top">
-      <div class="game-user-col">
-        <div class="game-avatar-ring" id="u-avatar">👤</div>
-        <div class="game-user-meta">
-          <div class="game-user-name" id="u-name">Загрузка профиля...</div>
-          <div class="game-user-role" id="u-role">Определение отдела...</div>
-        </div>
-      </div>
-      <div class="game-xp-pill">
-        <div class="game-level-tag" id="game-level-num">LVL 4</div>
-        <div class="game-xp-count"><span id="game-xp-val">1 250</span> <small>XP</small></div>
-      </div>
-    </div>
-    
-    <div class="game-progress-wrapper">
-      <div class="game-progress-bar">
-        <div class="game-progress-fill" id="game-xp-bar" style="width: 65%;"></div>
-      </div>
-      <div class="game-progress-labels">
-        <span id="game-rank-name">👑 Ранг: Мастер документооборота</span>
-        <span id="game-xp-next">65% до LVL 5</span>
-      </div>
-    </div>
-
-    <div class="game-quests-row">
-      <div class="quest-pill done">
-        <span>⚡</span> <span>0 просрочек</span>
-      </div>
-      <div class="quest-pill" id="quest-pill-sz">
-        <span>📝</span> <span id="quest-sz-text">СЗ под контролем</span>
-      </div>
-      <div class="quest-pill" id="quest-pill-avr">
-        <span>📑</span> <span id="quest-avr-text">Оригиналы в архиве</span>
-      </div>
-    </div>
-  </div>
+  </header>
 
   <div class="nav-tabs-wrapper">
     <div class="nav-tabs">
@@ -1685,7 +1505,7 @@
             <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
               <span class="status-badge" style="background: rgba(30,70,43,0.08); color: var(--primary); font-size: 11px; padding: 4px 10px;">⚡️ Авто-расчет сумм</span>
               <span class="status-badge" style="background: rgba(150,116,56,0.1); color: var(--gold); font-size: 11px; padding: 4px 10px;">👑 Маршрут без посредников</span>
-              <span class="status-badge" style="background: #e0f2fe; color: #0284c7; font-size: 11px; padding: 4px 10px;">🎯 +100 XP за запуск</span>
+              <span class="status-badge" style="background: #e0f2fe; color: #0284c7; font-size: 11px; padding: 4px 10px;">🚀 Мгновенная регистрация</span>
             </div>
           </div>
 
@@ -3406,177 +3226,51 @@
     // ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
     function updateUserUI() {
       if (!currentUser) return;
-      document.getElementById('u-name').textContent = currentUser.name;
+      var nameEl = document.getElementById('u-name');
+      if (nameEl) nameEl.textContent = currentUser.name;
       
       var isSuper = isLawyerOrAdmin(currentUser);
       var isAdmin = (/сайдуллаев куанышбек/i.test(currentUser.name) || currentUser.isAdmin === true || /администратор|админ/i.test(currentUser.role));
       
-      var accessBadge = isAdmin ? ' 👑 Администратор (Полный доступ)' : (isSuper ? ' ⚖️ Юрист (Полный доступ)' : '');
-      document.getElementById('u-role').textContent = currentUser.role + ' • ' + currentUser.department + accessBadge;
-      document.getElementById('u-avatar').textContent = currentUser.name.charAt(0);
-      document.getElementById('initiator-badge').textContent = 'Инициатор: ' + currentUser.name;
+      var accessBadge = isAdmin ? ' 👑 Администратор' : (isSuper ? ' ⚖️ Юрист' : '');
+      var roleEl = document.getElementById('u-role');
+      if (roleEl) roleEl.textContent = currentUser.role + ' • ' + currentUser.department + accessBadge;
+      
+      var avEl = document.getElementById('u-avatar');
+      if (avEl) avEl.textContent = (currentUser.name || 'С').charAt(0);
+      
+      var initBadge = document.getElementById('initiator-badge');
+      if (initBadge) initBadge.textContent = 'Инициатор: ' + currentUser.name;
 
       var adminBtn = document.getElementById('btn-admin-toggle');
       if (adminBtn) {
         adminBtn.style.display = isAdminUser(currentUser) ? 'inline-flex' : 'none';
       }
 
-      document.getElementById('contracts-dept-title').textContent = isSuper 
-        ? (isAdmin ? 'Все отделы компании (Режим Администратора)' : 'Все отделы компании (Режим Юриста)') 
-        : currentUser.department;
-      document.getElementById('contracts-access-hint').textContent = isSuper 
-        ? (isAdmin 
-            ? '👑 Режим Администратора: вам открыт сквозной просмотр всех договоров и СЗ по всей компании Jana Men.' 
-            : '⚖️ Вам предоставлен полный сквозной доступ ко всем договорам компании Jana Men.') 
-        : 'Отображаются договоры только вашего подразделения.';
+      var deptTitle = document.getElementById('contracts-dept-title');
+      if (deptTitle) {
+        deptTitle.textContent = isSuper 
+          ? (isAdmin ? 'Все отделы компании (Режим Администратора)' : 'Все отделы компании (Режим Юриста)') 
+          : currentUser.department;
+      }
+      var accessHint = document.getElementById('contracts-access-hint');
+      if (accessHint) {
+        accessHint.textContent = isSuper 
+          ? (isAdmin 
+              ? '👑 Режим Администратора: вам открыт сквозной просмотр всех договоров и СЗ по всей компании Jana Men.' 
+              : '⚖️ Вам предоставлен полный сквозной доступ ко всем договорам компании Jana Men.') 
+          : 'Отображаются договоры только вашего подразделения.';
+      }
 
       populateDepartmentSelects();
-
-      // Геймификация: расчет уровня, ранга и прогресса
-      var storedXp = parseInt(localStorage.getItem('jm_user_xp_' + currentUser.name) || (isAdmin ? '1450' : '850'), 10);
-      var level = Math.floor(storedXp / 300) + 1;
-      var currentLevelFloor = (level - 1) * 300;
-      var xpInLevel = storedXp - currentLevelFloor;
-      var percent = Math.min(100, Math.max(12, Math.round((xpInLevel / 300) * 100)));
-
-      var rankName = isAdmin ? '👑 Главный Архитектор ЭДО' : (isSuper ? '⚖️ Верховный Юрист' : '🚀 Специалист документооборота');
-      
-      var elRank = document.getElementById('game-rank-name');
-      if (elRank) elRank.textContent = rankName;
-      var elLvl = document.getElementById('game-level-num');
-      if (elLvl) elLvl.textContent = 'LVL ' + level;
-      var elVal = document.getElementById('game-xp-val');
-      if (elVal) elVal.textContent = storedXp.toLocaleString('ru-RU');
-      var elBar = document.getElementById('game-xp-bar');
-      if (elBar) elBar.style.width = percent + '%';
-      var elNext = document.getElementById('game-xp-next');
-      if (elNext) elNext.textContent = percent + '% до LVL ' + (level + 1);
-
-      var modalRank = document.getElementById('modal-user-rank-display');
-      if (modalRank) modalRank.textContent = rankName;
-      var modalXp = document.getElementById('modal-user-xp-details');
-      if (modalXp) modalXp.textContent = storedXp.toLocaleString('ru-RU') + ' XP • Уровень ' + level;
     }
 
-    function awardGamificationXP(points, ruleTitle, reason) {
-      points = Number(points) || 50;
-      ruleTitle = ruleTitle || 'Активность в ЭДО';
-
-      if (currentUser && currentUser.name) {
-        var key = 'jm_user_xp_' + currentUser.name;
-        var currentXp = parseInt(localStorage.getItem(key) || (currentUser.isAdmin ? '1550' : '850'), 10);
-        var newXp = currentXp + points;
-        localStorage.setItem(key, newXp.toString());
-        currentUser.xp = newXp;
-
-        // Сохранение в журнал истории
-        try {
-          var histKey = 'jm_xp_hist_' + currentUser.name;
-          var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
-          hist.unshift({
-            date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}),
-            points: points,
-            ruleTitle: ruleTitle,
-            reason: reason || ''
-          });
-          localStorage.setItem(histKey, JSON.stringify(hist.slice(0, 30)));
-          localStorage.setItem('jm_edo_user', JSON.stringify(currentUser));
-        } catch(e) {}
-
-        updateUserUI();
-      }
-
-      if (window.confetti) {
-        try {
-          window.confetti({
-            particleCount: 75,
-            spread: 65,
-            origin: { y: 0.65 },
-            colors: ['#E87411', '#F59E0B', '#C4670D', '#FFFFFF', '#16A34A']
-          });
-        } catch(e) {}
-      }
-
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        try {
-          window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        } catch(e) {}
-      }
-
-      showToast('🏆 +' + points + ' XP: ' + ruleTitle);
-    }
-
-    function celebrateAction(message, xpAdded) {
-      awardGamificationXP(xpAdded || 50, message, '');
-    }
-
-    function switchAchTab(tab) {
-      var tabRules = document.getElementById('ach-tab-rules');
-      var tabHist = document.getElementById('ach-tab-history');
-      var paneRules = document.getElementById('ach-pane-rules');
-      var paneHist = document.getElementById('ach-pane-history');
-
-      if (tab === 'rules') {
-        if (tabRules) tabRules.className = 'nav-tab active';
-        if (tabHist) tabHist.className = 'nav-tab';
-        if (paneRules) paneRules.style.display = 'block';
-        if (paneHist) paneHist.style.display = 'none';
-      } else {
-        if (tabRules) tabRules.className = 'nav-tab';
-        if (tabHist) tabHist.className = 'nav-tab active';
-        if (paneRules) paneRules.style.display = 'none';
-        if (paneHist) paneHist.style.display = 'block';
-        renderAchievementsHistoryList();
-      }
-    }
-
-    function renderAchievementsHistoryList() {
-      var cont = document.getElementById('ach-history-list');
-      if (!cont) return;
-
-      var histKey = 'jm_xp_hist_' + (currentUser ? currentUser.name : '');
-      var hist = [];
-      try {
-        hist = JSON.parse(localStorage.getItem(histKey) || '[]');
-      } catch(e) {}
-
-      if (hist.length === 0) {
-        cont.innerHTML = '<div style="text-align:center;padding:32px 14px;color:var(--text-muted);font-size:13px;">История начислений пока пуста.<br>Выполняйте согласования и прикрепляйте оригиналы, чтобы зарабатывать XP!</div>';
-        return;
-      }
-
-      var html = [];
-      hist.forEach(function(item) {
-        html.push([
-          '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">',
-            '<div>',
-              '<div style="font-size:13px;font-weight:700;color:var(--text);">' + item.ruleTitle + '</div>',
-              (item.reason ? ('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + item.reason + '</div>') : ''),
-              '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">🕒 ' + item.date + '</div>',
-            '</div>',
-            '<div style="font-size:13px;font-weight:800;color:#c2410c;background:#fff7ed;padding:4px 10px;border-radius:8px;border:1px solid #fed7aa;flex-shrink:0;">',
-              '+' + item.points + ' XP',
-            '</div>',
-          '</div>'
-        ].join(''));
-      });
-      cont.innerHTML = html.join('');
-    }
-
-    function openAchievementsModal() {
-      switchAchTab('rules');
-      document.getElementById('modal-achievements').style.display = 'flex';
-      if (window.confetti) {
-        try {
-          window.confetti({
-            particleCount: 40,
-            spread: 45,
-            origin: { y: 0.5 },
-            colors: ['#E87411', '#F59E0B', '#C4670D', '#FFFFFF']
-          });
-        } catch(e) {}
-      }
-    }
+    // Заглушки геймификации для обратной совместимости вызовов
+    function awardGamificationXP(points, ruleTitle, reason) {}
+    function celebrateAction(message, xpAdded) {}
+    function openAchievementsModal() {}
+    function switchAchTab(tab) {}
+    function renderAchievementsHistoryList() {}
 
     function testMyTelegramBotConnection() {
       if (!currentUser || !currentUser.name) {
@@ -4448,8 +4142,7 @@
 
       currentRoute.forEach(function(step, idx) {
         var isBoss = step.isBoss || /генеральный/i.test(step.role);
-        var xpReward = isBoss ? '+200 XP' : (step.isPaymentStep || /бухгалтер/i.test(step.role) ? '+100 XP' : '+50 XP');
-        var stepIcon = isBoss ? '👑' : (idx === 0 ? '🟢' : '⚡');
+                var stepIcon = isBoss ? '👑' : (idx === 0 ? '🟢' : '⚡');
 
         var isFirst = idx === 0;
         var isLast = idx === currentRoute.length - 1;
@@ -4472,7 +4165,7 @@
             '<div class="route-step-name">' + stepIcon + ' ' + step.name + (isBoss ? ' <span style="color:var(--gold); font-size:11px; font-weight:800;">(Финальный Шеф)</span>' : '') + '</div>',
             '<div class="route-step-role">' + step.stepName + ' • ' + step.role + '</div>',
           '</div>',
-          '<div class="route-step-xp">' + xpReward + '</div>',
+          
           '<div class="route-step-actions">',
             '<button type="button" class="route-ctrl-btn" title="Переместить выше" onclick="moveRouteStep(' + idx + ', ' + (idx - 1) + ')" ' + (isFirst ? 'disabled' : '') + '>▲</button>',
             '<button type="button" class="route-ctrl-btn" title="Переместить ниже" onclick="moveRouteStep(' + idx + ', ' + (idx + 1) + ')" ' + (isLast ? 'disabled' : '') + '>▼</button>',
@@ -6291,7 +5984,7 @@
       "📜 <b>Регламент Jana Men:</b> Договоры свыше 500 000 ₸ требуют согласования генерального директора",
       "⏳ <b>Сдача документов:</b> Закрывающие акты (АВР) необходимо сдать в бухгалтерию до 5 числа месяца",
       "🛡️ <b>Безопасность:</b> Проверяйте пункт о конфиденциальности (NDA) при работе с подрядчиками",
-      "🎯 <b>Геймификация:</b> Своевременная сдача оригинала в архив приносит +100 XP в системе мотивации",
+      "📁 <b>Электронный архив:</b> Все сканы и оригиналы документов хранятся централизованно в защищенном облаке",
       "🔍 <b>Авто-проверка:</b> ИИ автоматически находит БИН, сумму, предмет и сроки действия договора"
     ];
     var currentAiTipIdx = 0;
@@ -7174,114 +6867,5 @@
     </div>
   </div>
 
-  <!-- ==================== МОДАЛЬНОЕ ОКНО: ЗАЛ СЛАВЫ И ГЕЙМИФИКАЦИЯ ==================== -->
-  <div id="modal-achievements" class="modal-overlay">
-    <div class="modal-content" style="max-width: 600px; padding: 22px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 24px;">🏆</span>
-          <div>
-            <h3 style="font-size: 16.5px; font-weight: 800; color: var(--text);">Система мотивации & Геймификация</h3>
-            <div style="font-size: 12px; color: var(--text-muted);">Стандарты корпоративного документооборота Jana Men</div>
-          </div>
-        </div>
-        <button onclick="closeModal('modal-achievements')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); padding: 4px;">✕</button>
-      </div>
-
-      <!-- Карточка статуса пользователя -->
-      <div style="background: linear-gradient(135deg, #241408 0%, #3D220E 50%, #573014 100%); color: #fff; border-radius: 14px; padding: 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 16px rgba(80, 50, 20, 0.25); border: 1px solid rgba(232, 116, 17, 0.3);">
-        <div>
-          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #FCD34D; font-weight: 800;">Ваш статус в Jana Men</div>
-          <div style="font-size: 18px; font-weight: 800; margin-top: 2px;" id="modal-user-rank-display">👑 Главный Архитектор ЭДО</div>
-          <div style="font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px;" id="modal-user-xp-details">1 550 XP • Уровень 5</div>
-        </div>
-        <div style="text-align: right; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 8px 14px;">
-          <div style="font-size: 24px; line-height: 1;">🔥 5</div>
-          <div style="font-size: 10.5px; color: #FCD34D; font-weight: 700; margin-top: 4px;">дней без задержек</div>
-        </div>
-      </div>
-
-      <!-- Вкладки окна достижений: Правила / История начислений -->
-      <div style="display: flex; gap: 8px; margin-bottom: 14px; background: var(--card-sub); padding: 4px; border-radius: 10px; border: 1px solid var(--border);">
-        <button id="ach-tab-rules" class="nav-tab active" onclick="switchAchTab('rules')" style="font-size: 12px; padding: 8px 12px;">🎯 Правила начисления XP (6 критериев)</button>
-        <button id="ach-tab-history" class="nav-tab" onclick="switchAchTab('history')" style="font-size: 12px; padding: 8px 12px;">📜 Мои баллы и история</button>
-      </div>
-
-      <!-- Панель 1: 6 официальных правил начисления очков -->
-      <div id="ach-pane-rules">
-        <div class="achievements-grid" style="gap: 8px;">
-          
-          <div class="achievement-item unlocked">
-            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #E87411, #D26307); color: #fff;">✍️</div>
-            <div class="achievement-meta">
-              <div class="achievement-title">1. Подписано без единой правки</div>
-              <div class="achievement-desc">СЗ прошла всех согласующих и утверждена Шефом с первого раза без замечаний и доработок</div>
-            </div>
-            <div class="achievement-reward" style="background: #fef3c7; color: #b45309; font-weight: 800;">+50 XP</div>
-          </div>
-
-          <div class="achievement-item unlocked">
-            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #16A34A, #15803D); color: #fff;">📑</div>
-            <div class="achievement-meta">
-              <div class="achievement-title">2. Сданные в срок оригиналы</div>
-              <div class="achievement-desc">Подписанный бумажный оригинал СЗ или АВР передан в бухгалтерию в течение 3 рабочих дней</div>
-            </div>
-            <div class="achievement-reward" style="background: #dcfce7; color: #15803d; font-weight: 800;">+100 XP</div>
-          </div>
-
-          <div class="achievement-item unlocked">
-            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #0284C7, #0369A1); color: #fff;">⏳</div>
-            <div class="achievement-meta">
-              <div class="achievement-title">3. Соблюдение сроков договоров</div>
-              <div class="achievement-desc">Закрывающие документы по действующему договору зарегистрированы строго в установленный срок</div>
-            </div>
-            <div class="achievement-reward" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">+80 XP</div>
-          </div>
-
-          <div class="achievement-item unlocked">
-            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #E87411, #F59E0B); color: #fff;">⚡️</div>
-            <div class="achievement-meta">
-              <div class="achievement-title">4. Скорость реакции на СЗ</div>
-              <div class="achievement-desc">Согласующий завизировал входящий документ менее чем за 2 часа (до 24 часов: +15 XP)</div>
-            </div>
-            <div class="achievement-reward" style="background: #ffedd5; color: #c2410c; font-weight: 800;">+40 XP</div>
-          </div>
-
-          <div class="achievement-item unlocked">
-            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #9333EA, #7E22CE); color: #fff;">🚀</div>
-            <div class="achievement-meta">
-              <div class="achievement-title">5. Скоростной маршрут СЗ</div>
-              <div class="achievement-desc">Полный цикл подписания всеми согласующими инстанциями пройден быстрее 24 часов</div>
-            </div>
-            <div class="achievement-reward" style="background: #f3e8ff; color: #7e22ce; font-weight: 800;">+120 XP</div>
-          </div>
-
-          <div class="achievement-item unlocked">
-            <div class="achievement-icon-box" style="background: linear-gradient(135deg, #D97706, #B45309); color: #fff;">📦</div>
-            <div class="achievement-meta">
-              <div class="achievement-title">6. Полный комплект документов</div>
-              <div class="achievement-desc">СЗ оформлена с договором-основанием, прикреплены подтверждающие счета и закрывающий АВР</div>
-            </div>
-            <div class="achievement-reward" style="background: #fef3c7; color: #b45309; font-weight: 800;">+150 XP</div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- Панель 2: История начислений XP -->
-      <div id="ach-pane-history" style="display: none;">
-        <div id="ach-history-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-          <!-- Список истории -->
-        </div>
-      </div>
-
-      <div style="margin-top: 18px; text-align: center;">
-        <button class="btn btn-primary" onclick="closeModal('modal-achievements')" style="padding: 11px 24px; width: auto; min-width: 200px;">
-          Отлично! Продолжить работу
-        </button>
-      </div>
-    </div>
-  </div>
-
-</body>
+  </body>
 </html>
