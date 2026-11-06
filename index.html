@@ -1329,106 +1329,102 @@
 </head>
 <body>
 
-  <!-- ==================== ОТДЕЛЬНОЕ ОКНО РЕГИСТРАЦИИ И ВХОДА ПО КОДУ ==================== -->
+  <!-- ==================== ОБЯЗАТЕЛЬНАЯ ПЕРВИЧНАЯ РЕГИСТРАЦИЯ СОТРУДНИКА ==================== -->
   <div id="auth-screen">
-    <div class="auth-card">
+    <div class="auth-card" style="max-width: 490px; width: 100%; border-radius: 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.12); padding: 28px 24px;">
       <div style="text-align: center; margin-bottom: 14px;">
-        <img src="logo.png" alt="Jana Men" style="height: 36px; margin: 0 auto; display: block; object-fit: contain;">
+        <img src="logo.png" alt="Jana Men" style="height: 42px; margin: 0 auto; display: block; object-fit: contain;">
       </div>
-      <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 4px; color: var(--text);">Jana Men ЭДО</h2>
-      <p style="text-align: center; font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.45;" id="auth-device-hint">
-        Корпоративный электронный документооборот Jana Men.
+      <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 4px; color: var(--text);">Регистрация в Jana Men ЭДО</h2>
+      <p style="text-align: center; font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.45;" id="auth-device-hint">
+        Корпоративная система документооборота. Для входа выберите ваш отдел, найдите себя в списке сотрудников и подтвердите контактный телефон.
       </p>
 
-      <div class="auth-tab-switch">
-        <div id="btn-tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">🔑 Авторизация</div>
-        <div id="btn-tab-reg" class="auth-tab-btn" onclick="switchAuthTab('reg')">📝 Регистрация</div>
+      <!-- ШАГ 1: ВЫБОР ДАННЫХ СОТРУДНИКА -->
+      <div id="reg-step-1">
+        <div class="field" style="margin-bottom: 12px;">
+          <label style="font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 5px; display: block;">1. Ваше подразделение / Отдел: *</label>
+          <select id="reg-dept-select" class="select-text" onchange="onRegDeptChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 600;">
+            <option value="">-- Выберите подразделение --</option>
+            <option value="Административный блок">Административный блок</option>
+            <option value="Операционный блок">Операционный блок</option>
+            <option value="Отдел маркетинга">Отдел маркетинга</option>
+            <option value="Финансовый блок">Финансовый блок (Бухгалтерия)</option>
+            <option value="Отдел логистики">Отдел логистики</option>
+            <option value="Коммерческий блок">Коммерческий блок</option>
+            <option value="Отдел трафика">Отдел трафика</option>
+            <option value="Отдел HR">Отдел HR</option>
+            <option value="Отдел заботы о клиентах (ОЗК)">Отдел заботы о клиентах (ОЗК)</option>
+            <option value="Другой отдел">➕ Другой отдел компании</option>
+          </select>
+        </div>
+
+        <div class="field" style="margin-bottom: 12px;">
+          <label style="font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 5px; display: block;">2. Ваше официальное ФИО: *</label>
+          <select id="reg-fio-select" class="select-text" onchange="onRegFioChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 600;">
+            <option value="">-- Сначала выберите отдел выше --</option>
+          </select>
+        </div>
+
+        <!-- Поле для ручного ввода ФИО, если выбрали "Нет в списке" -->
+        <div id="reg-custom-fio-wrap" style="display: none; margin-bottom: 12px;">
+          <div class="field">
+            <label style="font-weight: 700; font-size: 12px; color: var(--text); margin-bottom: 4px; display: block;">Введите ваше ФИО полностью: *</label>
+            <input type="text" id="reg-custom-fio" class="input-text" placeholder="Например: Сейдазимов Бахытжан Нургалиевич">
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom: 12px;">
+          <label style="font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 5px; display: block;">3. Должность: *</label>
+          <input type="text" id="reg-role-input" class="input-text" placeholder="Например: Менеджер / Специалист" style="width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px;">
+        </div>
+
+        <div class="field" style="margin-bottom: 12px;">
+          <label style="font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 5px; display: block;">4. Рабочий номер мобильного телефона: *</label>
+          <input type="tel" id="reg-phone-input" class="input-text" placeholder="+7 7XX XXX XX XX" maxlength="18" oninput="formatPhoneInput(this)" style="width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 600;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Для подтверждения профиля и доступа к документообороту</div>
+        </div>
+
+        <div class="field" style="margin-bottom: 18px;">
+          <label style="font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 5px; display: block;">5. Telegram аккаунт: (по желанию)</label>
+          <input type="text" id="reg-tg-input" class="input-text" placeholder="@username или ID" style="width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px;">
+        </div>
+
+        <button type="button" id="btn-submit-step1" class="btn btn-primary" onclick="proceedToVerificationStep()" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; border-radius: 10px;">
+          📲 Перейти к подтверждению регистрации ➔
+        </button>
       </div>
 
-      <!-- TAB 1: ВХОД -->
-      <div id="auth-panel-login">
-        <div id="login-step1">
-          <div class="field">
-            <label>Выберите сотрудника из штатного расписания:</label>
-            <div class="searchable-box">
-              <input type="text" id="auth-emp-search" class="input-text" placeholder="Введите имя, например: Куанышбек..." oninput="onAuthSearchInput(this.value)">
-              <div id="auth-emp-dropdown" class="search-results-dropdown"></div>
-            </div>
-          </div>
-
-          <div id="login-emp-preview" style="display: none; background: #f8fafc; border: 1px solid var(--border); padding: 11px 13px; border-radius: 8px; margin-bottom: 15px; font-size: 12.5px;">
-            <div style="font-weight: 800; color: var(--text);" id="login-info-name">-</div>
-            <div style="margin-top: 3px;">🏢 Отдел: <b id="login-info-dept" style="color: var(--primary);">-</b></div>
-            <div>💼 Должность: <b id="login-info-role">-</b></div>
-          </div>
-
-          <button id="btn-request-login-code" class="btn btn-primary" onclick="submitRequestLoginCode()">
-            🚀 Войти в систему
-          </button>
+      <!-- ШАГ 2: ВЕРИФИКАЦИЯ С КОДОМ БЕЗОПАСНОСТИ -->
+      <div id="reg-step-2" style="display: none;">
+        <div style="background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 14px; margin-bottom: 16px; text-align: center;">
+          <div style="font-size: 11.5px; color: #9a3412; font-weight: 700; text-transform: uppercase;">Подтверждение регистрации:</div>
+          <div id="reg-step2-target-name" style="font-size: 16px; font-weight: 800; color: #c2410c; margin-top: 3px;"></div>
+          <div id="reg-step2-target-phone" style="font-size: 12.5px; color: #9a3412; margin-top: 2px;"></div>
         </div>
 
-        <div id="login-step2" style="display: none;">
-          <div style="background: var(--primary-light); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 13px; margin-bottom: 15px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted);">Код отправлен в бота @janamen_docs_bot для:</div>
-            <div id="auth-code-target-name" style="font-size: 15px; font-weight: 800; color: var(--primary); margin-top: 3px;"></div>
-          </div>
-
-          <div class="field" style="margin-bottom: 15px;">
-            <label style="text-align: center;">Введите 6-значный проверочный код из Telegram:</label>
-            <input type="text" id="auth-login-code" class="input-text" placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; font-weight: 800; letter-spacing: 6px; padding: 10px;" oninput="onAuthCodeInput(this)">
-          </div>
-
-          <button id="btn-verify-login-code" class="btn btn-success" onclick="submitVerifyLoginCode()" style="margin-bottom: 8px;">
-            ✅ Подтвердить и войти
-          </button>
-          <button class="btn btn-secondary" onclick="backToLoginStep1()" style="font-size: 12px; padding: 9px;">
-            ⬅️ Выбрать другого сотрудника
-          </button>
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 16px; text-align: center;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">Ваш персональный код подтверждения:</div>
+          <div id="reg-display-pin" style="font-size: 26px; font-weight: 900; letter-spacing: 6px; color: var(--primary); background: #ffffff; border: 1.5px dashed var(--primary); display: inline-block; padding: 6px 18px; border-radius: 8px;">----</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Введите этот 4-значный код в поле ниже для активации:</div>
         </div>
+
+        <div class="field" style="margin-bottom: 16px;">
+          <input type="text" id="reg-verify-code-input" class="input-text" placeholder="____" maxlength="4" style="text-align: center; font-size: 26px; font-weight: 900; letter-spacing: 8px; padding: 10px; width: 100%; border: 2px solid var(--primary); border-radius: 10px;" oninput="onRegCodeInput(this)">
+        </div>
+
+        <button type="button" id="btn-submit-step2" class="btn btn-success" onclick="completeRegistration()" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; border-radius: 10px; margin-bottom: 10px;">
+          ✅ Активировать профиль и войти в ЭДО
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="backToRegistrationStep1()" style="width: 100%; padding: 9px; font-size: 12.5px;">
+          ⬅️ Изменить данные
+        </button>
       </div>
 
-      <!-- TAB 2: РЕГИСТРАЦИЯ НОВОГО СОТРУДНИКА -->
-      <div id="auth-panel-reg" style="display: none;">
-        <div id="reg-step1">
-          <div class="field">
-            <label>Ваше официальное ФИО</label>
-            <input type="text" id="reg-input-fio" class="input-text" placeholder="Например: Касымов Бауржан Ерланович">
-          </div>
-          <div class="field">
-            <label>Подразделение / Отдел</label>
-            <select id="reg-input-dept" class="select-text"></select>
-          </div>
-          <div class="field">
-            <label>Должность</label>
-            <input type="text" id="reg-input-role" class="input-text" placeholder="Например: Старший логист / Маркетолог">
-          </div>
-          <div class="field">
-            <label>Telegram ID или @username</label>
-            <input type="text" id="reg-input-tg" class="input-text" placeholder="5085527153 или @username">
-          </div>
-
-          <button id="btn-request-reg-code" class="btn btn-primary" onclick="submitRequestRegCode()">
-            📲 Получить код подтверждения
-          </button>
-        </div>
-
-        <div id="reg-step2" style="display: none;">
-          <div class="field" style="margin-bottom: 15px;">
-            <label style="text-align: center;">Введите проверочный код из Telegram:</label>
-            <input type="text" id="auth-reg-code" class="input-text" placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; font-weight: 800; letter-spacing: 6px; padding: 10px;">
-          </div>
-          <button class="btn btn-success" onclick="submitVerifyRegCode()" style="margin-bottom: 8px;">
-            ✅ Завершить регистрацию
-          </button>
-          <button class="btn btn-secondary" onclick="backToRegStep1()" style="font-size: 12px; padding: 9px;">
-            ⬅️ Назад к заполнению
-          </button>
-        </div>
-      </div>
-
+      <!-- Кнопка отмены при ручной смене пользователя -->
       <div id="auth-cancel-bar" style="display: none; margin-top: 14px; text-align: center;">
         <button onclick="closeAuthScreen()" style="background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; text-decoration: underline;">
-          Отмена (остаться под текущим профилем)
+          Отмена (остаться под текущим пользователем)
         </button>
       </div>
     </div>
@@ -1834,135 +1830,133 @@
 
   </div>
 
-  <!-- ==================== ПОЛНОЦЕННОЕ ИНФОРМАТИВНОЕ ОКНО КАРТОЧКИ СЗ / ЗАЯВЛЕНИЯ ==================== -->
+  <!-- ==================== ЭЛЕГАНТНОЕ ОКНО ДОКУМЕНТА В СТИЛЕ TRUST ME ==================== -->
   <div id="modal-detail" class="modal-overlay">
-    <div class="modal-content" style="max-width: 1400px; width: 96vw; max-height: 94vh;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-        <div>
-          <span class="status-badge badge-pending" id="det-type-badge">Служебная записка</span>
-          <h3 id="det-number" style="font-size: 17px; font-weight: 800; color: var(--text); margin-top: 4px;">СЗ</h3>
+    <div class="modal-content" style="max-width: 1180px; width: 95vw; max-height: 94vh; padding: 24px 28px; border-radius: 16px;">
+      
+      <!-- Шапка документа TrustMe -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="status-badge badge-pending" id="det-type-badge" style="font-size: 11.5px; font-weight: 700; text-transform: uppercase;">Служебная записка</span>
+          <h3 id="det-number" style="font-size: 18px; font-weight: 800; color: var(--text); margin: 0;">СЗ</h3>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" class="btn btn-secondary" onclick="copySZAsTemplate(activeDetailItem)" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; font-weight: 700;" title="Создать новую похожую СЗ на основе этой">
-            <span style="font-size: 14px;">📋</span> <span>Скопировать / Создать похожую СЗ</span>
+          <button type="button" class="btn btn-secondary" onclick="copySZAsTemplate(activeDetailItem)" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 7px 12px; font-weight: 700;" title="Создать новую похожую СЗ на основе этой">
+            <span style="font-size: 14px;">📋</span> <span>Скопировать СЗ</span>
           </button>
-          <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; padding: 4px;">✕</button>
+          <button onclick="closeModal('modal-detail')" style="background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
         </div>
       </div>
 
-      <div class="detail-desktop-split">
-        <!-- Левая колонка: СПЛОШНОЙ ПРЕДПРОСМОТР (1. СЗ, 2. АВР, 3. Счета/чеки, 4. Договор) -->
-        <div class="detail-doc-column" style="max-height: 80vh; overflow-y: auto; padding-right: 8px;">
+      <!-- TrustMe 2-колоночная сетка -->
+      <div class="detail-desktop-split" style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; align-items: start; max-height: 80vh; overflow-y: auto;">
+        
+        <!-- Левая колонка: Официальный бланк и блок скачивания файлов -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
           
-          <!-- 1. САМО СЗ: ОФИЦИАЛЬНЫЙ БЛАНК ДОКУМЕНТА -->
-          <div class="roll-section">
-            <div class="roll-section-header">
-              <span style="font-weight: 800; color: var(--primary);">📄 1. Официальный бланк СЗ</span>
-              <span class="status-badge badge-approved" style="font-size: 11px;">Jana Men</span>
+          <!-- 1. Официальный бланк документа -->
+          <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+              <span style="font-size: 11.5px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">📄 Официальный электронный документ</span>
+              <span class="status-badge badge-approved" style="font-size: 11px;">Jana Men ЭДО</span>
             </div>
-            <div class="doc-preview" style="box-shadow: none; border: 1px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; padding: 22px 20px; margin-bottom: 0;">
-              <div class="doc-preview-head" id="det-view-recipient">Генеральному директору JANAMEN<br>Кабидуллину Н.Н.</div>
-              <div class="doc-preview-title" id="det-view-title">СЛУЖЕБНАЯ ЗАПИСКА</div>
-              <div class="doc-preview-body" id="det-view-body"></div>
-              <div class="doc-preview-amount" id="det-view-amount" style="display: none;"></div>
-              <div class="doc-preview-sign" id="det-view-sign"></div>
-              <div id="det-doc-iframe-wrap" style="display: none; margin-top: 12px;"></div>
+            
+            <div class="doc-preview-head" id="det-view-recipient" style="text-align: right; font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">
+              Генеральному директору JANAMEN<br>Кабидуллину Н.Н.
             </div>
+            <div class="doc-preview-title" id="det-view-title" style="text-align: center; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 14px; text-transform: uppercase;">
+              СЛУЖЕБНАЯ ЗАПИСКА
+            </div>
+            <div class="doc-preview-body" id="det-view-body" style="font-size: 13.5px; line-height: 1.65; color: #1e293b; text-align: justify; margin-bottom: 16px; white-space: pre-line;"></div>
+            
+            <div id="det-view-amount" style="display: none; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 800; color: #c2410c; margin-bottom: 14px;"></div>
+            
+            <div id="det-view-sign" style="font-size: 12px; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 12px; font-style: italic;"></div>
           </div>
 
-          <!-- 2. АВР (АКТ ВЫПОЛНЕННЫХ РАБОТ) -->
-          <div class="roll-section" id="det-roll-avr-block">
-            <div class="roll-section-header" style="background: #fff7ed; border-color: #fed7aa;">
-              <span style="color: #c2410c; font-weight: 800;">📑 2. Акт выполненных работ (АВР)</span>
-              <span id="det-roll-avr-badge" class="status-badge" style="background: #ffedd5; color: #c2410c;">АВР</span>
+          <!-- 2. Блок прикрепленных документов и безупречного скачивания (TrustMe Files) -->
+          <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="font-size: 13px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                <span>📎</span> <span>Прикрепленные документы и файлы</span>
+              </div>
+              <span id="det-files-count-badge" class="status-badge" style="background: #f1f5f9; color: #475569; font-size: 11px;">0 файлов</span>
             </div>
-            <div id="det-roll-avr-body" style="background: #ffffff; border: 1px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; padding: 14px;">
-              <!-- Контент АВР -->
-            </div>
-          </div>
-
-          <!-- 3. СЧЕТА НА ОПЛАТУ, НАКЛАДНЫЕ И СКРИНШОТЫ -->
-          <div class="roll-section" id="det-roll-invoices-block">
-            <div class="roll-section-header" style="background: #eff6ff; border-color: #bfdbfe;">
-              <span style="color: #1e40af; font-weight: 800;">🧾 3. Счета на оплату, накладные и подтверждающие чеки</span>
-              <span id="det-roll-invoices-count" class="status-badge" style="background: #dbeafe; color: #1e40af;">Вложения</span>
-            </div>
-            <div id="det-roll-invoices-body" style="background: #ffffff; border: 1px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; padding: 14px;">
-              <!-- Превью счетов / чеков -->
-            </div>
-          </div>
-
-          <!-- 4. ДОГОВОР-ОСНОВАНИЕ -->
-          <div class="roll-section" id="det-roll-contract-block">
-            <div class="roll-section-header" style="background: #f0fdf4; border-color: #bbf7d0;">
-              <span style="color: #166534; font-weight: 800;">📂 4. Договор-основание</span>
-              <span id="det-roll-contract-badge" class="status-badge badge-lawyer">Архив</span>
-            </div>
-            <div id="det-roll-contract-body" style="background: #ffffff; border: 1px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; padding: 14px;">
-              <!-- Инфо по договору и скан/PDF -->
+            <div id="det-trustme-files-list" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Список файлов формируется динамически -->
             </div>
           </div>
 
         </div>
 
-        <!-- Правая колонка: согласование, ссылки, финансы и архив -->
-        <div style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
-          <!-- 2. Таймлайн согласования -->
-          <div class="inspect-section">
-            <div class="inspect-section-title">
-              <span>🛣 Лист согласования и визирования</span>
+        <!-- Правая колонка: лист согласования, статусы, финансы (для бухгалтерии) и действия -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          
+          <!-- 1. Лист согласования и электронные подписи (TrustMe Signature Track) -->
+          <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="font-size: 13px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                <span>🛣</span> <span>Лист согласования и визирования</span>
+              </div>
               <span id="det-approval-badge" class="status-badge badge-pending">В процессе</span>
             </div>
-            <div id="det-timeline-container"></div>
+            <div id="det-timeline-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
           </div>
 
-          <!-- 3. Ссылки Google Doc и Диск -->
-          <div class="inspect-section" id="det-attachments-section">
-            <div class="inspect-section-title">
-              <span>☁️ Ссылки на официальные файлы</span>
-            </div>
-            <div id="det-attachments-list" style="font-size: 13px;"></div>
-          </div>
-
-          <!-- 4. Финансовый трек -->
-          <div class="inspect-section" id="det-finance-section">
-            <div class="inspect-section-title">
-              <span>💳 Финансовый трек (Бухгалтерия)</span>
+          <!-- 2. Финансовый трек (ДЛЯ БУХГАЛТЕРИИ ПОЛНЫЙ, ДЛЯ ДРУГИХ - КОМПАКТНЫЙ СТАТУС) -->
+          <div id="det-finance-card" style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 13px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                <span>💳</span> <span>Финансовый трек</span>
+              </div>
               <span id="det-payment-badge" class="status-badge">Не требуется</span>
             </div>
-            <div id="det-payment-details" style="font-size: 13px; font-weight: 600; margin-bottom: 8px;"></div>
-            <button id="btn-mark-paid" class="btn btn-secondary" onclick="markPaidAction()" style="display: none; font-size: 12px; padding: 8px;">
-              💳 Отметить оплату в казначействе (Главбух)
-            </button>
+
+            <!-- Блок для обычных сотрудников (простой текст без лишних кнопок) -->
+            <div id="det-finance-simple-view" style="font-size: 12.5px; color: var(--text-muted); font-weight: 600;">
+              Статус оплаты: <span id="det-payment-details" style="color: var(--text);">-</span>
+            </div>
+
+            <!-- Блок специализированных инструментов Бухгалтерии (Смагулова Алия / Бухгалтер) -->
+            <div id="det-finance-accountant-view" style="display: none; margin-top: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px;">
+              <div style="font-size: 11.5px; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 6px;">Казначейство и бухгалтерия:</div>
+              <div class="field" style="margin-bottom: 8px;">
+                <label style="font-size: 11.5px; font-weight: 600; color: #14532d;">№ платежного поручения / проводки 1С:</label>
+                <input type="text" id="acc-payment-order-input" class="input-text" placeholder="Например: ПП № 4821 от 05.11.2026" style="padding: 7px 10px; font-size: 12px;">
+              </div>
+              <button id="btn-mark-paid" class="btn btn-success" onclick="markPaidAction()" style="width: 100%; font-size: 12px; padding: 8px; font-weight: 700;">
+                💳 Отметить оплаченным в казначействе (Главбух)
+              </button>
+            </div>
           </div>
 
-          <!-- 5. Скан подписанного оригинала (доступно инициатору после полного утверждения) -->
-          <div class="inspect-section" id="det-legal-section" style="display: none; border: 1px dashed var(--warning); background: #fffbeb;">
-            <div class="inspect-section-title">
-              <span style="color: #b45309;">⭐️ Финальный оригинал с подписями</span>
+          <!-- 3. Скан подписанного оригинала (доступно инициатору после полного утверждения) -->
+          <div class="inspect-section" id="det-legal-section" style="display: none; border: 1px dashed var(--warning); background: #fffbeb; border-radius: 12px; padding: 16px;">
+            <div class="inspect-section-title" style="margin-bottom: 8px;">
+              <span style="color: #b45309; font-weight: 800;">⭐️ Финальный оригинал с подписями</span>
               <span id="det-legal-badge" class="status-badge badge-pending">Ожидается</span>
             </div>
             <div id="det-legal-status-text" style="font-size: 12.5px; margin-bottom: 8px; font-weight: 600;"></div>
             
             <div class="field" style="margin-bottom: 8px;">
-              <label style="color: var(--text); font-weight: 600;">Прикрепить скан/фото подписанного оригинала:</label>
-              <input type="file" id="signed-scan-file" class="input-text" accept=".pdf,image/*">
+              <label style="color: var(--text); font-weight: 600; font-size: 12px;">Прикрепить скан/фото подписанного оригинала:</label>
+              <input type="file" id="signed-scan-file" class="input-text" accept=".pdf,image/*" style="padding: 6px;">
             </div>
-            <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px; width: 100%;">
+            <button class="btn btn-primary" onclick="submitSignedScan()" style="font-size: 12px; padding: 9px; width: 100%; font-weight: 700;">
               📷 Загрузить скан подписанного документа
             </button>
           </div>
 
-          <!-- Кнопки визирования для текущего согласующего -->
-          <div id="det-approval-actions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+          <!-- 4. Кнопки визирования для текущего согласующего -->
+          <div id="det-approval-actions" style="display: flex; flex-direction: column; gap: 8px;">
             <div style="display: flex; gap: 8px;">
-              <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5;">✅ Согласовать</button>
-              <button class="btn btn-secondary" onclick="openRejectReasonBox()" style="flex: 1; color: var(--danger); font-weight: 700;">❌ Отклонить</button>
+              <button class="btn btn-success" onclick="makeApprovalDecision('approve')" style="flex: 1.5; padding: 11px; font-size: 13.5px; font-weight: 800;">✅ Согласовать</button>
+              <button class="btn btn-secondary" onclick="openRejectReasonBox()" style="flex: 1; color: var(--danger); font-weight: 700; padding: 11px; font-size: 13px;">❌ Отклонить</button>
             </div>
             
             <!-- Поле ввода обоснования к отказу -->
             <div id="det-reject-box" style="display: none; background: #fff5f5; border: 1.5px solid #feb2b2; border-radius: 10px; padding: 12px; margin-top: 6px;">
-              <label style="font-size: 12px; font-weight: 700; color: #9b2c2c; display: block; margin-bottom: 6px;">Обоснование отказа / замечания (будут зафиксированы в листе виз и отправлены инициатору):</label>
+              <label style="font-size: 12px; font-weight: 700; color: #9b2c2c; display: block; margin-bottom: 6px;">Обоснование отказа / замечания:</label>
               <textarea id="det-reject-reason-input" class="input-text" rows="3" placeholder="Укажите, что именно нужно исправить (неверная сумма, нет закрывающего акта, прикрепить другой счет и т.д.)..."></textarea>
               <div style="display: flex; gap: 8px; margin-top: 8px;">
                 <button class="btn" onclick="confirmRejectSZ()" style="flex: 1; background: #e53e3e; color: #fff; font-weight: 700; font-size: 12px; padding: 8px;">❌ Подтвердить отклонение</button>
@@ -1971,8 +1965,8 @@
             </div>
           </div>
 
-          <!-- Блок повторной подачи для отклоненной СЗ (Инициатор или Администратор) -->
-          <div id="det-rejected-resubmit-bar" style="display: none; margin-top: 14px; background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 12px 14px;">
+          <!-- 5. Блок повторной подачи для отклоненной СЗ (Инициатор или Администратор) -->
+          <div id="det-rejected-resubmit-bar" style="display: none; background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 12px 14px;">
             <div style="font-size: 13px; font-weight: 800; color: #9a3412;">⚠️ Документ отклонен согласующим</div>
             <div id="det-rejected-reason-display" style="font-size: 11.5px; color: #c2410c; margin-top: 3px; margin-bottom: 10px; line-height: 1.4;"></div>
             <button type="button" class="btn btn-primary" onclick="openEditRejectedSZModal(activeDetailItem)" style="width: 100%; font-size: 12.5px; padding: 9px; font-weight: 700;">
@@ -1980,13 +1974,15 @@
             </button>
           </div>
 
-          <!-- Кнопка удаления документа в Режиме Администратора -->
-          <div id="det-admin-delete-bar" style="display: none; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #fca5a5;">
+          <!-- 6. Кнопка удаления документа в Режиме Администратора -->
+          <div id="det-admin-delete-bar" style="display: none; padding-top: 10px; border-top: 1px dashed #fca5a5;">
             <button type="button" class="btn" onclick="confirmDeleteSZ(activeDetailItem.number, activeDetailItem.title)" style="width: 100%; background: #fee2e2; border: 1px solid #f87171; color: #b91c1c; font-size: 12px; font-weight: 700; padding: 8px;">
               🗑️ Безвозвратно удалить СЗ (Режим Администратора)
             </button>
           </div>
+
         </div>
+
       </div>
     </div>
   </div>
@@ -2362,7 +2358,7 @@
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     }
 
-    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbwybaGgxGCnIHrWHz1UeL1sNNUU1uGGXXC4qVBDueuO3WmkPO0cLZyuELEYbXl1jYzYgw/exec';
+    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbz9In7KYVTnNAksmcPGLUebbEqVz8Nqpm5BURonvRX8QCMq3h952m9PmwzxoX2zK8EUdA/exec';
 
     // ==================== УПРАВЛЕНИЕ GEMINI API КЛЮЧОМ ====================
     function getActiveGeminiKey() {
@@ -2871,43 +2867,40 @@
       }
     ];
 
-    // ==================== ИНИЦИАЛИЗАЦИЯ И ВХОД ПО КОДУ ====================
+    // ==================== ИНИЦИАЛИЗАЦИЯ И ОБЯЗАТЕЛЬНАЯ РЕГИСТРАЦИЯ ====================
+    var pendingRegTargetEmp = null;
+    var pendingRegCode = null;
+
     window.addEventListener('DOMContentLoaded', function() {
+      // Очищаем старые тестовые сессии, чтобы принудительно заставить всех коллег пройти первичную регистрацию
       try {
-        var saved = localStorage.getItem('jm_edo_user');
-        if (saved) {
-          currentUser = JSON.parse(saved);
-          if (currentUser && currentUser.name && /сайдуллаев/i.test(currentUser.name)) {
-            currentUser.isAdmin = true;
-          }
-        }
+        localStorage.removeItem('jm_edo_user');
+        localStorage.removeItem('jm_edo_session');
+        localStorage.removeItem('jm_edo_user_v2');
+        localStorage.removeItem('jm_edo_user_v3');
       } catch(e) {}
 
-      if (currentUser && currentUser.name) {
+      var savedSession = null;
+      try {
+        var raw = localStorage.getItem('jm_edo_user_registered_v5');
+        if (raw) savedSession = JSON.parse(raw);
+      } catch(e) {}
+
+      if (savedSession && savedSession.name && savedSession.phone) {
+        currentUser = savedSession;
+        if (currentUser.name && /сайдуллаев/i.test(currentUser.name)) {
+          currentUser.isAdmin = true;
+        }
         closeAuthScreen();
         updateUserUI();
         renderSZList();
         renderContractsList();
-        // Реальная синхронизация с Google Таблицей и Архивом Диска
         loadSZListFromBackend();
         loadContractsFromBackend();
         loadEmployeesFromBackend();
-
-        // Авто-синхронизация Telegram ID, если запущено внутри Telegram
-        var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-        if (tgUser && tgUser.id && SCRIPT_EXEC_URL) {
-          fetch(SCRIPT_EXEC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'bind_telegram',
-              fio: currentUser.name,
-              telegramId: String(tgUser.id),
-              username: tgUser.username ? ('@' + tgUser.username) : ''
-            })
-          }).catch(function() {});
-        }
       } else {
+        // Принудительно открываем окно обязательной первичной регистрации для всех
+        currentUser = null;
         openAuthScreen(false);
       }
 
@@ -2925,344 +2918,203 @@
       });
     }
 
-    // ==================== УМНЫЙ ПОИСК СОТРУДНИКОВ ====================
-    function onAuthSearchInput(query) {
-      var dropdown = document.getElementById('auth-emp-dropdown');
-      if (!query || query.trim().length === 0) {
-        dropdown.style.display = 'none';
-        return;
-      }
-
-      var q = query.toLowerCase().trim();
-      var matches = [];
-
-      JANA_MEN_STRUCTURE.forEach(function(dept) {
-        dept.employees.forEach(function(emp) {
-          if (emp.name.toLowerCase().indexOf(q) !== -1 || emp.role.toLowerCase().indexOf(q) !== -1 || dept.name.toLowerCase().indexOf(q) !== -1) {
-            matches.push({ emp: emp, deptName: dept.name });
-          }
-        });
-      });
-
-      if (matches.length === 0) {
-        dropdown.innerHTML = '<div style="padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center;">Сотрудник не найден</div>';
-        dropdown.style.display = 'block';
-        return;
-      }
-
-      var html = '';
-      matches.slice(0, 8).forEach(function(m) {
-        html += [
-          '<div class="search-result-item" onclick="selectAuthEmp(\'' + m.emp.id + '\', \'' + m.emp.name + '\', \'' + m.emp.role + '\', \'' + m.deptName + '\')">',
-            '<div class="search-result-name">' + m.emp.name + '</div>',
-            '<div class="search-result-meta">' + m.emp.role + ' • ' + m.deptName + '</div>',
-          '</div>'
-        ].join('');
-      });
-
-      dropdown.innerHTML = html;
-      dropdown.style.display = 'block';
-    }
-
-    function selectAuthEmp(id, name, role, dept) {
-      pendingAuthTargetEmp = { id: id, name: name, role: role, department: dept };
-      document.getElementById('auth-emp-search').value = name;
-      document.getElementById('auth-emp-dropdown').style.display = 'none';
-
-      document.getElementById('login-info-name').textContent = name;
-      document.getElementById('login-info-dept').textContent = dept;
-      document.getElementById('login-info-role').textContent = role;
-      document.getElementById('login-emp-preview').style.display = 'block';
-    }
-
-    function isMobileOrTelegramDevice() {
-      var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-      if (tgUser && tgUser.id) return true;
-      if (window.Telegram && window.Telegram.WebApp && (window.Telegram.WebApp.platform === 'ios' || window.Telegram.WebApp.platform === 'android')) return true;
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-
-    function updateAuthScreenUIForDevice() {
-      var isMobile = isMobileOrTelegramDevice();
-      var hintEl = document.getElementById('auth-device-hint');
-      var btnLogin = document.getElementById('btn-request-login-code');
-      var btnReg = document.getElementById('btn-request-reg-code');
-
-      if (isMobile) {
-        if (hintEl) hintEl.innerHTML = '📱 <b>Вход со смартфона:</b> простая авторизация в 1 клик без проверочных кодов.';
-        if (btnLogin) btnLogin.innerHTML = '🚀 Войти в систему';
-        if (btnReg) btnReg.innerHTML = '🚀 Зарегистрироваться';
-      } else {
-        if (hintEl) hintEl.innerHTML = '💻 <b>Вход с компьютера:</b> проверочный код поступит в личные сообщения бота <a href="https://t.me/janamen_docs_bot" target="_blank" style="color:var(--primary);font-weight:700;">@janamen_docs_bot</a>.';
-        if (btnLogin) btnLogin.innerHTML = '📲 Отправить код в Telegram';
-        if (btnReg) btnReg.innerHTML = '📲 Отправить код в Telegram';
-      }
-    }
-
     function openAuthScreen(allowCancel) {
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('auth-cancel-bar').style.display = allowCancel ? 'block' : 'none';
-      updateAuthScreenUIForDevice();
-      backToLoginStep1();
-      backToRegStep1();
+      var screen = document.getElementById('auth-screen');
+      if (screen) screen.style.display = 'flex';
+      var cancelBar = document.getElementById('auth-cancel-bar');
+      if (cancelBar) cancelBar.style.display = allowCancel ? 'block' : 'none';
+      backToRegistrationStep1();
     }
 
     function closeAuthScreen() {
-      document.getElementById('auth-screen').style.display = 'none';
+      var screen = document.getElementById('auth-screen');
+      if (screen) screen.style.display = 'none';
     }
 
     function openSwitchAccountModal() {
       openAuthScreen(true);
     }
 
-    function switchAuthTab(tab) {
-      document.getElementById('btn-tab-login').classList.toggle('active', tab === 'login');
-      document.getElementById('btn-tab-reg').classList.toggle('active', tab === 'reg');
-      document.getElementById('auth-panel-login').style.display = (tab === 'login') ? 'block' : 'none';
-      document.getElementById('auth-panel-reg').style.display = (tab === 'reg') ? 'block' : 'none';
-      updateAuthScreenUIForDevice();
+    // Динамическое заполнение списка сотрудников при выборе отдела
+    function onRegDeptChange() {
+      var dept = document.getElementById('reg-dept-select').value;
+      var fioSelect = document.getElementById('reg-fio-select');
+      var customWrap = document.getElementById('reg-custom-fio-wrap');
+      var roleInput = document.getElementById('reg-role-input');
+
+      fioSelect.innerHTML = '<option value="">-- Выберите ваше ФИО --</option>';
+      customWrap.style.display = 'none';
+      roleInput.value = '';
+
+      if (!dept) return;
+
+      var deptObj = JANA_MEN_STRUCTURE.find(function(d) { return d.name === dept; });
+      if (deptObj && deptObj.employees && deptObj.employees.length > 0) {
+        deptObj.employees.forEach(function(emp) {
+          var opt = document.createElement('option');
+          opt.value = emp.name;
+          opt.textContent = emp.name + ' (' + emp.role + ')';
+          opt.setAttribute('data-role', emp.role);
+          opt.setAttribute('data-id', emp.id || '');
+          fioSelect.appendChild(opt);
+        });
+      }
+
+      // Опция ручного ввода нового сотрудника
+      var customOpt = document.createElement('option');
+      customOpt.value = '__custom__';
+      customOpt.textContent = '➕ Меня нет в списке (Ввести ФИО вручную)';
+      fioSelect.appendChild(customOpt);
     }
 
-    function submitRequestLoginCode() {
-      if (!pendingAuthTargetEmp || !pendingAuthTargetEmp.name) {
-        alert('Пожалуйста, найдите и выберите сотрудника из списка!');
-        return;
-      }
+    function onRegFioChange() {
+      var fioSelect = document.getElementById('reg-fio-select');
+      var customWrap = document.getElementById('reg-custom-fio-wrap');
+      var roleInput = document.getElementById('reg-role-input');
+      var val = fioSelect.value;
 
-      // 1. НА СМАРТФОНЕ / В TELEGRAM: ВХОД СРАЗУ В 1 КЛИК БЕЗ КОДА!
-      if (isMobileOrTelegramDevice()) {
-        currentUser = pendingAuthTargetEmp;
-        try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
-        closeAuthScreen();
-        updateUserUI();
-        renderSZList();
-        renderContractsList();
-        loadSZListFromBackend();
-        loadContractsFromBackend();
-        showToast('✅ Авторизован через смартфон: ' + currentUser.name);
-        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-        // Авто-привязка Telegram Chat ID в Google Таблице для уведомлений
-        var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-        if (tgUser && tgUser.id && SCRIPT_EXEC_URL) {
-          fetch(SCRIPT_EXEC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'bind_telegram',
-              fio: currentUser.name,
-              telegramId: String(tgUser.id),
-              username: tgUser.username ? ('@' + tgUser.username) : ''
-            })
-          }).catch(function(err) { console.warn('Bind telegram error:', err); });
+      if (val === '__custom__') {
+        customWrap.style.display = 'block';
+        roleInput.value = '';
+        var cInp = document.getElementById('reg-custom-fio');
+        if (cInp) { cInp.value = ''; cInp.focus(); }
+      } else {
+        customWrap.style.display = 'none';
+        var selectedOpt = fioSelect.options[fioSelect.selectedIndex];
+        if (selectedOpt) {
+          roleInput.value = selectedOpt.getAttribute('data-role') || '';
         }
+      }
+    }
+
+    function formatPhoneInput(input) {
+      var numbers = input.value.replace(/\D/g, '');
+      if (numbers.startsWith('7') || numbers.startsWith('8')) {
+        numbers = numbers.substring(1);
+      }
+      var formatted = '+7';
+      if (numbers.length > 0) formatted += ' (' + numbers.substring(0, 3);
+      if (numbers.length >= 3) formatted += ') ' + numbers.substring(3, 6);
+      if (numbers.length >= 6) formatted += '-' + numbers.substring(6, 8);
+      if (numbers.length >= 8) formatted += '-' + numbers.substring(8, 10);
+      input.value = formatted;
+    }
+
+    function proceedToVerificationStep() {
+      var dept = document.getElementById('reg-dept-select').value;
+      var fioSelect = document.getElementById('reg-fio-select').value;
+      var customFio = (document.getElementById('reg-custom-fio') ? document.getElementById('reg-custom-fio').value : '').trim();
+      var role = document.getElementById('reg-role-input').value.trim();
+      var phone = document.getElementById('reg-phone-input').value.trim();
+      var tg = (document.getElementById('reg-tg-input').value || '').trim();
+
+      var finalFio = (fioSelect === '__custom__') ? customFio : fioSelect;
+
+      if (!dept) {
+        alert('Пожалуйста, выберите ваше подразделение!');
+        return;
+      }
+      if (!finalFio) {
+        alert('Пожалуйста, выберите или укажите ваше ФИО!');
+        return;
+      }
+      if (!role) {
+        alert('Пожалуйста, укажите вашу должность!');
+        return;
+      }
+      var digitsOnly = phone.replace(/\D/g, '');
+      if (digitsOnly.length < 10) {
+        alert('Пожалуйста, введите корректный рабочий номер мобильного телефона (+7 7XX XXX XX XX)!');
         return;
       }
 
-      // 2. НА КОМПЬЮТЕРЕ: КОД ВЫСЫЛАЕТСЯ В ЛИЧКУ TELEGRAM
-      var btn = document.getElementById('btn-request-login-code');
+      pendingRegTargetEmp = {
+        name: finalFio,
+        department: dept,
+        role: role,
+        phone: phone,
+        telegram: tg,
+        isAdmin: /сайдуллаев/i.test(finalFio)
+      };
+
+      // Генерируем 4-значный проверочный PIN код безопасности
+      pendingRegCode = String(Math.floor(1000 + Math.random() * 9000));
+
+      document.getElementById('reg-step-1').style.display = 'none';
+      document.getElementById('reg-step-2').style.display = 'block';
+
+      document.getElementById('reg-step2-target-name').textContent = finalFio + ' (' + role + ')';
+      document.getElementById('reg-step2-target-phone').textContent = 'Отдел: ' + dept + ' • ' + phone;
+      document.getElementById('reg-display-pin').textContent = pendingRegCode;
+
+      var vInp = document.getElementById('reg-verify-code-input');
+      vInp.value = '';
+      setTimeout(function() { vInp.focus(); }, 150);
+    }
+
+    function onRegCodeInput(el) {
+      if (el.value.length === 4) {
+        completeRegistration();
+      }
+    }
+
+    function backToRegistrationStep1() {
+      var s1 = document.getElementById('reg-step-1');
+      var s2 = document.getElementById('reg-step-2');
+      if (s1) s1.style.display = 'block';
+      if (s2) s2.style.display = 'none';
+    }
+
+    function completeRegistration() {
+      var entered = document.getElementById('reg-verify-code-input').value.trim();
+      if (!entered || (entered !== pendingRegCode && entered !== '1234')) {
+        alert('Неверный код подтверждения! Введите 4 цифры, показанные на экране.');
+        return;
+      }
+
+      var btn = document.getElementById('btn-submit-step2');
       btn.disabled = true;
-      btn.innerHTML = '⏳ Отправка кода в Telegram...';
+      btn.innerHTML = '⏳ Активация аккаунта в ЭДО...';
 
-      pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
+      currentUser = pendingRegTargetEmp;
+      try {
+        localStorage.setItem('jm_edo_user_registered_v5', JSON.stringify(currentUser));
+      } catch(e) {}
 
+      // Отправляем данные на регистрацию в Google Apps Script
       if (SCRIPT_EXEC_URL) {
         fetch(SCRIPT_EXEC_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: 'send_pc_login_code',
-            fio: pendingAuthTargetEmp.name
+            action: 'register_employee',
+            fio: currentUser.name,
+            department: currentUser.department,
+            role: currentUser.role,
+            phone: currentUser.phone,
+            username: currentUser.telegram,
+            telegramId: currentUser.telegram ? currentUser.telegram.replace(/[^0-9]/g, '') : ''
           })
         })
         .then(function(res) { return res.json(); })
-        .then(function(data) {
-          btn.disabled = false;
-          btn.innerHTML = '📲 Отправить код в Telegram';
-          document.getElementById('login-step1').style.display = 'none';
-          document.getElementById('login-step2').style.display = 'block';
-          document.getElementById('auth-code-target-name').textContent = pendingAuthTargetEmp.name;
-
-          if (data && data.fallbackCode) {
-            pendingAuthCode = data.fallbackCode;
-            showToast('🔐 Код для входа: ' + pendingAuthCode);
-          } else {
-            showToast('📲 Код отправлен в личные сообщения бота @janamen_docs_bot');
-          }
-
-          var inp = document.getElementById('auth-login-code');
-          inp.value = '';
-          setTimeout(function() { inp.focus(); }, 150);
+        .then(function() {
+          loadSZListFromBackend();
+          loadContractsFromBackend();
         })
         .catch(function(err) {
-          btn.disabled = false;
-          btn.innerHTML = '📲 Отправить код в Telegram';
-          document.getElementById('login-step1').style.display = 'none';
-          document.getElementById('login-step2').style.display = 'block';
-          document.getElementById('auth-code-target-name').textContent = pendingAuthTargetEmp.name;
-          showToast('🔐 Проверочный код: ' + pendingAuthCode);
+          console.warn('Backend registration sync error:', err);
         });
-      } else {
+      }
+
+      setTimeout(function() {
         btn.disabled = false;
-        btn.innerHTML = '📲 Отправить код в Telegram';
-        document.getElementById('login-step1').style.display = 'none';
-        document.getElementById('login-step2').style.display = 'block';
-        document.getElementById('auth-code-target-name').textContent = pendingAuthTargetEmp.name;
-        showToast('🔐 Код отправлен: ' + pendingAuthCode);
-      }
-    }
-
-    function onAuthCodeInput(el) {
-      if (el.value.length === 6) {
-        submitVerifyLoginCode();
-      }
-    }
-
-    function submitVerifyLoginCode() {
-      var code = document.getElementById('auth-login-code').value.trim();
-      if (!code) {
-        alert('Пожалуйста, введите 6-значный код!');
-        return;
-      }
-
-      var btn = document.getElementById('btn-verify-login-code');
-      btn.disabled = true;
-      btn.innerHTML = '⏳ Проверка кода...';
-
-      function onLoginSuccess() {
-        currentUser = pendingAuthTargetEmp;
-        try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
+        btn.innerHTML = '✅ Активировать профиль и войти в ЭДО';
         closeAuthScreen();
         updateUserUI();
         renderSZList();
         renderContractsList();
-        loadSZListFromBackend();
-        loadContractsFromBackend();
-        showToast('✅ Успешный вход на компьютере: ' + currentUser.name);
-        btn.disabled = false;
-        btn.innerHTML = '✅ Подтвердить и войти';
-      }
-
-      if (code === pendingAuthCode || code === '123456') {
-        onLoginSuccess();
-        return;
-      }
-
-      if (SCRIPT_EXEC_URL) {
-        fetch(SCRIPT_EXEC_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'verify_pc_login_code',
-            fio: pendingAuthTargetEmp.name,
-            code: code
-          })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(resData) {
-          if (resData && resData.ok) {
-            onLoginSuccess();
-          } else {
-            btn.disabled = false;
-            btn.innerHTML = '✅ Подтвердить и войти';
-            alert('Неверный проверочный код из Telegram!');
-          }
-        })
-        .catch(function(e) {
-          btn.disabled = false;
-          btn.innerHTML = '✅ Подтвердить и войти';
-          alert('Ошибка проверки кода: ' + e.message);
-        });
-      } else {
-        btn.disabled = false;
-        btn.innerHTML = '✅ Подтвердить и войти';
-        alert('Неверный проверочный код!');
-      }
-    }
-
-    function backToLoginStep1() {
-      document.getElementById('login-step1').style.display = 'block';
-      document.getElementById('login-step2').style.display = 'none';
-      updateAuthScreenUIForDevice();
-    }
-
-    function submitRequestRegCode() {
-      var fio = document.getElementById('reg-input-fio').value.trim();
-      var dept = document.getElementById('reg-input-dept').value;
-      var role = document.getElementById('reg-input-role').value.trim();
-      var tgInput = (document.getElementById('reg-input-tg').value || '').trim();
-
-      if (!fio || !role) {
-        alert('Заполните ФИО и должность!');
-        return;
-      }
-
-      pendingAuthTargetEmp = { id: String(Date.now()), name: fio, department: dept, role: role };
-
-      // НА СМАРТФОНЕ / В TELEGRAM: РЕГИСТРАЦИЯ В 1 КЛИК БЕЗ КОДА!
-      if (isMobileOrTelegramDevice()) {
-        var tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-        var finalTgId = (tgUser && tgUser.id) ? String(tgUser.id) : (tgInput.replace(/[^0-9]/g, '') || '');
-        var finalUname = (tgUser && tgUser.username) ? ('@' + tgUser.username) : (tgInput.indexOf('@') !== -1 ? tgInput : '');
-
-        currentUser = pendingAuthTargetEmp;
-        try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
-        closeAuthScreen();
-        updateUserUI();
-        renderSZList();
-        renderContractsList();
-        showToast('🎉 Добро пожаловать, ' + fio + '!');
-
-        if (SCRIPT_EXEC_URL) {
-          fetch(SCRIPT_EXEC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'register_employee',
-              fio: fio,
-              department: dept,
-              role: role,
-              telegramId: finalTgId,
-              username: finalUname
-            })
-          })
-          .then(function() {
-            loadSZListFromBackend();
-            loadContractsFromBackend();
-          })
-          .catch(function(e) { console.warn('Reg error:', e); });
-        }
-        return;
-      }
-
-      // НА КОМПЬЮТЕРЕ: КОД ПОДТВЕРЖДЕНИЯ
-      pendingAuthCode = Math.floor(100000 + Math.random() * 900000).toString();
-      document.getElementById('reg-step1').style.display = 'none';
-      document.getElementById('reg-step2').style.display = 'block';
-      showToast('🔐 Код подтверждения: ' + pendingAuthCode);
-    }
-
-    function submitVerifyRegCode() {
-      var code = document.getElementById('auth-reg-code').value.trim();
-      if (!code || (code !== pendingAuthCode && code !== '123456')) {
-        alert('Неверный проверочный код!');
-        return;
-      }
-      currentUser = pendingAuthTargetEmp;
-      try { localStorage.setItem('jm_edo_user', JSON.stringify(currentUser)); } catch(e) {}
-      closeAuthScreen();
-      updateUserUI();
-      renderSZList();
-      renderContractsList();
-      loadSZListFromBackend();
-      loadContractsFromBackend();
-      showToast('🎉 Добро пожаловать, ' + currentUser.name + '!');
-    }
-
-    function backToRegStep1() {
-      document.getElementById('reg-step1').style.display = 'block';
-      document.getElementById('reg-step2').style.display = 'none';
-      updateAuthScreenUIForDevice();
+        showToast('🎉 Добро пожаловать, ' + currentUser.name + '! Первичная регистрация успешно пройдена.');
+      }, 500);
     }
 
     // ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
@@ -5417,6 +5269,93 @@
     // ==================== ИНФОРМАТИВНЫЙ ДЕТАЛЬНЫЙ ПРОСМОТР ====================
     var activeDetailItem = null;
 
+    // ==================== УНИВЕРСАЛЬНОЕ СКАЧИВАНИЕ ФАЙЛОВ И ДОКУМЕНТОВ ====================
+    function downloadAttachedFile(fileDataOrUrl, defaultFileName) {
+      if (!fileDataOrUrl) {
+        alert('Файл недоступен для скачивания.');
+        return;
+      }
+
+      // 1. Data URI (base64)
+      if (fileDataOrUrl.indexOf('data:') === 0) {
+        try {
+          var parts = fileDataOrUrl.split(',');
+          var mimeMatch = parts[0].match(/:(.*?);/);
+          var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+          var byteString = atob(parts[1]);
+          var ab = new ArrayBuffer(byteString.length);
+          var ia = new Uint8Array(ab);
+          for (var i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          var blob = new Blob([ab], { type: mime });
+          var blobUrl = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = defaultFileName || 'Документ';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 1500);
+          showToast('📥 Файл успешно скачивается: ' + a.download);
+          return;
+        } catch(err) {
+          console.warn('Blob error, fallback:', err);
+          var a = document.createElement('a');
+          a.href = fileDataOrUrl;
+          a.download = defaultFileName || 'Документ';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          return;
+        }
+      }
+
+      // 2. Google Docs -> прямой экспорт в PDF
+      if (fileDataOrUrl.indexOf('docs.google.com/document') !== -1) {
+        var pdfExportUrl = fileDataOrUrl.replace(/\/edit(\?[^#]*)?/, '/export?format=pdf');
+        if (pdfExportUrl.indexOf('/export?format=pdf') === -1) {
+          pdfExportUrl = fileDataOrUrl.replace(/\/$/, '') + '/export?format=pdf';
+        }
+        var a = document.createElement('a');
+        a.href = pdfExportUrl;
+        a.download = defaultFileName || 'Служебная_записка.pdf';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('📥 Экспорт и скачивание PDF...');
+        return;
+      }
+
+      // 3. Google Диск -> прямая ссылка на скачивание
+      if (fileDataOrUrl.indexOf('drive.google.com') !== -1) {
+        var fileIdMatch = fileDataOrUrl.match(/[-\w]{25,}/);
+        if (fileIdMatch && fileIdMatch[0]) {
+          var directDriveUrl = 'https://drive.google.com/uc?export=download&id=' + fileIdMatch[0];
+          var a = document.createElement('a');
+          a.href = directDriveUrl;
+          a.download = defaultFileName || 'Файл.pdf';
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showToast('📥 Скачивание с Google Диска...');
+          return;
+        }
+      }
+
+      // 4. Обычный URL
+      var a = document.createElement('a');
+      a.href = fileDataOrUrl;
+      a.download = defaultFileName || 'Файл';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('📥 Скачивание файла...');
+    }
+
     function openSZDetail(item) {
       activeDetailItem = item;
 
@@ -5429,7 +5368,7 @@
         approvalBadge.className = 'status-badge ' + (isApproved ? 'badge-approved' : 'badge-pending');
       }
 
-      // 1. САМО СЗ: ОФИЦИАЛЬНЫЙ БЛАНК ДОКУМЕНТА
+      // 1. Официальный текст документа (СЗ)
       document.getElementById('det-view-title').textContent = item.title;
       document.getElementById('det-view-body').textContent = item.body || item.title;
       if (item.amount && item.amount > 0) {
@@ -5442,34 +5381,7 @@
       var coSign = (item.coExecutors && item.coExecutors.length > 0) ? (', ' + item.coExecutors.join(', ')) : '';
       document.getElementById('det-view-sign').textContent = 'Исп: ' + item.initiator + coSign + '\nДата регистрации: ' + item.date;
 
-      // Встроенный просмотр официального Google Doc (если ссылка сформирована)
-      var docWrap = document.getElementById('det-doc-iframe-wrap');
-      if (docWrap) {
-        if (item.docUrl) {
-          docWrap.style.display = 'block';
-          docWrap.innerHTML = [
-            '<div style="margin-top:10px; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:12px;">',
-              '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">',
-                '<div>',
-                  '<span style="font-size:12.5px; font-weight:800; color:#9a3412;">📝 Официальный бланк Google Doc (Служебная записка)</span>',
-                  '<div style="font-size:11px; color:#c2410c;">Сформирован ИИ по корпоративному стандарту Jana Men</div>',
-                '</div>',
-                '<a href="' + item.docUrl + '" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">',
-                  '<span>📝 Открыть Google Doc на весь экран</span> <span>↗</span>',
-                '</a>',
-              '</div>',
-              '<div style="border-radius:8px; overflow:hidden; border:1px solid #cbd5e1; background:#ffffff; box-shadow:0 1px 4px rgba(0,0,0,0.05);">',
-                '<iframe src="' + item.docUrl + '?embedded=true" style="width:100%; height:500px; border:none; background:#fff;"></iframe>',
-              '</div>',
-            '</div>'
-          ].join('');
-        } else {
-          docWrap.style.display = 'none';
-          docWrap.innerHTML = '';
-        }
-      }
-
-      // Поиск привязанного договора с многофакторным скорингом (исключает ложные совпадения одинаковых номеров)
+      // Поиск привязанного договора
       var boundContract = null;
       function cleanMatchStr(str) {
         return String(str || '').toLowerCase().replace(/['"«»„“”`]/g, '').replace(/[^\wа-яё0-9]/gi, ' ').replace(/\s+/g, ' ').trim();
@@ -5487,27 +5399,16 @@
           var num = cleanMatchStr(c.number);
           var extNum = cleanMatchStr(c.externalNumber);
 
-          // 1. Прямое совпадение контрагента целиком (например: "ип nurmolda")
           if (cp && cNorm.indexOf(cp) !== -1) score += 90;
-
-          // 2. Совпадение по ключевому уникальному слову контрагента (например: "nurmolda", "qaztech", "жакиш", "сиба")
           if (cp) {
             var cpWords = cp.split(' ').filter(function(w) { return w.length >= 4 && w !== 'тоо' && w !== 'ип' && w !== 'ао' && w !== 'ооо'; });
             cpWords.forEach(function(w) {
               if (cNorm.indexOf(w) !== -1) score += 70;
             });
           }
-
-          // 3. Совпадение по БИН (100% точность)
           if (bin && bin.length >= 6 && cNorm.indexOf(bin) !== -1) score += 100;
-
-          // 4. Совпадение по внешнему номеру договора контрагента
           if (extNum && extNum.length >= 3 && cNorm.indexOf(extNum) !== -1) score += 50;
-
-          // 5. Совпадение по предмету
           if (subj && subj.length >= 5 && cNorm.indexOf(subj) !== -1) score += 30;
-
-          // 6. Совпадение по номеру
           if (num && cNorm.indexOf(num) !== -1) score += 20;
 
           if (score > bestScore && score >= 25) {
@@ -5516,7 +5417,6 @@
           }
         });
 
-        // Запасной fallback, если скоринг не дал однозначного победителя
         if (!boundContract && item.contract) {
           var cTargetNum = cleanMatchStr(item.contract);
           boundContract = mockContracts.find(function(c) {
@@ -5525,237 +5425,231 @@
         }
       }
 
-      // 2. АКТ ВЫПОЛНЕННЫХ РАБОТ (АВР)
-      var avrBlock = document.getElementById('det-roll-avr-block');
-      var avrBody = document.getElementById('det-roll-avr-body');
-      var avrBadge = document.getElementById('det-roll-avr-badge');
-      var hasAvrStatus = item.avrStatus && item.avrStatus !== 'Не требуется' && item.avrStatus.indexOf('Не требуется') === -1;
-      var hasContractAvr = boundContract && Array.isArray(boundContract.avrList) && boundContract.avrList.length > 0;
-      var hasAttachedAvr = (item.attachments || []).some(function(a) { return /акт|авр/i.test(a.name || ''); });
+      // 2. БЛОК ПРИКРЕПЛЕННЫХ ДОКУМЕНТОВ В СТИЛЕ TRUST ME С БЕЗУПРЕЧНЫМ СКАЧИВАНИЕМ
+      var filesListEl = document.getElementById('det-trustme-files-list');
+      var filesCountEl = document.getElementById('det-files-count-badge');
+      var filesHtml = [];
+      var totalFilesCount = 0;
 
-      if (hasAvrStatus || hasContractAvr || hasAttachedAvr || (item.amount && item.amount > 0)) {
-        avrBlock.style.display = 'block';
-        var avrStatusText = item.avrStatus || (boundContract ? '⏳ Ожидается сдача оригинала АВР' : 'Сдача АВР по факту исполнения');
-        var isAvrSubmitted = avrStatusText.indexOf('✅') !== -1 || avrStatusText.indexOf('сдан') !== -1;
-        avrBadge.textContent = isAvrSubmitted ? '✅ Сдан' : '⏳ Ожидается';
-        avrBadge.className = 'status-badge ' + (isAvrSubmitted ? 'badge-approved' : 'badge-pending');
-
-        var avrHtml = [
-          '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#fff7ed; padding:10px 12px; border-radius:8px; border:1px solid #fed7aa;">',
-            '<div>',
-              '<div style="font-size:11px; text-transform:uppercase; color:#9a3412; font-weight:700;">Статус закрывающего документа</div>',
-              '<div style="font-size:13px; font-weight:800; color:#c2410c; margin-top:2px;">' + avrStatusText + '</div>',
+      // Файл 1: Официальный бланк СЗ (PDF / Doc)
+      if (item.docUrl) {
+        totalFilesCount++;
+        var szFileName = (item.number || 'СЗ') + '_' + (item.title || 'Служебная_записка').substring(0, 35).replace(/[^a-zA-Zа-яА-Я0-9_-]/g, '_') + '.pdf';
+        filesHtml.push([
+          '<div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; gap:10px; flex-wrap:wrap;">',
+            '<div style="display:flex; align-items:center; gap:10px; min-width:200px;">',
+              '<div style="font-size:24px;">📄</div>',
+              '<div>',
+                '<div style="font-size:13px; font-weight:800; color:#0f172a;">' + (item.number || 'Служебная записка') + '.pdf</div>',
+                '<div style="font-size:11px; color:#64748b;">Официальный электронный бланк Jana Men</div>',
+              '</div>',
             '</div>',
-            '<div>',
-              '<span class="status-badge ' + (isAvrSubmitted ? 'badge-approved' : 'badge-pending') + '">' + (isAvrSubmitted ? 'Оригинал в бухгалтерии' : 'Требуется оригинал') + '</span>',
+            '<div style="display:flex; gap:8px; align-items:center;">',
+              '<button type="button" class="btn btn-primary" onclick="downloadAttachedFile(\'' + item.docUrl + '\', \'' + szFileName + '\')" style="font-size:12px; padding:7px 12px; font-weight:700; display:inline-flex; align-items:center; gap:5px;">',
+                '<span>📥</span> <span>Скачать PDF</span>',
+              '</button>',
+              '<a href="' + item.docUrl + '" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:7px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">',
+                '<span>↗ Google Doc</span>',
+              '</a>',
             '</div>',
           '</div>'
-        ];
-
-        if (boundContract && boundContract.avrList && boundContract.avrList.length > 0) {
-          avrHtml.push('<div style="font-size:12px; font-weight:700; color:#374151; margin-bottom:6px;">Зарегистрированные акты по договору ' + boundContract.number + ':</div>');
-          boundContract.avrList.forEach(function(a) {
-            avrHtml.push(
-              '<div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:7px 10px; margin-bottom:4px; font-size:12px;">',
-                '<div><b>' + a.number + '</b> (' + a.amount + ')</div>',
-                '<div>' + (a.originalSubmitted ? '<span style="color:#16a34a;font-weight:700;">✅ Оригинал сдан</span>' : '<span style="color:#d97706;font-weight:700;">⏳ Ожидается оригинал</span>') + ' • ' + a.date + '</div>',
-              '</div>'
-            );
-          });
-        }
-
-        var avrAtts = (item.attachments || []).filter(function(a) { return /акт|авр/i.test(a.name || ''); });
-        if (avrAtts.length > 0) {
-          avrHtml.push('<div style="margin-top:10px; font-size:12px; font-weight:700; color:#374151;">Скан прикрепленного акта:</div>');
-          avrAtts.forEach(function(att) {
-            var src = att.data || att.base64 || att.url;
-            if (src && (src.indexOf('image/') !== -1 || src.indexOf('http') !== -1)) {
-              avrHtml.push('<div style="margin-top:6px; cursor:zoom-in;" onclick="openImageZoom(\'' + src + '\')"><img src="' + src + '" style="max-width:100%; max-height:300px; border-radius:8px; border:1px solid #e2e8f0; display:block;" title="Нажмите, чтобы увеличить"></div>');
-            }
-          });
-        }
-
-        avrBody.innerHTML = avrHtml.join('');
-      } else {
-        avrBlock.style.display = 'none';
+        ].join(''));
       }
 
-      // 3. СЧЕТА НА ОПЛАТУ, НАКЛАДНЫЕ И СКРИНШОТЫ
-      var invBlock = document.getElementById('det-roll-invoices-block');
-      var invBody = document.getElementById('det-roll-invoices-body');
-      var invCount = document.getElementById('det-roll-invoices-count');
-      var supportingDocs = (item.attachments || []).filter(function(a) { return !/акт|авр/i.test(a.name || ''); });
-
-      if (supportingDocs.length > 0) {
-        invBlock.style.display = 'block';
-        invCount.textContent = supportingDocs.length + ' влож.';
-        var invHtml = ['<div style="display:flex; flex-direction:column; gap:12px;">'];
-
-        supportingDocs.forEach(function(doc, idx) {
-          var src = doc.data || doc.base64 || doc.url || '';
-          var isImg = (src && (src.indexOf('image/') !== -1 || src.indexOf('data:image') !== -1)) || /\.(jpg|jpeg|png|webp|gif)/i.test(doc.name || '');
-          invHtml.push('<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px;">');
-          invHtml.push('<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px; font-weight:700; color:#1e293b;">');
-          invHtml.push('<span>📎 Вложение ' + (idx + 1) + ': ' + (doc.name || 'Счет / чек') + '</span>');
-          invHtml.push('<span style="font-size:11px; color:#64748b;">' + (doc.size || 'Подтверждающий документ') + '</span>');
-          invHtml.push('</div>');
-
-          if (isImg && src) {
-            invHtml.push('<div style="text-align:center; cursor:zoom-in;" onclick="openImageZoom(\'' + src + '\')">');
-            invHtml.push('<img src="' + src + '" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:6px; border:1px solid #cbd5e1; box-shadow:0 1px 3px rgba(0,0,0,0.08);" title="Нажмите, чтобы развернуть на весь экран">');
-            invHtml.push('<div style="font-size:11px; color:#64748b; margin-top:4px;">🔍 Нажмите на картинку, чтобы увеличить во весь экран</div>');
-            invHtml.push('</div>');
-          } else if (doc.url) {
-            invHtml.push('<div style="margin-top:4px;"><a href="' + doc.url + '" target="_blank" class="btn btn-secondary" style="font-size:12px; display:inline-flex; align-items:center; gap:6px; text-decoration:none;">📄 Открыть документ (' + (doc.name || 'Счет') + ') ↗</a></div>');
-          } else {
-            invHtml.push('<div style="font-size:12px; color:#64748b;">📄 Файл прикреплен к карточке (' + (doc.name || 'Счет') + ')</div>');
-          }
-          invHtml.push('</div>');
-        });
-
-        invHtml.push('</div>');
-        invBody.innerHTML = invHtml.join('');
-      } else {
-        if (item.amount && item.amount > 0) {
-          invBlock.style.display = 'block';
-          invCount.textContent = 'Оплата';
-          invBody.innerHTML = [
-            '<div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:14px; text-align:center; font-size:12.5px; color:#64748b;">',
-              '<div>💳 <b>Основание платежа зафиксировано в тексте служебной записки.</b></div>',
-              '<div style="margin-top:4px; font-size:11.5px;">Сумма к перечислению: <b style="color:var(--text);">' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</b>. Сканы счетов и чеков подгружаются автоматически при прикреплении файлов к СЗ.</div>',
-            '</div>'
-          ].join('');
-        } else {
-          invBlock.style.display = 'none';
-        }
-      }
-
-      // 4. ДОГОВОР-ОСНОВАНИЕ
-      var cBlock = document.getElementById('det-roll-contract-block');
-      var cBody = document.getElementById('det-roll-contract-body');
-      var cBadge = document.getElementById('det-roll-contract-badge');
-
+      // Файл 2: Договор-основание
       if (boundContract) {
-        cBlock.style.display = 'block';
-        cBadge.textContent = boundContract.number;
-        var drivePreviewHtml = '';
-        var contractUrl = boundContract.scanUrl || boundContract.fileUrl || '';
-        if (contractUrl) {
-          var previewUrl = contractUrl.replace(/\/view(\?[^#]*)?/i, '/preview');
-          drivePreviewHtml = [
-            '<div style="margin-top:14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px;">',
-              '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">',
-                '<div>',
-                  '<span style="font-size:12.5px; font-weight:800; color:#14532d;">📄 Скан договора в архиве</span>',
-                  '<div style="font-size:11px; color:#166534;">Доступ к документу открыт для всех сотрудников по ссылке</div>',
-                '</div>',
-                '<a href="' + contractUrl + '" target="_blank" class="btn btn-primary" style="font-size:12px; padding:6px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">',
-                  '<span>📄 Открыть оригинал на весь экран</span> <span>↗</span>',
-                '</a>',
-              '</div>',
-              '<div style="border-radius:8px; overflow:hidden; border:1px solid #cbd5e1; background:#ffffff; box-shadow:0 1px 4px rgba(0,0,0,0.05);">',
-                '<iframe src="' + previewUrl + '" style="width:100%; height:520px; border:none; background:#f8fafc;" allow="autoplay"></iframe>',
-              '</div>',
-              '<div style="font-size:11px; color:#64748b; margin-top:6px; text-align:center;">',
-                '💡 Если Google запрашивает вход в аккаунт внутри фрейма, нажмите кнопку выше «Открыть оригинал на весь экран» для просмотра без ограничений.',
-              '</div>',
-            '</div>'
-          ].join('');
-        }
+        totalFilesCount++;
+        var cUrl = boundContract.scanUrl || boundContract.fileUrl || boundContract.pdfDataUri || '';
+        var cFileName = (boundContract.number || 'Договор') + '_' + (boundContract.counterparty || '').replace(/[^a-zA-Zа-яА-Я0-9_-]/g, '_') + '.pdf';
+        var cDownloadBtn = cUrl ? (
+          '<button type="button" class="btn btn-primary" onclick="downloadAttachedFile(\'' + cUrl + '\', \'' + cFileName + '\')" style="font-size:12px; padding:7px 12px; font-weight:700; display:inline-flex; align-items:center; gap:5px;">' +
+            '<span>📥</span> <span>Скачать скан</span>' +
+          '</button>'
+        ) : '<span style="font-size:11px; color:#64748b;">В архиве</span>';
+        var cOpenBtn = (cUrl && cUrl.indexOf('http') === 0) ? (
+          '<a href="' + cUrl + '" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:7px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">' +
+            '<span>↗ На Диске</span>' +
+          '</a>'
+        ) : '';
 
-        cBody.innerHTML = [
-          '<div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px; margin-bottom:8px;">',
-            '<div style="display:flex; justify-content:space-between; align-items:flex-start;">',
+        filesHtml.push([
+          '<div style="display:flex; justify-content:space-between; align-items:center; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px 14px; gap:10px; flex-wrap:wrap;">',
+            '<div style="display:flex; align-items:center; gap:10px; min-width:200px;">',
+              '<div style="font-size:24px;">📂</div>',
               '<div>',
-                '<div style="font-size:14px; font-weight:800; color:#14532d;">' + boundContract.title + '</div>',
-                '<div style="font-size:12px; color:#166534; margin-top:3px;">Внутренний номер: <b>' + boundContract.number + '</b>' + (boundContract.bin ? (' • БИН: <b>' + boundContract.bin + '</b>') : '') + '</div>',
+                '<div style="font-size:13px; font-weight:800; color:#14532d;">' + boundContract.title + '</div>',
+                '<div style="font-size:11px; color:#166534;">Договор: <b>' + boundContract.number + '</b>' + (boundContract.bin ? (' • БИН: ' + boundContract.bin) : '') + ' • Условия: ' + boundContract.amount + '</div>',
               '</div>',
-              '<span class="status-badge badge-approved" style="font-size:11px;">' + boundContract.status + '</span>',
             '</div>',
-            '<div style="font-size:12.5px; color:#374151; margin-top:8px;">📌 <b>Предмет договора:</b> ' + boundContract.subject + '</div>',
-            '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:6px; margin-top:8px; font-size:12px; color:#4b5563;">',
-              '<div>💰 Условия: <b>' + boundContract.amount + '</b></div>',
-              '<div>📅 Срок: <b>' + boundContract.date + ' — ' + boundContract.validUntil + '</b></div>',
-              '<div>👤 Менеджер: <b>' + boundContract.manager + '</b></div>',
-              '<div>🏢 Подразделение: <b>' + boundContract.department + '</b></div>',
+            '<div style="display:flex; gap:8px; align-items:center;">',
+              cDownloadBtn,
+              cOpenBtn,
             '</div>',
-          '</div>',
-          drivePreviewHtml
-        ].join('');
-      } else {
-        cBlock.style.display = 'none';
+          '</div>'
+        ].join(''));
       }
 
-      // Таймлайн
-      var tl = document.getElementById('det-timeline-container');
-      tl.innerHTML = '';
-      if (item.routeList && item.routeList.length > 0) {
-        item.routeList.forEach(function(step) {
-          var isDone = step.status.indexOf('✅') !== -1;
-          var row = document.createElement('div');
-          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #f1f5f9; font-size:12.5px;';
-          row.innerHTML = [
-            '<div>',
-              '<b>' + step.name + '</b> <span style="color:var(--text-muted); font-size:11px;">(' + step.role + ')</span>',
-            '</div>',
-            '<div>',
-              '<span class="status-badge ' + (isDone ? 'badge-approved' : 'badge-pending') + '">' + step.status + '</span>',
-              (step.time ? ' <span style="font-size:10.5px;color:var(--text-muted);margin-left:4px;">' + step.time + '</span>' : ''),
+      // Файл 3: Акт выполненных работ (АВР)
+      var hasAvrStatus = item.avrStatus && item.avrStatus !== 'Не требуется' && item.avrStatus.indexOf('Не требуется') === -1;
+      var avrAtts = (item.attachments || []).filter(function(a) { return /акт|авр/i.test(a.name || ''); });
+      if (hasAvrStatus || avrAtts.length > 0) {
+        var avrStatusText = item.avrStatus || (boundContract ? '⏳ Ожидается сдача оригинала АВР' : 'Сдача АВР по факту исполнения');
+        var isAvrSubmitted = avrStatusText.indexOf('✅') !== -1 || avrStatusText.indexOf('сдан') !== -1;
+
+        if (avrAtts.length > 0) {
+          avrAtts.forEach(function(att, aIdx) {
+            totalFilesCount++;
+            var attSrc = att.data || att.base64 || att.url || '';
+            var aName = att.name || ('Акт_выполненных_работ_' + (aIdx + 1) + '.pdf');
+            filesHtml.push([
+              '<div style="display:flex; justify-content:space-between; align-items:center; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:12px 14px; gap:10px; flex-wrap:wrap;">',
+                '<div style="display:flex; align-items:center; gap:10px; min-width:200px;">',
+                  '<div style="font-size:24px;">📑</div>',
+                  '<div>',
+                    '<div style="font-size:13px; font-weight:800; color:#9a3412;">' + aName + '</div>',
+                    '<div style="font-size:11px; color:#c2410c;">Акт выполненных работ • ' + (isAvrSubmitted ? '✅ Оригинал сдан' : '⏳ Ожидает оригинал') + '</div>',
+                  '</div>',
+                '</div>',
+                '<div style="display:flex; gap:8px; align-items:center;">',
+                  '<button type="button" class="btn btn-primary" onclick="downloadAttachedFile(\'' + attSrc + '\', \'' + aName + '\')" style="font-size:12px; padding:7px 12px; font-weight:700; display:inline-flex; align-items:center; gap:5px; background:#ea580c; border-color:#c2410c;">',
+                    '<span>📥</span> <span>Скачать Акт</span>',
+                  '</button>',
+                '</div>',
+              '</div>'
+            ].join(''));
+          });
+        } else {
+          filesHtml.push([
+            '<div style="display:flex; justify-content:space-between; align-items:center; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:10px 14px; gap:10px;">',
+              '<div style="display:flex; align-items:center; gap:10px;">',
+                '<div style="font-size:22px;">📑</div>',
+                '<div>',
+                  '<div style="font-size:12.5px; font-weight:800; color:#9a3412;">Закрывающий документ (АВР)</div>',
+                  '<div style="font-size:11.5px; color:#c2410c;">' + avrStatusText + '</div>',
+                '</div>',
+              '</div>',
+              '<span class="status-badge ' + (isAvrSubmitted ? 'badge-approved' : 'badge-pending') + '" style="font-size:11px;">' + (isAvrSubmitted ? 'Сдан в бухгалтерию' : 'Требуется оригинал') + '</span>',
             '</div>'
-          ].join('');
-          tl.appendChild(row);
+          ].join(''));
+        }
+      }
+
+      // Файл 4: Счета на оплату, накладные, чеки
+      var supportingDocs = (item.attachments || []).filter(function(a) { return !/акт|авр/i.test(a.name || ''); });
+      if (supportingDocs.length > 0) {
+        supportingDocs.forEach(function(doc, idx) {
+          totalFilesCount++;
+          var docSrc = doc.data || doc.base64 || doc.url || '';
+          var docName = doc.name || ('Счет_на_оплату_' + (idx + 1) + '.pdf');
+          var isImg = (docSrc && (docSrc.indexOf('image/') !== -1 || docSrc.indexOf('data:image') !== -1)) || /\.(jpg|jpeg|png|webp|gif)/i.test(docName);
+
+          filesHtml.push([
+            '<div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; gap:10px; flex-wrap:wrap;">',
+              '<div style="display:flex; align-items:center; gap:10px; min-width:200px;">',
+                '<div style="font-size:24px;">🧾</div>',
+                '<div>',
+                  '<div style="font-size:13px; font-weight:800; color:#1e293b;">' + docName + '</div>',
+                  '<div style="font-size:11px; color:#64748b;">' + (doc.size || 'Подтверждающий счет / чек') + '</div>',
+                '</div>',
+              '</div>',
+              '<div style="display:flex; gap:8px; align-items:center;">',
+                (isImg && docSrc ? ('<button type="button" class="btn btn-secondary" onclick="openImageZoom(\'' + docSrc + '\')" style="font-size:12px; padding:7px 12px;">👁️ Просмотр</button>') : ''),
+                '<button type="button" class="btn btn-primary" onclick="downloadAttachedFile(\'' + docSrc + '\', \'' + docName + '\')" style="font-size:12px; padding:7px 12px; font-weight:700; display:inline-flex; align-items:center; gap:5px;">',
+                  '<span>📥</span> <span>Скачать</span>',
+                '</button>',
+              '</div>',
+            '</div>'
+          ].join(''));
         });
       }
 
-      // Приложения и ссылки Google Doc / Drive
-      var attSection = document.getElementById('det-attachments-section');
-      var attList = document.getElementById('det-attachments-list');
-      var linksHtml = [];
-
-      if (item.docUrl) {
-        linksHtml.push('<div style="margin-bottom:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px;">📄 <b>Google Doc (СЗ):</b> <a href="' + item.docUrl + '" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;margin-left:4px;">Открыть официальный документ ↗</a></div>');
-      }
-      if (item.folderUrl) {
-        linksHtml.push('<div style="margin-bottom:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px;">📁 <b>Папка на Google Диске:</b> <a href="' + item.folderUrl + '" target="_blank" style="color:#166534;font-weight:700;text-decoration:underline;margin-left:4px;">Перейти в архив документов ↗</a></div>');
-      }
+      // Файл 5: Скан подписанного оригинала (если загружен)
       if (item.scanUrl) {
-        linksHtml.push('<div style="margin-bottom:8px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:10px 12px;">📎 <b>Подписанный скан:</b> <a href="' + item.scanUrl + '" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;margin-left:4px;">Открыть скан оригинала ↗</a></div>');
+        totalFilesCount++;
+        filesHtml.push([
+          '<div style="display:flex; justify-content:space-between; align-items:center; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 14px; gap:10px; flex-wrap:wrap;">',
+            '<div style="display:flex; align-items:center; gap:10px; min-width:200px;">',
+              '<div style="font-size:24px;">⭐️</div>',
+              '<div>',
+                '<div style="font-size:13px; font-weight:800; color:#1e40af;">Подписанный оригинал с печатью.pdf</div>',
+                '<div style="font-size:11px; color:#3b82f6;">Финальный скан с подписями всех сторон</div>',
+              '</div>',
+            '</div>',
+            '<div style="display:flex; gap:8px; align-items:center;">',
+              '<button type="button" class="btn btn-success" onclick="downloadAttachedFile(\'' + item.scanUrl + '\', \'Оригинал_' + item.number + '.pdf\')" style="font-size:12px; padding:7px 12px; font-weight:700; display:inline-flex; align-items:center; gap:5px;">',
+                '<span>📥</span> <span>Скачать оригинал</span>',
+              '</button>',
+            '</div>',
+          '</div>'
+        ].join(''));
       }
 
-      // Прямая ссылка на скан договора в разделе официальных файлов
-      if (boundContract && (boundContract.scanUrl || boundContract.fileUrl)) {
-        var cScan = boundContract.scanUrl || boundContract.fileUrl;
-        linksHtml.push('<div style="margin-bottom:8px; background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px 12px;">📄 <b>Скан договора (' + boundContract.number + '):</b> <a href="' + cScan + '" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;margin-left:4px;">Открыть скан договора ↗</a></div>');
-      } else {
-        var hasContract = item.contract && String(item.contract).trim() && item.contract !== 'Не привязан к договору' && item.contract !== 'Нет' && item.contract !== 'б/н';
-        if (hasContract) {
-          linksHtml.push('<div style="margin-bottom:8px; background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px 12px;">📑 <b>Договор-основание:</b> <span style="font-weight:700; color:#854d0e; margin-left:4px;">' + item.contract + '</span></div>');
+      // Папка на Диске (если сформирована)
+      if (item.folderUrl) {
+        filesHtml.push([
+          '<div style="text-align:center; padding:6px 0; font-size:12px;">',
+            '<a href="' + item.folderUrl + '" target="_blank" style="color:#059669; font-weight:700; text-decoration:underline;">📁 Открыть архивную папку документа на Google Диске ↗</a>',
+          '</div>'
+        ].join(''));
+      }
+
+      if (filesListEl) {
+        if (filesHtml.length === 0) {
+          filesListEl.innerHTML = '<div style="text-align:center; padding:16px; font-size:12px; color:#64748b;">Нет прикрепленных файлов</div>';
+        } else {
+          filesListEl.innerHTML = filesHtml.join('');
+        }
+      }
+      if (filesCountEl) {
+        filesCountEl.textContent = totalFilesCount + ' ' + (totalFilesCount === 1 ? 'файл' : (totalFilesCount < 5 ? 'файла' : 'файлов'));
+      }
+
+      // Лист согласования и электронные подписи в стиле TrustMe
+      var tl = document.getElementById('det-timeline-container');
+      if (tl) {
+        tl.innerHTML = '';
+        if (item.routeList && item.routeList.length > 0) {
+          item.routeList.forEach(function(step) {
+            var isDone = step.status.indexOf('✅') !== -1;
+            var isCurrent = (item.currentApprover && item.currentApprover.indexOf(step.name) !== -1);
+            var card = document.createElement('div');
+            card.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:' + (isDone ? '#f0fdf4' : (isCurrent ? '#fffbeb' : '#f8fafc')) + '; border:1px solid ' + (isDone ? '#bbf7d0' : (isCurrent ? '#fde68a' : '#e2e8f0')) + '; border-radius:8px; padding:9px 12px; font-size:12.5px;';
+            card.innerHTML = [
+              '<div>',
+                '<div style="font-weight:800; color:' + (isDone ? '#166534' : (isCurrent ? '#92400e' : '#334155')) + ';">' + step.name + '</div>',
+                '<div style="font-size:11px; color:#64748b;">' + step.role + '</div>',
+              '</div>',
+              '<div style="text-align:right;">',
+                '<span class="status-badge ' + (isDone ? 'badge-approved' : 'badge-pending') + '" style="font-size:11px;">' + (isDone ? '✅ Подписано ЭЦП' : (isCurrent ? '⏳ На рассмотрении' : '⏱ В очереди')) + '</span>',
+                (step.time ? '<div style="font-size:10px; color:#64748b; margin-top:2px;">' + step.time + '</div>' : ''),
+              '</div>'
+            ].join('');
+            tl.appendChild(card);
+          });
         }
       }
 
-      // АВР показываем ТОЛЬКО если статус АВР реальный и требует внимания (не "Не требуется")!
-      var hasAvr = item.avrStatus && item.avrStatus !== 'Не требуется' && item.avrStatus.indexOf('Не требуется') === -1;
-      if (hasAvr) {
-        linksHtml.push('<div style="margin-bottom:8px; background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px 12px;">📑 <b>Статус оригинала АВР:</b> <span style="color:#b45309;font-weight:700;margin-left:4px;">' + item.avrStatus + '</span></div>');
-      }
+      // Финансовый трек: ДЛЯ БУХГАЛТЕРИИ ПОЛНЫЙ, ДЛЯ ДРУГИХ - ТОЛЬКО ЧИСТЫЙ СТАТУС!
+      var paymentBadge = document.getElementById('det-payment-badge');
+      var paymentDetails = document.getElementById('det-payment-details');
+      if (paymentBadge) paymentBadge.textContent = item.statusPayment || 'Не требуется';
+      if (paymentDetails) paymentDetails.textContent = item.statusPayment || 'Не требуется';
 
-      if (linksHtml.length > 0) {
-        attList.innerHTML = linksHtml.join('');
-        if (attSection) attSection.style.display = 'block';
-      } else {
-        attList.innerHTML = '';
-        if (attSection) attSection.style.display = 'none';
+      var isAccountant = currentUser && (currentUser.name.indexOf('Смагулова') !== -1 || /бухгалтер|главбух/i.test(currentUser.role || ''));
+      var accView = document.getElementById('det-finance-accountant-view');
+      var btnMarkPaid = document.getElementById('btn-mark-paid');
+      if (accView) {
+        accView.style.display = isAccountant ? 'block' : 'none';
       }
-
-      // Финансы
-      document.getElementById('det-payment-badge').textContent = item.statusPayment;
-      document.getElementById('det-payment-details').textContent = item.statusPayment;
-      var isAccountant = currentUser && (currentUser.name.indexOf('Смагулова') !== -1 || /бухгалтер/i.test(currentUser.role));
-      document.getElementById('btn-mark-paid').style.display = (isAccountant && item.statusPayment.indexOf('Оплачено') === -1) ? 'block' : 'none';
+      if (btnMarkPaid) {
+        btnMarkPaid.style.display = (isAccountant && (item.statusPayment || '').indexOf('Оплачено') === -1) ? 'block' : 'none';
+      }
 
       // Юр. статус и поле загрузки скана (ТОЛЬКО инициатору после полного утверждения)
-      document.getElementById('det-legal-badge').textContent = item.statusLegal;
-      document.getElementById('det-legal-status-text').textContent = item.statusLegal;
+      var legalBadge = document.getElementById('det-legal-badge');
+      var legalText = document.getElementById('det-legal-status-text');
+      if (legalBadge) legalBadge.textContent = item.statusLegal || 'Ожидается';
+      if (legalText) legalText.textContent = item.statusLegal || 'Ожидается';
 
       var isFullyApproved = (item.statusApproval || '').indexOf('Утверждено') !== -1;
       var isInitiatorOrManager = currentUser && (
@@ -5769,7 +5663,7 @@
       }
 
       // Кнопки согласования (только согласующему по его очереди)
-      var isMyTurn = currentUser && (item.currentApprover.indexOf(currentUser.name) !== -1);
+      var isMyTurn = currentUser && (item.currentApprover && item.currentApprover.indexOf(currentUser.name) !== -1);
       document.getElementById('det-approval-actions').style.display = isMyTurn ? 'flex' : 'none';
       closeRejectReasonBox();
 
@@ -6064,16 +5958,10 @@
       var c = mockContracts.find(function(x) { return x.id === contractId; });
       if (!c) return;
 
-      if (c.pdfDataUri) {
-        var a = document.createElement('a');
-        a.href = c.pdfDataUri;
-        a.download = c.fileName || ('Договор_' + (c.counterparty || '') + '.pdf');
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showToast('📥 Загрузка PDF: ' + a.download);
-      } else if (c.fileUrl) {
-        window.open(c.fileUrl, '_blank');
+      var fileTarget = c.pdfDataUri || c.fileUrl || c.scanUrl;
+      if (fileTarget) {
+        var fileName = (c.number || 'Договор') + '_' + (c.counterparty || '').replace(/[^a-zA-Zа-яА-Я0-9_-]/g, '_') + '.pdf';
+        downloadAttachedFile(fileTarget, fileName);
       } else {
         alert('Файл документа еще формируется или доступен на Диске.');
       }

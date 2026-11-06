@@ -105,6 +105,8 @@ function doGet(e) {
       result = deleteContract(postData.contractNumber, postData.contractId);
     } else if (action === 'resubmit_sz') {
       result = resubmitSZ(postData.szNumber, postData);
+    } else if (action === 'reset_registrations') {
+      result = resetEmployeeRegistrations();
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -176,6 +178,8 @@ function doPost(e) {
       result = deleteContract(postData.contractNumber, postData.contractId);
     } else if (action === 'resubmit_sz') {
       result = resubmitSZ(postData.szNumber, postData);
+    } else if (action === 'reset_registrations') {
+      result = resetEmployeeRegistrations();
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -1174,35 +1178,100 @@ function registerEmployeeDynamic(data) {
     sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
   }
 
-  var nextId = Math.max(1, sheet.getLastRow());
   var tz = Session.getScriptTimeZone() || 'GMT+5';
-  var dateStr = Utilities.formatDate(new Date(), tz, 'dd.MM.yyyy');
+  var dateStr = Utilities.formatDate(new Date(), tz, 'dd.MM.yyyy HH:mm');
+  var targetFio = String(data.fio || '').trim();
 
-  var row = [
-    nextId,
-    data.telegramId || '',
-    data.fio || '',
-    data.department || 'Операционный блок',
-    data.role || 'Сотрудник',
-    data.manager || CONFIG.BUSINESS_ASSISTANT,
-    data.director || CONFIG.GENERAL_DIRECTOR,
-    data.username || '',
-    data.phone || '',
-    data.edoRole || 'Исполнитель',
-    dateStr
-  ];
-
-  sheet.appendRow(row);
-  return {
-    ok: true,
-    message: 'Сотрудник ' + data.fio + ' успешно зарегистрирован в системе!',
-    user: {
-      id: nextId,
-      name: data.fio,
-      department: data.department,
-      role: data.role
+  // Ищем существующего сотрудника в таблице
+  var rows = sheet.getDataRange().getValues();
+  var foundRowIdx = -1;
+  for (var i = 1; i < rows.length; i++) {
+    var rFio = String(rows[i][2]).trim();
+    if (rFio.toLowerCase() === targetFio.toLowerCase() || (targetFio && rFio.indexOf(targetFio) !== -1) || (rFio && targetFio.indexOf(rFio) !== -1)) {
+      foundRowIdx = i + 1;
+      break;
     }
-  };
+  }
+
+  if (foundRowIdx > 0) {
+    // Обновляем существующего сотрудника
+    if (data.telegramId) sheet.getRange(foundRowIdx, 2).setValue(String(data.telegramId));
+    if (data.department) sheet.getRange(foundRowIdx, 4).setValue(data.department);
+    if (data.role) sheet.getRange(foundRowIdx, 5).setValue(data.role);
+    if (data.username) sheet.getRange(foundRowIdx, 8).setValue(data.username);
+    if (data.phone) sheet.getRange(foundRowIdx, 9).setValue(data.phone);
+    sheet.getRange(foundRowIdx, 10).setValue('Зарегистрирован');
+    sheet.getRange(foundRowIdx, 11).setValue(dateStr);
+
+    logAuditAction('РЕГИСТРАЦИЯ', targetFio, 'Первичная регистрация подтверждена (Тел: ' + (data.phone || '-') + ', TG: ' + (data.telegramId || data.username || '-') + ')', 'Успешно');
+
+    return {
+      ok: true,
+      message: 'Регистрация сотрудника ' + targetFio + ' успешно подтверждена!',
+      user: {
+        id: rows[foundRowIdx - 1][0],
+        name: targetFio,
+        department: data.department || rows[foundRowIdx - 1][3],
+        role: data.role || rows[foundRowIdx - 1][4],
+        phone: data.phone || rows[foundRowIdx - 1][8],
+        telegramId: data.telegramId || rows[foundRowIdx - 1][1]
+      }
+    };
+  } else {
+    // Новый сотрудник
+    var nextId = Math.max(1, sheet.getLastRow());
+    var row = [
+      nextId,
+      data.telegramId || '',
+      targetFio,
+      data.department || 'Операционный блок',
+      data.role || 'Сотрудник',
+      data.manager || CONFIG.BUSINESS_ASSISTANT,
+      data.director || CONFIG.GENERAL_DIRECTOR,
+      data.username || '',
+      data.phone || '',
+      'Зарегистрирован',
+      dateStr
+    ];
+    sheet.appendRow(row);
+
+    logAuditAction('РЕГИСТРАЦИЯ_НОВЫЙ', targetFio, 'Новый сотрудник зарегистрирован (Тел: ' + (data.phone || '-') + ')', 'Успешно');
+
+    return {
+      ok: true,
+      message: 'Сотрудник ' + targetFio + ' успешно зарегистрирован в системе!',
+      user: {
+        id: nextId,
+        name: targetFio,
+        department: data.department,
+        role: data.role,
+        phone: data.phone,
+        telegramId: data.telegramId
+      }
+    };
+  }
+}
+
+function resetEmployeeRegistrations() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
+  if (!sheet) return { ok: false, error: 'Лист Сотрудники не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return { ok: true, message: 'Таблица пуста' };
+
+  // Очищаем колонки: Telegram ID (2), Username (8), Номер телефона (9), Роль в ЭДО (10), Дата регистрации (11)
+  for (var i = 1; i < rows.length; i++) {
+    var rFio = String(rows[i][2]).trim();
+    sheet.getRange(i + 1, 2).setValue('');
+    sheet.getRange(i + 1, 8).setValue('');
+    sheet.getRange(i + 1, 9).setValue('');
+    sheet.getRange(i + 1, 10).setValue('Ожидает регистрации');
+    sheet.getRange(i + 1, 11).setValue('');
+  }
+
+  logAuditAction('СБРОС_РЕГИСТРАЦИЙ', 'Администратор', 'Все предыдущие регистрации сотрудников сброшены для повторного входа', 'Успешно');
+  return { ok: true, message: 'Все предыдущие привязки и регистрации успешно сброшены в базе!' };
 }
 
 /**
