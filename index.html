@@ -1258,6 +1258,9 @@
       transition: all 0.15s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       position: relative;
+      box-sizing: border-box;
+      overflow: hidden;
+      word-break: break-word;
     }
     .kanban-card:hover {
       transform: translateY(-2px);
@@ -1286,15 +1289,20 @@
       color: #ffffff;
     }
     .btn-card-move-down {
-      background: #f1f5f9;
+      background: #f8fafc;
       border: 1px solid var(--border);
       color: var(--text-muted);
-      border-radius: 4px;
-      padding: 2px 7px;
-      font-size: 10.5px;
+      border-radius: 5px;
+      padding: 2.5px 6px;
+      font-size: 10px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      line-height: 1.2;
     }
     .btn-card-move-down:hover {
       background: var(--primary);
@@ -5108,14 +5116,16 @@
             html.push('<div style="font-size:11px;color:var(--text-muted);line-height:1.4;">👤 ' + item.initiator + ' (' + item.department + ')' + coExec + '</div>');
             html.push(amountStr);
 
-            html.push('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;">');
             if (item.currentApprover && item.currentApprover !== '-' && item.currentApprover !== 'Завершено') {
-              html.push('<div style="font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">⏳ <b>' + item.currentApprover + '</b></div>');
-            } else {
-              html.push('<div></div>');
+              html.push('<div style="font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Текущий согласующий: ' + item.currentApprover + '">');
+              html.push('<span>⏳</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>' + item.currentApprover + '</b></span>');
+              html.push('</div>');
             }
-            html.push('<div style="display:flex;gap:4px;flex-shrink:0;">' + editDraftBtn + resubmitBtn + copyBtn + moveDownBtn + '</div>');
-            html.push('</div>');
+
+            var actionButtonsHtml = editDraftBtn + resubmitBtn + copyBtn + moveDownBtn;
+            if (actionButtonsHtml) {
+              html.push('<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:flex-end;margin-top:7px;padding-top:6px;border-top:1px dashed var(--border);">' + actionButtonsHtml + '</div>');
+            }
 
             html.push('</div>');
           });
