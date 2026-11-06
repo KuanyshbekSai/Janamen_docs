@@ -1186,146 +1186,95 @@
 </head>
 <body>
 
-  <!-- ==================== МОДАЛЬНОЕ ОКНО: АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ПО КОДУ TELEGRAM ==================== -->
-  <div id="modal-auth" id="auth-screen" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); z-index: 99999; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px);">
+  <!-- ==================== МОДАЛЬНОЕ ОКНО: АВТОРИЗАЦИЯ JANA MEN ЭДО ==================== -->
+  <div id="modal-auth" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); z-index: 99999; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px);">
     <div class="auth-card" style="background: var(--card-bg, #ffffff); border-radius: 18px; max-width: 440px; width: 100%; padding: 26px 22px; box-shadow: 0 16px 45px rgba(0,0,0,0.25); border: 1px solid var(--border); max-height: 92vh; overflow-y: auto;">
       
       <!-- Логотип Jana Men -->
-      <div style="text-align: center; margin-bottom: 12px;">
+      <div style="text-align: center; margin-bottom: 14px;">
         <img src="logo.png" alt="Jana Men" style="height: 38px; margin: 0 auto; display: block; object-fit: contain;">
       </div>
 
-      <!-- Вкладки: Вход / Регистрация -->
-      <div class="auth-tab-switch" style="display: flex; background: rgba(0,0,0,0.06); padding: 4px; border-radius: 10px; margin-bottom: 16px; gap: 4px;">
-        <div id="auth-tab-btn-login" class="auth-tab-btn active" onclick="switchAuthTab('login')" style="flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; background: #ffffff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-          🔑 Вход по коду
+      <!-- ВАРИАНТ А: Если пользователь открыл Mini-App в Telegram, но еще не зарегистрирован -->
+      <div id="auth-tg-unregistered" style="display: none; text-align: center;">
+        <div style="font-size: 36px; margin-bottom: 10px;">👋</div>
+        <div style="font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 6px;">
+          Добро пожаловать в Jana Men ЭДО!
         </div>
-        <div id="auth-tab-btn-register" class="auth-tab-btn" onclick="switchAuthTab('register')" style="flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; color: var(--text-muted); background: transparent;">
-          📝 Регистрация
+        <div style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">
+          Ваш Telegram-аккаунт пока не привязан к учетной записи компании.<br>
+          Пройдите быструю регистрацию прямо в боте:
         </div>
+        <a id="btn-tg-bot-reg-link" href="https://t.me/janamen_docs_bot?start=reg" target="_blank" class="btn btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; font-size: 14px; font-weight: 700; border-radius: 10px; text-decoration: none; box-sizing: border-box;">
+          <span>🤖</span> <span>Зарегистрироваться в боте</span>
+        </a>
+        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 14px; line-height: 1.4;">
+          После подтверждения в боте нажмите кнопку ниже для входа:
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="retryTelegramAuth()" style="width: 100%; margin-top: 8px; font-size: 12.5px; padding: 10px; font-weight: 600;">
+          🔄 Я зарегистрировался, войти
+        </button>
       </div>
 
-      <!-- ================= ПАНЕЛЬ 1: ВХОД ПО ТЕЛЕГРАМ КОДУ ================= -->
-      <div id="auth-panel-login">
-        <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px;">
-          Вход в Jana Men ЭДО
+      <!-- ВАРИАНТ Б: Вход с компьютера / десктопа (поиск по ФИО + 4-значный код в TG) -->
+      <div id="auth-desktop-view">
+        <div style="font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px;">
+          Вход для сотрудников
         </div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-          Выберите сотрудника из списка. Бот <b>@janamen_docs_bot</b> пришлёт одноразовый 6-значный проверочный код в Telegram.
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">
+          Введите ваше ФИО. Одноразовый 4-значный код будет отправлен в ваш личный Telegram-бот <b>@janamen_docs_bot</b>.
         </div>
 
-        <!-- Шаг 1: Выбор сотрудника -->
-        <div id="auth-login-step1">
+        <!-- Шаг 1: Ввод ФИО для поиска сотрудника -->
+        <div id="desktop-login-step1">
           <div class="field" style="margin-bottom: 14px;">
-            <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 5px;">Сотрудник</label>
-            <select id="auth-employee-select" class="select-text" style="width: 100%; font-size: 13.5px; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border);">
-              <option value="">-- Загрузка сотрудников... --</option>
-            </select>
+            <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px;">Ваша Фамилия и Имя</label>
+            <input type="text" id="desktop-fio-input" class="input-text" placeholder="Например: Сайдуллаев Куанышбек" style="width: 100%; font-size: 13.5px; padding: 11px 12px; border-radius: 9px; border: 1.5px solid var(--border);" onkeydown="if(event.key==='Enter')checkDesktopEmployee()">
+            <div id="desktop-fio-error" style="display: none; color: #dc2626; font-size: 11.5px; margin-top: 6px; line-height: 1.35;"></div>
           </div>
-          <button type="button" id="btn-request-login-code" class="btn btn-primary" onclick="submitRequestLoginCode()" style="width: 100%; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 10px;">
-            📲 Получить код в Telegram
+          <button type="button" id="btn-desktop-check-fio" class="btn btn-primary" onclick="checkDesktopEmployee()" style="width: 100%; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 10px;">
+            🔍 Найти мой профиль
           </button>
         </div>
 
-        <!-- Шаг 2: Ввод кода -->
-        <div id="auth-login-step2" style="display: none;">
+        <!-- Шаг 2: Подтверждение личности сотрудника -->
+        <div id="desktop-login-step2" style="display: none;">
+          <div style="background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: center;">
+            <div style="font-size: 12px; color: #9a3412; font-weight: 600;">Подтверждение личности:</div>
+            <div id="desktop-confirm-question" style="font-size: 15px; font-weight: 800; color: var(--primary); margin-top: 6px; line-height: 1.35;"></div>
+            <div id="desktop-confirm-sub" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"></div>
+          </div>
+
+          <div id="desktop-need-tg-box" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 12px; color: #b91c1c; line-height: 1.4; text-align: center;">
+            ⚠️ Telegram еще не привязан к вашему профилю.<br>
+            Откройте в Telegram бота <a href="https://t.me/janamen_docs_bot?start=reg" target="_blank" style="color: #b91c1c; font-weight: 800; text-decoration: underline;">@janamen_docs_bot</a> и напишите ему свою фамилию, чтобы завершить привязку.
+          </div>
+
+          <div id="desktop-confirm-actions">
+            <button type="button" id="btn-desktop-send-otp" class="btn btn-primary" onclick="sendDesktopLoginCode()" style="width: 100%; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 10px;">
+              📲 Да, это я (Получить код в Telegram)
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="resetDesktopLoginStep()" style="width: 100%; margin-top: 8px; font-size: 12px; padding: 8px;">
+              🔍 Ввести другое ФИО
+            </button>
+          </div>
+        </div>
+
+        <!-- Шаг 3: Ввод 4-значного кода -->
+        <div id="desktop-login-step3" style="display: none;">
           <div style="background: rgba(234, 88, 12, 0.08); border: 1px solid rgba(234, 88, 12, 0.25); border-radius: 10px; padding: 12px; margin-bottom: 14px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted);">Код отправлен в Telegram для:</div>
-            <div id="auth-code-target-name" style="font-size: 15px; font-weight: 800; color: var(--primary); margin-top: 3px;"></div>
-            <div id="auth-fallback-msg" style="display: none; font-size: 12px; color: #c2410c; margin-top: 6px; padding: 6px 8px; background: #fff7ed; border-radius: 6px; font-weight: 600;"></div>
+            <div style="font-size: 12px; color: var(--text-muted);">Код отправлен в Telegram бот для:</div>
+            <div id="desktop-otp-target-name" style="font-size: 14.5px; font-weight: 800; color: var(--primary); margin-top: 3px;"></div>
           </div>
           <div class="field" style="margin-bottom: 14px;">
-            <label style="text-align: center; display: block; font-weight: 700; font-size: 12px; margin-bottom: 6px;">Введите 6-значный код из @janamen_docs_bot</label>
-            <input type="text" id="auth-login-code" class="input-text" placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; font-weight: 900; letter-spacing: 6px; padding: 10px; width: 100%; border: 2px solid var(--primary); border-radius: 10px;" oninput="onAuthCodeInput(this)">
+            <label style="text-align: center; display: block; font-weight: 700; font-size: 12px; margin-bottom: 6px;">Введите 4-значный код из @janamen_docs_bot</label>
+            <input type="text" id="desktop-otp-code" class="input-text" placeholder="••••" maxlength="4" style="text-align: center; font-size: 26px; font-weight: 900; letter-spacing: 10px; padding: 10px; width: 100%; border: 2px solid var(--primary); border-radius: 10px;" oninput="onDesktopOtpInput(this)">
           </div>
-          <button type="button" id="btn-verify-login-code" class="btn btn-primary" onclick="submitVerifyLoginCode()" style="width: 100%; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 10px;">
+          <button type="button" id="btn-desktop-verify-otp" class="btn btn-primary" onclick="submitVerifyDesktopOtp()" style="width: 100%; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 10px;">
             ✅ Подтвердить и войти
           </button>
-          <button type="button" class="btn btn-secondary" onclick="backToAuthStep1()" style="width: 100%; margin-top: 8px; font-size: 12px; padding: 8px;">
-            ↩️ Выбрать другого сотрудника
-          </button>
-        </div>
-      </div>
-
-      <!-- ================= ПАНЕЛЬ 2: РЕГИСТРАЦИЯ НОВОГО СОТРУДНИКА ================= -->
-      <div id="auth-panel-register" style="display: none;">
-        <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px;">
-          Регистрация нового сотрудника
-        </div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-          Заполните данные для внесения в таблицу «Сотрудники». Код подтверждения придёт в ваш Telegram-бот <b>@janamen_docs_bot</b>.
-        </div>
-
-        <!-- Шаг 1: Форма регистрации -->
-        <div id="auth-reg-step1">
-          <!-- Быстрый выбор из штатной структуры (ориентир для автозаполнения) -->
-          <div style="margin-bottom: 12px; background: #fff7ed; padding: 9px 11px; border-radius: 8px; border: 1px dashed #fed7aa;">
-            <label style="font-weight: 700; font-size: 11.5px; color: #9a3412; display: block; margin-bottom: 3px;">💡 Штатная структура (быстрый выбор для автозаполнения):</label>
-            <select id="reg-quick-select" class="select-text" onchange="onRegQuickSelectChange(this.value)" style="width: 100%; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid #fed7aa; background: #ffffff;">
-              <option value="">-- Выбрать сотрудника или заполнить вручную ниже --</option>
-            </select>
-          </div>
-
-          <div class="field" style="margin-bottom: 10px;">
-            <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 4px;">Фамилия и Имя *</label>
-            <input type="text" id="reg-fio" class="input-text" placeholder="Например: Каримова Адель" style="width: 100%; font-size: 13px; padding: 9px 11px; border-radius: 8px; border: 1.5px solid var(--border);">
-          </div>
-
-          <div class="field" style="margin-bottom: 10px;">
-            <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 4px;">Подразделение / Отдел *</label>
-            <select id="reg-department" class="select-text" style="width: 100%; font-size: 13px; padding: 9px 11px; border-radius: 8px; border: 1.5px solid var(--border);">
-              <option value="Операционный блок" selected>Операционный блок</option>
-              <option value="Отдел маркетинга">Отдел маркетинга</option>
-              <option value="Финансовый блок">Финансовый блок (Бухгалтерия)</option>
-              <option value="Административный блок">Административный блок</option>
-              <option value="Отдел логистики">Отдел логистики</option>
-              <option value="Коммерческий блок">Коммерческий блок</option>
-              <option value="Отдел трафика">Отдел трафика</option>
-              <option value="Отдел HR">Отдел HR</option>
-              <option value="Отдел заботы о клиентах (ОЗК)">Отдел заботы о клиентах (ОЗК)</option>
-              <option value="Другой отдел">Другой отдел компании</option>
-            </select>
-          </div>
-
-          <div class="field" style="margin-bottom: 10px;">
-            <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 4px;">Должность *</label>
-            <input type="text" id="reg-role" class="input-text" placeholder="Например: Менеджер / Специалист" style="width: 100%; font-size: 13px; padding: 9px 11px; border-radius: 8px; border: 1.5px solid var(--border);">
-          </div>
-
-          <div class="field" style="margin-bottom: 10px;">
-            <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 4px;">Номер телефона *</label>
-            <input type="tel" id="reg-phone" class="input-text" placeholder="+7 7XX XXX XX XX" maxlength="18" oninput="formatPhoneInput(this)" style="width: 100%; font-size: 13px; padding: 9px 11px; border-radius: 8px; border: 1.5px solid var(--border);">
-          </div>
-
-          <div class="field" style="margin-bottom: 14px;">
-            <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 4px;">Telegram ID или @username *</label>
-            <input type="text" id="reg-tg" class="input-text" placeholder="Например: @karmiil11 или 1147069237" style="width: 100%; font-size: 13px; padding: 9px 11px; border-radius: 8px; border: 1.5px solid var(--border);">
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.35;">
-              💡 Чтобы бот отправил проверочный код, сначала откройте в Telegram и нажмите СТАРТ: <a href="https://t.me/janamen_docs_bot" target="_blank" style="color: var(--primary); font-weight: 700; text-decoration: underline;">@janamen_docs_bot</a>
-            </div>
-          </div>
-
-          <button type="button" id="btn-request-reg-code" class="btn btn-primary" onclick="submitRequestRegCode()" style="width: 100%; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 10px;">
-            📲 Отправить код подтверждения
-          </button>
-        </div>
-
-        <!-- Шаг 2: Ввод кода регистрации -->
-        <div id="auth-reg-step2" style="display: none;">
-          <div style="background: rgba(234, 88, 12, 0.08); border: 1px solid rgba(234, 88, 12, 0.25); border-radius: 10px; padding: 12px; margin-bottom: 14px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted);">Код отправлен в Telegram:</div>
-            <div id="reg-code-target-name" style="font-size: 15px; font-weight: 800; color: var(--primary); margin-top: 3px;"></div>
-            <div id="reg-fallback-msg" style="display: none; font-size: 12px; color: #c2410c; margin-top: 6px; padding: 6px 8px; background: #fff7ed; border-radius: 6px; font-weight: 600;"></div>
-          </div>
-          <div class="field" style="margin-bottom: 14px;">
-            <label style="text-align: center; display: block; font-weight: 700; font-size: 12px; margin-bottom: 6px;">Введите 6-значный код из @janamen_docs_bot</label>
-            <input type="text" id="auth-reg-code" class="input-text" placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; font-weight: 900; letter-spacing: 6px; padding: 10px; width: 100%; border: 2px solid var(--primary); border-radius: 10px;" oninput="onRegAuthCodeInput(this)">
-          </div>
-          <button type="button" id="btn-verify-reg-code" class="btn btn-primary" onclick="submitVerifyRegCode()" style="width: 100%; padding: 12px; font-weight: 700; font-size: 14px; border-radius: 10px;">
-            🎉 Завершить регистрацию
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="backToRegStep1()" style="width: 100%; margin-top: 8px; font-size: 12px; padding: 8px;">
-            ↩️ Изменить данные
+          <button type="button" class="btn btn-secondary" onclick="resetDesktopLoginStep()" style="width: 100%; margin-top: 8px; font-size: 12px; padding: 8px;">
+            ↩️ Начать сначала
           </button>
         </div>
       </div>
@@ -2242,7 +2191,7 @@
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     }
 
-    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbwhXXtMLhEZGHS9gb2AriaXnpu8EF6Nnq9qZRt4VyI6IfErcQx9eM-sBjiHMRIFRwVmAA/exec';
+    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbyNw5t5PXkb12baWQGIQxRAksjLS-FQ0C0ZfGElji61Pk8xWWLht4h62_FHu0lbpxlo4g/exec';
 
     // Вспомогательная функция санитизации для защиты от XSS
     function escapeHtml(str) {
@@ -2783,14 +2732,12 @@
       }
     } catch(eCachedSZ) {}
 
-// ==================== СИСТЕМА АВТОРИЗАЦИИ И РЕГИСТРАЦИИ ПО КОДУ TELEGRAM ====================
+    // ==================== СИСТЕМА АВТОРИЗАЦИИ JANA MEN ЭДО ====================
     var activeAuthUser = null;
-    var cachedEmployeesList = [];
     var pendingAuthTargetEmp = null;
-    var pendingRegTargetEmp = null;
 
     (function initAuthSystem() {
-      // 1. Проверяем Telegram WebApp на телефоне
+      // 1. Проверяем Telegram WebApp на телефоне / клиенте Telegram
       if (typeof tg !== 'undefined' && tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
         var u = tg.initDataUnsafe.user;
         var tgId = String(u.id);
@@ -2798,44 +2745,32 @@
         var uName = ((u.first_name || '') + (u.last_name ? ' ' + u.last_name : '')).trim();
         var uTag = u.username ? ('@' + u.username) : '';
 
-        // Проверяем в базе сотрудников
+        // Проверяем привязку аккаунта в базе данных
         fetch(SCRIPT_EXEC_URL + '?action=get_user_profile&userId=' + tgId)
           .then(function(r) { return r.json(); })
           .then(function(res) {
             if (res && res.ok && res.employee) {
               setAuthenticatedUser({
-                id: tgId,
+                id: res.employee.id || tgId,
                 telegramId: tgId,
                 name: res.employee.fullName || res.employee.name || uName,
-                role: res.employee.role || 'Специалист',
+                role: res.employee.role || 'Сотрудник',
                 department: res.employee.department || 'Операционный блок',
                 username: uTag
               });
             } else {
-              setAuthenticatedUser({
-                id: tgId,
-                telegramId: tgId,
-                name: uName || 'Сотрудник Telegram',
-                role: 'Специалист',
-                department: 'Операционный блок',
-                username: uTag
-              });
+              // Пользователь еще не зарегистрирован в боте
+              showTelegramUnregisteredScreen(tgId, uName);
             }
           })
-          .catch(function() {
-            setAuthenticatedUser({
-              id: tgId,
-              telegramId: tgId,
-              name: uName || 'Сотрудник',
-              role: 'Специалист',
-              department: 'Операционный блок',
-              username: uTag
-            });
+          .catch(function(err) {
+            console.warn('TG profile check failed:', err);
+            showTelegramUnregisteredScreen(tgId, uName);
           });
         return;
       }
 
-      // 2. В браузере (компьютер / веб): проверяем сохраненную сессию
+      // 2. В обычном браузере (компьютер / десктоп): проверяем сохраненную сессию
       try {
         var savedRaw = localStorage.getItem('jm_auth_user') || localStorage.getItem('jm_edo_user_registered_v5') || localStorage.getItem('jm_edo_user');
         if (savedRaw) {
@@ -2847,11 +2782,56 @@
         }
       } catch(e) {}
 
-      // 3. Если еще не авторизован - автоматически открываем модальное окно входа / регистрации
+      // 3. Если еще не авторизован на десктопе - открываем окно входа по ФИО и Telegram коду
       setTimeout(function() {
         openLoginModal(false);
       }, 300);
     })();
+
+    function showTelegramUnregisteredScreen(tgId, uName) {
+      var modal = document.getElementById('modal-auth');
+      if (modal) modal.style.display = 'flex';
+      var tgView = document.getElementById('auth-tg-unregistered');
+      var deskView = document.getElementById('auth-desktop-view');
+      if (tgView) tgView.style.display = 'block';
+      if (deskView) deskView.style.display = 'none';
+
+      var link = document.getElementById('btn-tg-bot-reg-link');
+      if (link) {
+        link.href = 'https://t.me/janamen_docs_bot?start=reg';
+      }
+    }
+
+    function retryTelegramAuth() {
+      if (typeof tg !== 'undefined' && tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+        var tgId = String(tg.initDataUnsafe.user.id);
+        var uName = ((tg.initDataUnsafe.user.first_name || '') + (tg.initDataUnsafe.user.last_name ? ' ' + tg.initDataUnsafe.user.last_name : '')).trim();
+        var uTag = tg.initDataUnsafe.user.username ? ('@' + tg.initDataUnsafe.user.username) : '';
+
+        fetch(SCRIPT_EXEC_URL + '?action=get_user_profile&userId=' + tgId)
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            if (res && res.ok && res.employee) {
+              setAuthenticatedUser({
+                id: res.employee.id || tgId,
+                telegramId: tgId,
+                name: res.employee.fullName || res.employee.name || uName,
+                role: res.employee.role || 'Сотрудник',
+                department: res.employee.department || 'Операционный блок',
+                username: uTag
+              });
+              showToast('🎉 Добро пожаловать, ' + (res.employee.fullName || res.employee.name) + '!');
+            } else {
+              alert('Вы еще не подтвердили регистрацию в @janamen_docs_bot. Откройте бота и отправьте ему свою фамилию.');
+            }
+          })
+          .catch(function(err) {
+            alert('Ошибка связи с сервером: ' + err.toString());
+          });
+      } else {
+        location.reload();
+      }
+    }
 
     // Слушатель для закрытия выпадающих списков при клике вне
     document.addEventListener('click', function(e) {
@@ -2894,19 +2874,21 @@
     }
 
     function openLoginModal(allowCancel) {
-      var modal = document.getElementById('modal-auth') || document.getElementById('auth-screen');
+      var modal = document.getElementById('modal-auth');
       if (modal) modal.style.display = 'flex';
       var closeBar = document.getElementById('auth-close-bar');
       if (closeBar) closeBar.style.display = allowCancel ? 'block' : 'none';
 
-      backToAuthStep1();
-      backToRegStep1();
-      switchAuthTab('login');
-      loadEmployeesForAuth();
+      var tgView = document.getElementById('auth-tg-unregistered');
+      var deskView = document.getElementById('auth-desktop-view');
+      if (tgView) tgView.style.display = 'none';
+      if (deskView) deskView.style.display = 'block';
+
+      resetDesktopLoginStep();
     }
 
     function closeLoginModal() {
-      var modal = document.getElementById('modal-auth') || document.getElementById('auth-screen');
+      var modal = document.getElementById('modal-auth');
       if (modal) modal.style.display = 'none';
     }
 
@@ -2917,219 +2899,146 @@
     var openAuthScreen = openLoginModal;
     var closeAuthScreen = closeLoginModal;
 
-    function switchAuthTab(tab) {
-      var btnLogin = document.getElementById('auth-tab-btn-login');
-      var btnReg = document.getElementById('auth-tab-btn-register');
-      var pLogin = document.getElementById('auth-panel-login');
-      var pReg = document.getElementById('auth-panel-register');
+    // ==================== ДЕСКТОПНЫЙ ВХОД: ПОИСК ПО ФИО И КОД В TELEGRAM ====================
+    function checkDesktopEmployee() {
+      var input = document.getElementById('desktop-fio-input');
+      var errEl = document.getElementById('desktop-fio-error');
+      var q = (input ? input.value : '').trim();
 
-      if (tab === 'login') {
-        if (btnLogin) {
-          btnLogin.style.background = '#ffffff';
-          btnLogin.style.color = 'var(--primary)';
-          btnLogin.style.fontWeight = '700';
-          btnLogin.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-        }
-        if (btnReg) {
-          btnReg.style.background = 'transparent';
-          btnReg.style.color = 'var(--text-muted)';
-          btnReg.style.fontWeight = '600';
-          btnReg.style.boxShadow = 'none';
-        }
-        if (pLogin) pLogin.style.display = 'block';
-        if (pReg) pReg.style.display = 'none';
-      } else {
-        if (btnReg) {
-          btnReg.style.background = '#ffffff';
-          btnReg.style.color = 'var(--primary)';
-          btnReg.style.fontWeight = '700';
-          btnReg.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-        }
-        if (btnLogin) {
-          btnLogin.style.background = 'transparent';
-          btnLogin.style.color = 'var(--text-muted)';
-          btnLogin.style.fontWeight = '600';
-          btnLogin.style.boxShadow = 'none';
-        }
-        if (pReg) pReg.style.display = 'block';
-        if (pLogin) pLogin.style.display = 'none';
-      }
-    }
-
-    function loadEmployeesForAuth() {
-      var sel = document.getElementById('auth-employee-select');
-      var quickSel = document.getElementById('reg-quick-select');
-
-      // 1. Быстрый выбор из штатной структуры для ориентира при регистрации
-      if (quickSel) {
-        var qHtml = '<option value="">-- Выбрать сотрудника или заполнить вручную ниже --</option>';
-        if (Array.isArray(JANA_MEN_STRUCTURE)) {
-          JANA_MEN_STRUCTURE.forEach(function(dept) {
-            qHtml += '<optgroup label="' + dept.name + '">';
-            if (Array.isArray(dept.employees)) {
-              dept.employees.forEach(function(emp) {
-                qHtml += '<option value="' + emp.name + '" data-dept="' + dept.name + '" data-role="' + (emp.role || '') + '">' + emp.name + ' — ' + (emp.role || '') + '</option>';
-              });
-            }
-            qHtml += '</optgroup>';
-          });
-        }
-        quickSel.innerHTML = qHtml;
+      if (errEl) {
+        errEl.style.display = 'none';
+        errEl.textContent = '';
       }
 
-      // 2. Список сотрудников для логина из бэкенда
-      if (!sel) return;
-
-      fetch(SCRIPT_EXEC_URL + '?action=get_employees')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (data && data.ok && Array.isArray(data.employees) && data.employees.length > 0) {
-            cachedEmployeesList = data.employees;
-            var html = '<option value="">-- Выберите ваше имя --</option>';
-            data.employees.forEach(function(emp) {
-              var roleStr = emp.role ? (' (' + emp.role + ')') : '';
-              var deptStr = emp.department ? (' — ' + emp.department) : '';
-              html += '<option value="' + (emp.id || emp.name) + '">' + emp.name + roleStr + deptStr + '</option>';
-            });
-            sel.innerHTML = html;
-          } else {
-            fallbackEmployeesForAuth();
-          }
-        })
-        .catch(function(err) {
-          console.warn('Error loading employees for auth:', err);
-          fallbackEmployeesForAuth();
-        });
-    }
-
-    function fallbackEmployeesForAuth() {
-      var sel = document.getElementById('auth-employee-select');
-      if (!sel) return;
-      var list = [];
-      if (Array.isArray(JANA_MEN_STRUCTURE)) {
-        JANA_MEN_STRUCTURE.forEach(function(dept) {
-          if (Array.isArray(dept.employees)) {
-            dept.employees.forEach(function(emp) {
-              list.push({ id: emp.id || emp.name, name: emp.name, role: emp.role, department: dept.name });
-            });
-          }
-        });
-      }
-      cachedEmployeesList = list;
-      var html = '<option value="">-- Выберите ваше имя --</option>';
-      list.forEach(function(emp) {
-        html += '<option value="' + emp.id + '">' + emp.name + ' (' + emp.role + ' — ' + emp.department + ')</option>';
-      });
-      sel.innerHTML = html;
-    }
-
-    function onRegQuickSelectChange(val) {
-      if (!val) return;
-      var quickSel = document.getElementById('reg-quick-select');
-      var opt = quickSel ? quickSel.options[quickSel.selectedIndex] : null;
-      var dept = opt ? opt.getAttribute('data-dept') : '';
-      var role = opt ? opt.getAttribute('data-role') : '';
-
-      var fioInp = document.getElementById('reg-fio');
-      var deptInp = document.getElementById('reg-department');
-      var roleInp = document.getElementById('reg-role');
-
-      if (fioInp) fioInp.value = val;
-      if (dept && deptInp) deptInp.value = dept;
-      if (role && roleInp) roleInp.value = role;
-    }
-
-    function formatPhoneInput(input) {
-      var numbers = input.value.replace(/\D/g, '');
-      if (numbers.startsWith('7') || numbers.startsWith('8')) {
-        numbers = numbers.substring(1);
-      }
-      var formatted = '+7';
-      if (numbers.length > 0) formatted += ' (' + numbers.substring(0, 3);
-      if (numbers.length >= 3) formatted += ') ' + numbers.substring(3, 6);
-      if (numbers.length >= 6) formatted += '-' + numbers.substring(6, 8);
-      if (numbers.length >= 8) formatted += '-' + numbers.substring(8, 10);
-      input.value = formatted;
-    }
-
-    function submitRequestLoginCode() {
-      var sel = document.getElementById('auth-employee-select');
-      var empId = sel ? sel.value : '';
-      if (!empId) {
-        alert('Пожалуйста, выберите ваше имя из списка');
+      if (!q || q.length < 2) {
+        if (errEl) {
+          errEl.style.display = 'block';
+          errEl.textContent = 'Пожалуйста, введите вашу фамилию или ФИО для поиска';
+        }
         return;
       }
 
-      var chosenEmp = null;
-      for (var i = 0; i < cachedEmployeesList.length; i++) {
-        var e = cachedEmployeesList[i];
-        if (String(e.id) === String(empId) || String(e.name) === String(empId)) {
-          chosenEmp = e;
-          break;
-        }
-      }
-      pendingAuthTargetEmp = chosenEmp || { name: empId, id: empId };
-
-      var btn = document.getElementById('btn-request-login-code');
+      var btn = document.getElementById('btn-desktop-check-fio');
       btn.disabled = true;
-      btn.textContent = '⏳ Отправка кода в Telegram...';
+      btn.textContent = '⏳ Поиск в базе компании...';
 
-      fetch(SCRIPT_EXEC_URL + '?action=request_login_code&id=' + encodeURIComponent(empId) + '&fio=' + encodeURIComponent(chosenEmp ? chosenEmp.name : empId))
+      fetch(SCRIPT_EXEC_URL + '?action=check_employee&query=' + encodeURIComponent(q))
         .then(function(r) { return r.json(); })
         .then(function(res) {
           btn.disabled = false;
-          btn.textContent = '📲 Получить код в Telegram';
+          btn.textContent = '🔍 Найти мой профиль';
 
-          if (res && res.ok) {
-            document.getElementById('auth-login-step1').style.display = 'none';
-            document.getElementById('auth-login-step2').style.display = 'block';
-            document.getElementById('auth-code-target-name').textContent = chosenEmp ? chosenEmp.name : 'Сотрудника';
-            
-            var fbMsg = document.getElementById('auth-fallback-msg');
-            if (res.fallbackCode) {
-              fbMsg.style.display = 'block';
-              fbMsg.innerHTML = '⚡ Telegram-бот еще не привязан. Ваш проверочный код: <b>' + res.fallbackCode + '</b>';
-            } else {
-              fbMsg.style.display = 'none';
+          if (res && res.ok && res.found && res.employee) {
+            var emp = res.employee;
+            pendingAuthTargetEmp = emp;
+
+            var qEl = document.getElementById('desktop-confirm-question');
+            var subEl = document.getElementById('desktop-confirm-sub');
+            var needTgBox = document.getElementById('desktop-need-tg-box');
+            var actionsBox = document.getElementById('desktop-confirm-actions');
+
+            if (qEl) {
+              qEl.textContent = 'Вы ' + emp.name + ' — ' + (emp.role || 'Специалист') + '?';
+            }
+            if (subEl) {
+              subEl.textContent = 'Подразделение: ' + (emp.department || 'Компания Jana Men');
             }
 
-            var codeInput = document.getElementById('auth-login-code');
-            codeInput.value = '';
-            setTimeout(function() { codeInput.focus(); }, 150);
+            if (!emp.hasTelegram) {
+              if (needTgBox) needTgBox.style.display = 'block';
+              if (actionsBox) actionsBox.style.display = 'none';
+            } else {
+              if (needTgBox) needTgBox.style.display = 'none';
+              if (actionsBox) actionsBox.style.display = 'block';
+            }
 
-            showToast('✅ Код отправлен в Telegram бота @janamen_docs_bot!');
-            if (typeof tg !== 'undefined' && tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            document.getElementById('desktop-login-step1').style.display = 'none';
+            document.getElementById('desktop-login-step2').style.display = 'block';
+            document.getElementById('desktop-login-step3').style.display = 'none';
           } else {
-            alert('Ошибка: ' + ((res && res.error) || 'Не удалось отправить код'));
+            if (errEl) {
+              errEl.style.display = 'block';
+              errEl.textContent = 'Сотрудник не найден в базе компании. Проверьте правильность написания фамилии или пройдите регистрацию в Telegram-боте @janamen_docs_bot.';
+            }
           }
         })
         .catch(function(err) {
           btn.disabled = false;
-          btn.textContent = '📲 Получить код в Telegram';
-          alert('Сетевая ошибка: ' + err.toString());
+          btn.textContent = '🔍 Найти мой профиль';
+          if (errEl) {
+            errEl.style.display = 'block';
+            errEl.textContent = 'Ошибка связи с сервером: ' + err.toString();
+          }
         });
     }
 
-    function onAuthCodeInput(el) {
-      if (el.value.length === 6) {
-        submitVerifyLoginCode();
-      }
-    }
-
-    function submitVerifyLoginCode() {
-      var codeInput = document.getElementById('auth-login-code');
-      var code = codeInput ? codeInput.value.trim() : '';
-      if (!code || code.length < 4) {
-        alert('Пожалуйста, введите проверочный код из Telegram');
+    function sendDesktopLoginCode() {
+      if (!pendingAuthTargetEmp) {
+        resetDesktopLoginStep();
         return;
       }
 
-      var empId = pendingAuthTargetEmp ? (pendingAuthTargetEmp.id || pendingAuthTargetEmp.name) : '';
-      var btn = document.getElementById('btn-verify-login-code');
+      var btn = document.getElementById('btn-desktop-send-otp');
+      btn.disabled = true;
+      btn.textContent = '⏳ Отправка 4-значного кода в Telegram...';
+
+      fetch(SCRIPT_EXEC_URL + '?action=request_login_code&id=' + encodeURIComponent(pendingAuthTargetEmp.id))
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          btn.disabled = false;
+          btn.textContent = '📲 Да, это я (Получить код в Telegram)';
+
+          if (res && res.ok) {
+            document.getElementById('desktop-login-step1').style.display = 'none';
+            document.getElementById('desktop-login-step2').style.display = 'none';
+            document.getElementById('desktop-login-step3').style.display = 'block';
+
+            var nameEl = document.getElementById('desktop-otp-target-name');
+            if (nameEl) nameEl.textContent = pendingAuthTargetEmp.name;
+
+            var codeInput = document.getElementById('desktop-otp-code');
+            if (codeInput) {
+              codeInput.value = '';
+              setTimeout(function() { codeInput.focus(); }, 150);
+            }
+
+            showToast('✅ 4-значный код отправлен в Telegram бота @janamen_docs_bot');
+          } else {
+            alert('Ошибка отправки кода: ' + ((res && res.error) || 'Не удалось отправить код'));
+          }
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          btn.textContent = '📲 Да, это я (Получить код в Telegram)';
+          alert('Ошибка связи с сервером: ' + err.toString());
+        });
+    }
+
+    function onDesktopOtpInput(el) {
+      el.value = el.value.replace(/\D/g, '').substring(0, 4);
+      if (el.value.length === 4) {
+        submitVerifyDesktopOtp();
+      }
+    }
+
+    function submitVerifyDesktopOtp() {
+      var codeInput = document.getElementById('desktop-otp-code');
+      var code = codeInput ? codeInput.value.trim() : '';
+      if (!code || code.length !== 4) {
+        alert('Пожалуйста, введите 4-значный код из @janamen_docs_bot');
+        return;
+      }
+
+      if (!pendingAuthTargetEmp) {
+        resetDesktopLoginStep();
+        return;
+      }
+
+      var btn = document.getElementById('btn-desktop-verify-otp');
       btn.disabled = true;
       btn.textContent = '⏳ Проверка кода...';
 
-      fetch(SCRIPT_EXEC_URL + '?action=verify_login_code&code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(empId))
+      fetch(SCRIPT_EXEC_URL + '?action=verify_login_code&code=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(pendingAuthTargetEmp.id))
         .then(function(r) { return r.json(); })
         .then(function(res) {
           btn.disabled = false;
@@ -3138,9 +3047,12 @@
           if (res && res.ok && res.user) {
             setAuthenticatedUser(res.user);
             showToast('🎉 Успешный вход: ' + res.user.name);
-            if (typeof tg !== 'undefined' && tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
           } else {
-            alert('Ошибка: ' + ((res && res.error) || 'Неверный проверочный код'));
+            alert('Ошибка: ' + ((res && res.error) || 'Неверный проверочный код. Проверьте сообщение в @janamen_docs_bot.'));
+            if (codeInput) {
+              codeInput.value = '';
+              codeInput.focus();
+            }
           }
         })
         .catch(function(err) {
@@ -3150,112 +3062,23 @@
         });
     }
 
-    function backToAuthStep1() {
-      var s1 = document.getElementById('auth-login-step1');
-      var s2 = document.getElementById('auth-login-step2');
+    function resetDesktopLoginStep() {
+      var s1 = document.getElementById('desktop-login-step1');
+      var s2 = document.getElementById('desktop-login-step2');
+      var s3 = document.getElementById('desktop-login-step3');
       if (s1) s1.style.display = 'block';
       if (s2) s2.style.display = 'none';
-    }
+      if (s3) s3.style.display = 'none';
 
-    function submitRequestRegCode() {
-      var fio = (document.getElementById('reg-fio').value || '').trim();
-      var dept = (document.getElementById('reg-department').value || 'Операционный блок').trim();
-      var role = (document.getElementById('reg-role').value || 'Специалист').trim();
-      var phone = (document.getElementById('reg-phone').value || '').trim();
-      var tgInput = (document.getElementById('reg-tg').value || '').trim();
-
-      if (!fio) { alert('Укажите ваше ФИО'); return; }
-      if (!phone) { alert('Укажите номер телефона'); return; }
-      if (!tgInput) { alert('Укажите ваш Telegram ID или @username'); return; }
-
-      var btn = document.getElementById('btn-request-reg-code');
-      btn.disabled = true;
-      btn.textContent = '⏳ Отправка кода в Telegram...';
-
-      var query = 'action=request_register_code' +
-        '&fio=' + encodeURIComponent(fio) +
-        '&department=' + encodeURIComponent(dept) +
-        '&role=' + encodeURIComponent(role) +
-        '&phone=' + encodeURIComponent(phone) +
-        '&telegramId=' + encodeURIComponent(tgInput);
-
-      fetch(SCRIPT_EXEC_URL + '?' + query)
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-          btn.disabled = false;
-          btn.textContent = '📲 Отправить код подтверждения';
-
-          if (res && res.ok) {
-            document.getElementById('auth-reg-step1').style.display = 'none';
-            document.getElementById('auth-reg-step2').style.display = 'block';
-            document.getElementById('reg-code-target-name').textContent = fio + ' (' + role + ')';
-
-            var fbMsg = document.getElementById('reg-fallback-msg');
-            if (res.fallbackCode) {
-              fbMsg.style.display = 'block';
-              fbMsg.innerHTML = '⚡ Telegram-бот еще не запущен. Ваш код для регистрации: <b>' + res.fallbackCode + '</b>';
-            } else {
-              fbMsg.style.display = 'none';
-            }
-
-            var regCodeInput = document.getElementById('auth-reg-code');
-            regCodeInput.value = '';
-            setTimeout(function() { regCodeInput.focus(); }, 150);
-            showToast('✅ Код подтверждения отправлен в Telegram!');
-          } else {
-            alert('Ошибка: ' + ((res && res.error) || 'Не удалось отправить код'));
-          }
-        })
-        .catch(function(err) {
-          btn.disabled = false;
-          btn.textContent = '📲 Отправить код подтверждения';
-          alert('Сетевая ошибка: ' + err.toString());
-        });
-    }
-
-    function onRegAuthCodeInput(el) {
-      if (el.value.length === 6) {
-        submitVerifyRegCode();
+      var errEl = document.getElementById('desktop-fio-error');
+      if (errEl) {
+        errEl.style.display = 'none';
+        errEl.textContent = '';
       }
-    }
-
-    function submitVerifyRegCode() {
-      var codeInput = document.getElementById('auth-reg-code');
-      var code = codeInput ? codeInput.value.trim() : '';
-      if (!code || code.length < 4) {
-        alert('Пожалуйста, введите проверочный код из Telegram');
-        return;
+      var fioInp = document.getElementById('desktop-fio-input');
+      if (fioInp) {
+        setTimeout(function() { fioInp.focus(); }, 150);
       }
-
-      var btn = document.getElementById('btn-verify-reg-code');
-      btn.disabled = true;
-      btn.textContent = '⏳ Завершение регистрации...';
-
-      fetch(SCRIPT_EXEC_URL + '?action=verify_register_code&code=' + encodeURIComponent(code))
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-          btn.disabled = false;
-          btn.textContent = '🎉 Завершить регистрацию';
-
-          if (res && res.ok && res.user) {
-            setAuthenticatedUser(res.user);
-            showToast('🎉 Регистрация завершена! Добро пожаловать, ' + res.user.name);
-          } else {
-            alert('Ошибка: ' + ((res && res.error) || 'Неверный код'));
-          }
-        })
-        .catch(function(err) {
-          btn.disabled = false;
-          btn.textContent = '🎉 Завершить регистрацию';
-          alert('Ошибка проверки: ' + err.toString());
-        });
-    }
-
-    function backToRegStep1() {
-      var s1 = document.getElementById('auth-reg-step1');
-      var s2 = document.getElementById('auth-reg-step2');
-      if (s1) s1.style.display = 'block';
-      if (s2) s2.style.display = 'none';
     }
 
     // ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
@@ -4821,6 +4644,13 @@
           html.push('<div style="text-align:center;padding:24px 8px;color:var(--text-muted);font-size:11.5px;border:1px dashed var(--border);border-radius:6px;">Нет документов на этом этапе</div>');
         } else {
           col.items.forEach(function(item) {
+            var escNum = escapeHtml(item.number || '');
+            var escTitle = escapeHtml(item.title || '');
+            var escDate = escapeHtml(item.date || '');
+            var escInit = escapeHtml(item.initiator || '');
+            var escDept = escapeHtml(item.department || '');
+            var escApprover = escapeHtml(item.currentApprover || '');
+
             var coExec = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 ' + item.coExecutors.map(escapeHtml).join(', ')) : '';
             var amountStr = (item.amount && item.amount > 0) ? ('<div style="font-size:12px;font-weight:800;color:var(--primary);margin-top:4px;">💰 ' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</div>') : '';
             
@@ -4837,13 +4667,6 @@
               ? ('<button type="button" class="btn-card-move-down" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca;" onclick="event.stopPropagation(); promptRevokeSZ(\'' + escNum + '\')" title="Отозвать служебную записку с согласования">↩️ Отозвать</button>') 
               : '';
 
-            var escNum = escapeHtml(item.number);
-            var escTitle = escapeHtml(item.title);
-            var escDate = escapeHtml(item.date);
-            var escInit = escapeHtml(item.initiator);
-            var escDept = escapeHtml(item.department);
-            var escApprover = escapeHtml(item.currentApprover);
-
             var adminDelCardBtn = (adminModeActive && isAdminUser(currentUser)) 
               ? ('<button type="button" class="btn-card-del-action" onclick="event.stopPropagation(); confirmDeleteSZ(\'' + escNum + '\', \'' + (escTitle).replace(/'/g, "\\'") + '\')" title="Удалить СЗ (Режим Администратора)">🗑️</button>') 
               : '';
@@ -4857,7 +4680,7 @@
 
             var isDraft = col.id === 'in_progress';
             var editDraftBtn = isDraft 
-              ? ('<button type="button" class="btn-card-move-down" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;font-weight:700;" onclick="event.stopPropagation(); copySZAsTemplateByNumber(\'' + escNum + '\')" title="Продолжить редактирование черновика">✏️ Черновик</button>') 
+              ? ('<button type="button" class="btn-card-move-down" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;font-weight:700;" onclick="event.stopPropagation(); openSZDetailByNumber(\'' + escNum + '\')" title="Продолжить редактирование черновика">✏️ Черновик</button>') 
               : '';
 
             html.push('<div class="kanban-card" draggable="true" ondragstart="onKanbanDragStart(event, \'' + escNum + '\')" ondragover="onKanbanDragOver(event)" ondrop="onKanbanDrop(event, \'' + escNum + '\')" ondragend="onKanbanDragEnd(event)" onclick="openSZDetailByNumber(\'' + escNum + '\')">');
@@ -4872,7 +4695,7 @@
             html.push('<div style="font-size:11px;color:var(--text-muted);line-height:1.4;">👤 ' + escInit + ' (' + escDept + ')' + coExec + '</div>');
             html.push(amountStr);
 
-            if (item.currentApprover && item.currentApprover !== '-' && item.currentApprover !== 'Завершено') {
+            if (col.id !== 'in_progress' && item.currentApprover && item.currentApprover !== '-' && item.currentApprover !== 'Завершено') {
               html.push('<div style="font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Текущий согласующий: ' + escApprover + '">');
               html.push('<span>⏳</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>' + escApprover + '</b></span>');
               html.push('</div>');

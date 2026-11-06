@@ -149,6 +149,9 @@ function doGet(e) {
         result = resetEmployeeRegistrations();
         try { CacheService.getScriptCache().remove('jm_employees_v1'); } catch(eC) {}
       }
+    } else if (action === 'check_employee') {
+      var q = (postData && (postData.query || postData.fio)) || ((e && e.parameter) ? (e.parameter.query || e.parameter.fio) : '');
+      result = checkEmployeeQuery(q);
     } else if (action === 'request_login_code') {
       var pId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
       result = sendPcLoginCode(pId);
@@ -262,6 +265,9 @@ function doPost(e) {
         result = resetEmployeeRegistrations();
         try { CacheService.getScriptCache().remove('jm_employees_v1'); } catch(eC) {}
       }
+    } else if (action === 'check_employee') {
+      var q = (postData && (postData.query || postData.fio)) || ((e && e.parameter) ? (e.parameter.query || e.parameter.fio) : '');
+      result = checkEmployeeQuery(q);
     } else if (action === 'request_login_code') {
       var pId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
       result = sendPcLoginCode(pId);
@@ -1521,6 +1527,99 @@ function bindTelegramAccount(fio, telegramId, username) {
   return { ok: false, error: 'Сотрудник не найден: ' + fio };
 }
 
+function checkEmployeeQuery(query) {
+  if (!query) return { ok: false, error: 'Укажите поисковый запрос' };
+  var q = String(query).trim().toLowerCase();
+  var emps = getEmployeesList().employees;
+  
+  var match = null;
+  var cleanQDigits = q.replace(/\D/g, '');
+
+  for (var i = 0; i < emps.length; i++) {
+    var e = emps[i];
+    var eName = String(e.name || '').trim().toLowerCase();
+    var ePhone = String(e.phone || '').replace(/\D/g, '');
+    
+    // Поиск по телефону
+    if (cleanQDigits.length >= 7 && ePhone && (ePhone.indexOf(cleanQDigits) !== -1 || cleanQDigits.indexOf(ePhone) !== -1)) {
+      match = e;
+      break;
+    }
+    // Точное или подстрочное совпадение
+    if (eName === q || eName.indexOf(q) !== -1 || q.indexOf(eName) !== -1) {
+      match = e;
+      break;
+    }
+    // По отдельным словам (например, фамилия "Сайдуллаев")
+    var qWords = q.split(/[\s,.-]+/).filter(function(w){ return w.length >= 3; });
+    if (qWords.length > 0) {
+      var allWordsMatch = true;
+      for (var w = 0; w < qWords.length; w++) {
+        if (eName.indexOf(qWords[w]) === -1) {
+          allWordsMatch = false;
+          break;
+        }
+      }
+      if (allWordsMatch) {
+        match = e;
+        break;
+      }
+    }
+  }
+
+  if (match) {
+    return {
+      ok: true,
+      found: true,
+      employee: {
+        id: match.id,
+        name: match.name,
+        role: match.role,
+        department: match.department,
+        hasTelegram: !!(match.telegramId && String(match.telegramId).trim() !== '')
+      }
+    };
+  }
+
+  return { ok: true, found: false };
+}
+
+function bindTelegramToEmployee(empIdOrFio, telegramId, username) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
+  if (!sheet) return { ok: false, error: 'Лист Сотрудники не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  var targetStr = String(empIdOrFio).trim().toLowerCase();
+
+  for (var i = 1; i < rows.length; i++) {
+    var rId = String(rows[i][0]).trim();
+    var rFio = String(rows[i][2]).trim();
+    if (rId === targetStr || rFio.toLowerCase() === targetStr || rFio.toLowerCase().indexOf(targetStr) !== -1 || targetStr.indexOf(rFio.toLowerCase()) !== -1) {
+      sheet.getRange(i + 1, 2).setValue(String(telegramId));
+      if (username) sheet.getRange(i + 1, 8).setValue(String(username));
+      sheet.getRange(i + 1, 10).setValue('Зарегистрирован');
+      var tz = Session.getScriptTimeZone() || 'GMT+5';
+      sheet.getRange(i + 1, 11).setValue(Utilities.formatDate(new Date(), tz, 'dd.MM.yyyy HH:mm'));
+
+      try { CacheService.getScriptCache().remove('jm_employees_v1'); } catch(eC) {}
+      logAuditAction('РЕГИСТРАЦИЯ_TG', rFio, 'Привязан Telegram ID: ' + telegramId + ' (' + (username || '-') + ')', 'Успешно');
+      return {
+        ok: true,
+        employee: {
+          id: rows[i][0],
+          telegramId: String(telegramId),
+          name: rFio,
+          department: rows[i][3],
+          role: rows[i][4],
+          username: username || rows[i][7]
+        }
+      };
+    }
+  }
+  return { ok: false, error: 'Сотрудник не найден: ' + empIdOrFio };
+}
+
 function sendPcLoginCode(fioOrId) {
   if (!fioOrId) return { ok: false, error: 'Укажите сотрудника' };
   
@@ -1536,44 +1635,48 @@ function sendPcLoginCode(fioOrId) {
     }
   }
   
-  var targetName = targetEmp ? targetEmp.name : fioOrId;
-  var tgId = targetEmp && targetEmp.telegramId ? String(targetEmp.telegramId).trim() : getEmployeeTelegramId(targetName);
-  var code = Math.floor(100000 + Math.random() * 900000).toString();
+  if (!targetEmp) {
+    return { ok: false, error: 'Сотрудник не найден в штатном расписании' };
+  }
+
+  var targetName = targetEmp.name;
+  var tgId = targetEmp.telegramId ? String(targetEmp.telegramId).trim() : getEmployeeTelegramId(targetName);
+
+  if (!tgId) {
+    return {
+      ok: false,
+      sentToTelegram: false,
+      needsTelegramReg: true,
+      error: 'Telegram-бот еще не привязан к вашему профилю. Пожалуйста, откройте @janamen_docs_bot и подтвердите регистрацию.'
+    };
+  }
+
+  var code = Math.floor(1000 + Math.random() * 9000).toString(); // 4-значный OTP код
 
   var cache = CacheService.getScriptCache();
   cache.put('pc_code_' + String(targetName).trim(), code, 600); // 10 минут
-  if (targetEmp && targetEmp.id) {
+  if (targetEmp.id) {
     cache.put('pc_code_' + String(targetEmp.id).trim(), code, 600);
   }
-  cache.put('auth_user_' + code, JSON.stringify(targetEmp || { name: targetName }), 600);
+  cache.put('auth_user_' + code, JSON.stringify(targetEmp), 600);
 
-  if (tgId) {
-    var msg = [
-      '🔐 *КОД ДЛЯ ВХОДА В JANA MEN ЭДО*',
-      '',
-      'Здравствуйте, *' + targetName + '*!',
-      '',
-      'Ваш проверочный код для входа на компьютере:',
-      '👉 `' + code + '`',
-      '',
-      '⏱ Код действителен 10 минут. Никому не сообщайте этот код.'
-    ].join('\n');
-    sendTelegramMessage(tgId, msg);
-    return {
-      ok: true,
-      sentToTelegram: true,
-      message: 'Код отправлен в Telegram ботом @janamen_docs_bot',
-      employee: targetEmp
-    };
-  } else {
-    return {
-      ok: true,
-      sentToTelegram: false,
-      fallbackCode: code,
-      message: 'Telegram еще не привязан к сотруднику. Код доступа: ' + code,
-      employee: targetEmp
-    };
-  }
+  var msg = [
+    '🔐 *КОД ДЛЯ ВХОДА В JANA MEN ЭДО*',
+    '',
+    'Здравствуйте, *' + targetName + '*!',
+    '',
+    'Ваш проверочный код для входа на компьютере:',
+    '👉 `' + code + '`',
+    '',
+    '⏱ Код действителен 10 минут. Никому не сообщайте этот код.'
+  ].join('\n');
+  
+  sendTelegramMessage(tgId, msg);
+  return {
+    ok: true,
+    sentToTelegram: true,
+    message: 'Код отправлен в Telegram ботом @janamen_docs_bot'
+  };
 }
 
 function verifyPcLoginCode(fioOrId, enteredCode) {
@@ -2196,14 +2299,49 @@ function handleTelegramUpdate(update) {
       } catch(cErr) {}
     }
 
-    // 1. Обработка Callback Query (нажатие кнопок [✅ Согласовать] / [❌ Отклонить] в Telegram)
+    // 1. Обработка Callback Query (нажатие кнопок согласования и подтверждения регистрации в Telegram)
     if (update.callback_query) {
       var cb = update.callback_query;
       var data = cb.data || '';
       var fromId = String(cb.from.id);
       var fromUser = ((cb.from.first_name || '') + (cb.from.last_name ? ' ' + cb.from.last_name : '')).trim() || 'Сотрудник';
+      var fromUserTag = cb.from.username ? ('@' + cb.from.username) : '';
       var parts = data.split(':');
       var actionType = parts[0];
+      var actionParam = parts[1];
+
+      // Регистрация в Telegram-боте в 1 клик
+      if (actionType === 'reg_confirm') {
+        var resBind = bindTelegramToEmployee(actionParam, fromId, fromUserTag);
+        answerCallbackQuery(cb.id, '✅ Регистрация подтверждена!');
+        if (resBind && resBind.ok) {
+          var successMsg = [
+            '🎉 *Регистрация успешно завершена!*',
+            '',
+            '👤 Вы авторизованы: *' + resBind.employee.name + '*',
+            '💼 Должность: *' + resBind.employee.role + '*',
+            '🏢 Отдел: *' + resBind.employee.department + '*',
+            '',
+            'Теперь вы можете полноценно пользоваться корпоративным ЭДО Jana Men.'
+          ].join('\n');
+
+          var appKeyboard = {
+            inline_keyboard: [
+              [{ text: '🚀 Открыть Jana Men ЭДО', web_app: { url: getMiniAppUrl() } }]
+            ]
+          };
+          editTelegramMessage(cb.message.chat.id, cb.message.message_id, successMsg);
+          sendTelegramMessageWithKeyboard(cb.message.chat.id, 'Нажмите кнопку ниже, чтобы открыть приложение:', appKeyboard);
+        } else {
+          sendTelegramMessage(cb.message.chat.id, '❌ Не удалось завершить привязку. Пожалуйста, обратитесь к администратору (@kuanyshbek).');
+        }
+        return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+      } else if (actionType === 'reg_ask_fio') {
+        answerCallbackQuery(cb.id, 'Введите ваше ФИО');
+        sendTelegramMessage(cb.message.chat.id, '📝 Пожалуйста, напишите ваше *ФИО* в ответном сообщении (например: Сайдуллаев Куанышбек):');
+        return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+      }
+
       var szNum = parts[1];
 
       // Поиск ФИО сотрудника по Telegram ID
@@ -2241,7 +2379,7 @@ function handleTelegramUpdate(update) {
       return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 2. Обработка текстовых команд (/start, /help, /status)
+    // 2. Обработка текстовых команд и регистрации
     if (update.message && update.message.text) {
       var msg = update.message;
       var chatId = msg.chat.id;
@@ -2259,26 +2397,41 @@ function handleTelegramUpdate(update) {
         profile = getUserProfile(senderTgId);
       }
 
-      if (text.indexOf('/start') === 0) {
+      if (profile.ok && profile.employee) {
+        // Сотрудник уже зарегистрирован!
         var welcomeLines = [
-          '👋 *Добро пожаловать в корпоративный ЭДО Jana Men!*',
+          '👋 Здравствуйте, *' + profile.employee.name + '*!',
+          '🏢 Отдел: ' + profile.employee.department,
+          '💼 Должность: ' + profile.employee.role,
           '',
-          profile.ok ? ('👤 Вы авторизованы: *' + profile.employee.name + '*\n🏢 Отдел: ' + profile.employee.department + '\n💼 Должность: ' + profile.employee.role) : '⚠️ Вы еще не зарегистрированы в системе.',
-          '',
-          'Здесь вы можете:',
-          '• Составлять служебные записки с помощью *Gemini 2.5 AI*',
-          '• Отслеживать согласование у руководителей, Арсена Бегалина и Шефа',
-          '• Смотреть изолированный архив договоров вашего отдела',
-          '• Прикреплять сканы подписанных оригиналов'
+          'Вы успешно авторизованы в корпоративном ЭДО Jana Men.'
         ];
-
         var keyboard = {
           inline_keyboard: [
             [{ text: '🚀 Открыть Jana Men ЭДО', web_app: { url: getMiniAppUrl() } }]
           ]
         };
-
         sendTelegramMessageWithKeyboard(chatId, welcomeLines.join('\n'), keyboard);
+      } else {
+        // Сотрудник еще не зарегистрирован!
+        if (text.indexOf('/start') === 0) {
+          sendTelegramMessage(chatId, '👋 *Добро пожаловать в корпоративный ЭДО Jana Men!*\n\nДля регистрации в системе напишите ваше *ФИО* ответным сообщением (например: Сайдуллаев Куанышбек):');
+        } else {
+          // Пользователь ввел свое ФИО для регистрации!
+          var chk = checkEmployeeQuery(text);
+          if (chk && chk.found && chk.employee) {
+            var regKeyboard = {
+              inline_keyboard: [
+                [{ text: '✅ Да, это я', callback_data: 'reg_confirm:' + chk.employee.id }],
+                [{ text: '❌ Нет, я другой сотрудник', callback_data: 'reg_ask_fio' }]
+              ]
+            };
+            var askMsg = 'Вы *' + chk.employee.name + '* — *' + chk.employee.role + '* (' + chk.employee.department + ')?';
+            sendTelegramMessageWithKeyboard(chatId, askMsg, regKeyboard);
+          } else {
+            sendTelegramMessage(chatId, '❌ Сотрудник с ФИО «' + text + '» не найден в штатном расписании компании.\n\nПожалуйста, проверьте написание фамилии и имени и отправьте снова (например: Сайдуллаев Куанышбек):');
+          }
+        }
       }
     }
 
