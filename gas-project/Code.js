@@ -73,6 +73,7 @@ function doGet(e) {
   }
   
   try {
+    var postData = null;
     var result = {};
     
     if (action === 'get_structure') {
@@ -100,21 +101,25 @@ function doGet(e) {
     } else if (action === 'make_archive_public') {
       result = makeArchivePublic();
     } else if (action === 'delete_sz') {
-      result = deleteSZ(postData.szNumber);
+      result = deleteSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''));
     } else if (action === 'delete_contract') {
-      result = deleteContract(postData.contractNumber, postData.contractId);
+      result = deleteContract((postData && postData.contractNumber) || ((e && e.parameter) ? e.parameter.contractNumber : ''), (postData && postData.contractId) || ((e && e.parameter) ? e.parameter.contractId : ''));
     } else if (action === 'resubmit_sz') {
-      result = resubmitSZ(postData.szNumber, postData);
+      result = resubmitSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''), postData || (e && e.parameter) || {});
     } else if (action === 'reset_registrations') {
       result = resetEmployeeRegistrations();
     } else if (action === 'request_login_code') {
-      result = sendPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '');
+      var pId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
+      result = sendPcLoginCode(pId);
     } else if (action === 'verify_login_code') {
-      result = verifyPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '', (postData && postData.code) || (e.parameter && e.parameter.code) || '');
+      var pvId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
+      var pvCode = (postData && postData.code) || ((e && e.parameter) ? e.parameter.code : '') || '';
+      result = verifyPcLoginCode(pvId, pvCode);
     } else if (action === 'request_register_code') {
-      result = requestRegistrationCode(postData || e.parameter || {});
+      result = requestRegistrationCode(postData || (e && e.parameter) || {});
     } else if (action === 'verify_register_code') {
-      result = verifyRegistrationCode((postData && postData.code) || (e.parameter && e.parameter.code) || '');
+      var pvrCode = (postData && postData.code) || ((e && e.parameter) ? e.parameter.code : '') || '';
+      result = verifyRegistrationCode(pvrCode);
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -181,21 +186,25 @@ function doPost(e) {
     } else if (action === 'make_archive_public') {
       result = makeArchivePublic();
     } else if (action === 'delete_sz') {
-      result = deleteSZ(postData.szNumber);
+      result = deleteSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''));
     } else if (action === 'delete_contract') {
-      result = deleteContract(postData.contractNumber, postData.contractId);
+      result = deleteContract((postData && postData.contractNumber) || ((e && e.parameter) ? e.parameter.contractNumber : ''), (postData && postData.contractId) || ((e && e.parameter) ? e.parameter.contractId : ''));
     } else if (action === 'resubmit_sz') {
-      result = resubmitSZ(postData.szNumber, postData);
+      result = resubmitSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''), postData || (e && e.parameter) || {});
     } else if (action === 'reset_registrations') {
       result = resetEmployeeRegistrations();
     } else if (action === 'request_login_code') {
-      result = sendPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '');
+      var pId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
+      result = sendPcLoginCode(pId);
     } else if (action === 'verify_login_code') {
-      result = verifyPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '', (postData && postData.code) || (e.parameter && e.parameter.code) || '');
+      var pvId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
+      var pvCode = (postData && postData.code) || ((e && e.parameter) ? e.parameter.code : '') || '';
+      result = verifyPcLoginCode(pvId, pvCode);
     } else if (action === 'request_register_code') {
-      result = requestRegistrationCode(postData || e.parameter || {});
+      result = requestRegistrationCode(postData || (e && e.parameter) || {});
     } else if (action === 'verify_register_code') {
-      result = verifyRegistrationCode((postData && postData.code) || (e.parameter && e.parameter.code) || '');
+      var pvrCode = (postData && postData.code) || ((e && e.parameter) ? e.parameter.code : '') || '';
+      result = verifyRegistrationCode(pvrCode);
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
