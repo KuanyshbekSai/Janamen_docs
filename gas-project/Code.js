@@ -431,8 +431,18 @@ function createNewSZ(data) {
   // 7. Запись в журнал согласований
   logApprovalEvent(szNumber, 'Создание СЗ', initiator, 'Запущено согласование', '');
 
-  // 8. Отправка уведомления первому согласующему
-  notifyApproverInTelegram(firstApprover, szNumber, initiator, title, amount);
+  // 8. Отправка уведомления первому согласующему (механика Trust Me)
+  notifyApproverInTelegram(firstApprover, {
+    szNumber: szNumber,
+    initiator: initiator,
+    department: dept,
+    title: title,
+    body: body,
+    amount: amount,
+    counterparty: counterparty,
+    contract: contract,
+    docUrl: docUrl
+  });
 
   return {
     ok: true,
@@ -674,7 +684,16 @@ function approveSZ(szNumber, approverFio, comment, decision) {
   var nextApprover = (currentIdx !== -1 && currentIdx + 1 < steps.length) ? steps[currentIdx + 1] : CONFIG.GENERAL_DIRECTOR;
   sheet.getRange(targetRow, 11).setValue('На согласовании: ' + nextApprover);
   sheet.getRange(targetRow, 14).setValue(nextApprover);
-  notifyApproverInTelegram(nextApprover, szNumber, szData[3], szData[6], szData[7]);
+  notifyApproverInTelegram(nextApprover, {
+    szNumber: szNumber,
+    initiator: szData[3],
+    department: szData[2],
+    title: szData[6],
+    amount: szData[7],
+    counterparty: szData[8],
+    contract: szData[9],
+    docUrl: szData[15]
+  });
 
   return { ok: true, message: 'Согласование принято. СЗ передана следующему согласующему: ' + nextApprover };
 }
@@ -1643,44 +1662,167 @@ function logApprovalEvent(szNumber, eventName, author, details, status) {
   }
 }
 
-function notifyApproverInTelegram(approverName, szNumber, initiator, title, amount) {
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Отправка сообщения согласующему в Telegram в механике Trust Me:
+ * Суть документа, реквизиты, прямая ссылка на Google Doc бланк и 2 главные кнопки: [✅ Согласовать] и [❌ Отклонить]
+ */
+function notifyApproverInTelegram(approverName, docInfoOrNum, initiator, title, amount, docUrl, body, contract) {
   var targetTgId = getEmployeeTelegramId(approverName);
-  if (!targetTgId) return;
+  if (!targetTgId) {
+    Logger.log('Telegram ID not found for: ' + approverName);
+    return false;
+  }
 
-  var msg = [
-    '📑 *НА СОГЛАСОВАНИЕ ПОСТУПИЛА СЗ*',
+  var info = {};
+  if (typeof docInfoOrNum === 'object' && docInfoOrNum !== null) {
+    info = docInfoOrNum;
+  } else {
+    info = {
+      szNumber: docInfoOrNum,
+      initiator: initiator,
+      title: title,
+      amount: amount,
+      docUrl: docUrl,
+      body: body,
+      contract: contract
+    };
+  }
+
+  var szNumber = info.szNumber || '';
+
+  // Если метаданные не полные, достаем из реестра
+  if (szNumber && (!info.docUrl || !info.title || !info.initiator || info.amount === undefined)) {
+    try {
+      var ss = getSpreadsheet();
+      var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+      if (sheet) {
+        var rows = sheet.getDataRange().getValues();
+        for (var r = 1; r < rows.length; r++) {
+          if (String(rows[r][0]).trim() === String(szNumber).trim()) {
+            info.initiator = info.initiator || rows[r][3];
+            info.department = info.department || rows[r][2];
+            info.title = info.title || rows[r][6];
+            if (info.amount === undefined || info.amount === null || info.amount === 0) {
+              info.amount = rows[r][7];
+            }
+            info.counterparty = info.counterparty || rows[r][8];
+            info.contract = info.contract || rows[r][9];
+            info.docUrl = info.docUrl || rows[r][15];
+            break;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Если суть документа не передана, извлекаем абзацы из Google Doc
+  if (!info.body && info.docUrl) {
+    try {
+      var docIdMatch = info.docUrl.match(/[-\w]{25,}/);
+      if (docIdMatch) {
+        var gDoc = DocumentApp.openById(docIdMatch[0]);
+        var paras = gDoc.getBody().getParagraphs();
+        var bodyLines = [];
+        for (var p = 0; p < paras.length; p++) {
+          var t = paras[p].getText().trim();
+          if (t && t.indexOf('СЛУЖЕБНАЯ ЗАПИСКА') === -1 && t.indexOf('Генеральному') === -1 && t.indexOf('Исп:') === -1 && t.indexOf('ЛИСТ СОГЛАСОВАНИЯ') === -1 && t.indexOf('Дата:') === -1) {
+            bodyLines.push(t);
+          }
+        }
+        if (bodyLines.length > 0) {
+          info.body = bodyLines.join('\n\n');
+        }
+      }
+    } catch(eDoc) {}
+  }
+
+  var numStr = escapeHtml(szNumber);
+  var initStr = escapeHtml(info.initiator || 'Сотрудник');
+  var deptStr = escapeHtml(info.department || '');
+  var titleStr = escapeHtml(info.title || 'Служебная записка');
+  var amt = Number(info.amount) || 0;
+  var contractStr = escapeHtml(info.contract || '');
+  var bodyText = (info.body || '').trim();
+
+  if (bodyText.length > 800) {
+    bodyText = bodyText.substring(0, 797) + '...';
+  }
+  var cleanBody = escapeHtml(bodyText);
+
+  var lines = [
+    '📑 <b>НА СОГЛАСОВАНИЕ ПОСТУПИЛ ДОКУМЕНТ</b>',
     '',
-    'Номер: *' + szNumber + '*',
-    'Инициатор: ' + initiator,
-    'Тема: ' + title,
-    amount > 0 ? ('Сумма: *' + Number(amount).toLocaleString('ru-RU') + ' ₸*') : '',
-    '',
-    'Выберите действие или откройте в Mini App:'
-  ].filter(Boolean).join('\n');
+    '📌 <b>Документ:</b> № ' + numStr,
+    '👤 <b>Инициатор:</b> ' + initStr + (deptStr ? ' (' + deptStr + ')' : ''),
+    '📋 <b>Тема:</b> ' + titleStr
+  ];
 
-  var keyboard = {
-    inline_keyboard: [
-      [
-        { text: '🚀 Открыть в Mini App', web_app: { url: getMiniAppUrl() } }
-      ],
-      [
-        { text: '✅ Согласовать', callback_data: 'approve:' + szNumber },
-        { text: '❌ Отклонить', callback_data: 'reject:' + szNumber }
-      ]
-    ]
-  };
+  if (amt > 0) {
+    lines.push('💰 <b>Сумма к оплате:</b> ' + amt.toLocaleString('ru-RU') + ' ₸');
+  }
+  if (contractStr && contractStr !== 'Не привязан к договору') {
+    lines.push('📂 <b>Основание:</b> ' + contractStr);
+  }
 
-  sendTelegramMessageWithKeyboard(targetTgId, msg, keyboard);
+  if (cleanBody) {
+    lines.push('');
+    lines.push('📝 <b>Суть документа:</b>');
+    lines.push('<i>' + cleanBody + '</i>');
+  }
+
+  lines.push('');
+  lines.push('──────────────────────');
+  lines.push('👉 <b>Выберите решение прямо в Telegram:</b>');
+
+  var buttons = [];
+
+  // 1. Прямая ссылка на сформированный официальный бланк Google Doc
+  if (info.docUrl) {
+    buttons.push([{ text: '📄 Открыть официальный бланк (Google Doc) ↗️', url: info.docUrl }]);
+  }
+
+  // 2. Две главные кнопки Trust Me механики
+  buttons.push([
+    { text: '✅ Согласовать', callback_data: 'approve:' + szNumber },
+    { text: '❌ Отклонить', callback_data: 'reject:' + szNumber }
+  ]);
+
+  // 3. Открыть в веб-приложении
+  buttons.push([
+    { text: '🚀 Открыть в приложении ЭДО', web_app: { url: getMiniAppUrl() } }
+  ]);
+
+  var keyboard = { inline_keyboard: buttons };
+  sendTelegramMessageWithKeyboardHtml(targetTgId, lines.join('\n'), keyboard);
+  return true;
 }
 
 function notifyInitiatorSZStatus(initiatorName, szNumber, message) {
   var targetTgId = getEmployeeTelegramId(initiatorName);
   if (targetTgId) {
-    sendTelegramMessage(targetTgId, '📢 *Служебная записка ' + szNumber + '*\n\n' + message);
+    var lines = [
+      '📢 <b>Служебная записка ' + escapeHtml(szNumber) + '</b>',
+      '',
+      escapeHtml(message)
+    ];
+    sendTelegramMessageHtml(targetTgId, lines.join('\n'));
   }
 }
 
 function sendTelegramMessage(chatId, text) {
+  sendTelegramMessageHtml(chatId, text);
+}
+
+function sendTelegramMessageHtml(chatId, htmlText) {
   if (!CONFIG.BOT_TOKEN || !chatId) return;
   try {
     var url = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/sendMessage';
@@ -1689,13 +1831,58 @@ function sendTelegramMessage(chatId, text) {
       contentType: 'application/json',
       payload: JSON.stringify({
         chat_id: chatId,
-        text: text,
-        parse_mode: 'Markdown'
+        text: htmlText,
+        parse_mode: 'HTML'
       }),
       muteHttpExceptions: true
     });
   } catch(e) {
-    Logger.log('sendTelegramMessage error: ' + e);
+    Logger.log('sendTelegramMessageHtml error: ' + e);
+  }
+}
+
+function sendTelegramMessageWithKeyboardHtml(chatId, htmlText, keyboard) {
+  if (!CONFIG.BOT_TOKEN || !chatId) return;
+  try {
+    var url = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/sendMessage';
+    UrlFetchApp.fetch(url, {
+      method: 'POST',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        chat_id: chatId,
+        text: htmlText,
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+        disable_web_page_preview: false
+      }),
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log('sendTelegramMessageWithKeyboardHtml error: ' + e);
+  }
+}
+
+function editTelegramMessageHtml(chatId, messageId, htmlText, keyboard) {
+  if (!CONFIG.BOT_TOKEN || !chatId || !messageId) return;
+  try {
+    var url = 'https://api.telegram.org/bot' + CONFIG.BOT_TOKEN + '/editMessageText';
+    var payload = {
+      chat_id: chatId,
+      message_id: messageId,
+      text: htmlText,
+      parse_mode: 'HTML'
+    };
+    if (keyboard) {
+      payload.reply_markup = keyboard;
+    }
+    UrlFetchApp.fetch(url, {
+      method: 'POST',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log('editTelegramMessageHtml error: ' + e);
   }
 }
 
@@ -1844,28 +2031,47 @@ function handleTelegramUpdate(update) {
       } catch(cErr) {}
     }
 
-    // 1. Обработка Callback Query (нажатие кнопок [✅ Согласовать] / [❌ Отклонить])
+    // 1. Обработка Callback Query (нажатие кнопок [✅ Согласовать] / [❌ Отклонить] в Telegram)
     if (update.callback_query) {
       var cb = update.callback_query;
       var data = cb.data || '';
       var fromId = String(cb.from.id);
-      var fromUser = cb.from.first_name || 'Сотрудник';
+      var fromUser = ((cb.from.first_name || '') + (cb.from.last_name ? ' ' + cb.from.last_name : '')).trim() || 'Сотрудник';
       var parts = data.split(':');
       var actionType = parts[0];
       var szNum = parts[1];
 
       // Поиск ФИО сотрудника по Telegram ID
       var empProfile = getUserProfile(fromId);
-      var approverFio = (empProfile.ok && empProfile.employee) ? empProfile.employee.name : fromUser;
+      var approverFio = (empProfile.ok && empProfile.employee && empProfile.employee.name) ? empProfile.employee.name : fromUser;
+      var dateNow = Utilities.formatDate(new Date(), 'GMT+5', 'dd.MM.yyyy HH:mm');
+
+      // Формируем кнопки: убираем кнопки решения, оставляем ссылку на документ и приложение
+      var remainingButtons = [];
+      if (cb.message && cb.message.reply_markup && cb.message.reply_markup.inline_keyboard) {
+        cb.message.reply_markup.inline_keyboard.forEach(function(row) {
+          var filtered = row.filter(function(b) {
+            return b.callback_data !== ('approve:' + szNum) && b.callback_data !== ('reject:' + szNum);
+          });
+          if (filtered.length > 0) remainingButtons.push(filtered);
+        });
+      }
+      var remKeyboard = remainingButtons.length > 0 ? { inline_keyboard: remainingButtons } : null;
+      var baseMsg = cb.message.text || '';
 
       if (actionType === 'approve') {
         var resApprove = approveSZ(szNum, approverFio, 'Согласовано через Telegram', 'approve');
-        answerCallbackQuery(cb.id, '✅ СЗ ' + szNum + ' согласована!');
-        editTelegramMessage(cb.message.chat.id, cb.message.message_id, cb.message.text + '\n\n✅ *СОГЛАСОВАНО* (' + approverFio + ')');
+        answerCallbackQuery(cb.id, '✅ Документ ' + szNum + ' успешно согласован!');
+
+        var updatedText = escapeHtml(baseMsg) + '\n\n━━━━━━━━━━━━━━━━━━━━\n✅ <b>ДОКУМЕНТ СОГЛАСОВАН</b>\n👤 <b>Согласующий:</b> ' + escapeHtml(approverFio) + '\n🕒 <b>Дата и время:</b> ' + dateNow;
+        editTelegramMessageHtml(cb.message.chat.id, cb.message.message_id, updatedText, remKeyboard);
+
       } else if (actionType === 'reject') {
         var resReject = approveSZ(szNum, approverFio, 'Отклонено через Telegram', 'reject');
-        answerCallbackQuery(cb.id, '❌ СЗ ' + szNum + ' отклонена');
-        editTelegramMessage(cb.message.chat.id, cb.message.message_id, cb.message.text + '\n\n❌ *ОТКЛОНЕНО* (' + approverFio + ')');
+        answerCallbackQuery(cb.id, '❌ Документ ' + szNum + ' отклонен');
+
+        var updatedText = escapeHtml(baseMsg) + '\n\n━━━━━━━━━━━━━━━━━━━━\n❌ <b>ДОКУМЕНТ ОТКЛОНЕН</b>\n👤 <b>Отклонил(а):</b> ' + escapeHtml(approverFio) + '\n🕒 <b>Дата и время:</b> ' + dateNow;
+        editTelegramMessageHtml(cb.message.chat.id, cb.message.message_id, updatedText, remKeyboard);
       }
       return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1934,7 +2140,7 @@ function setTelegramWebhook(customUrl) {
 
 function getMiniAppUrl() {
   var props = PropertiesService.getScriptProperties().getProperty('MINIAPP_URL');
-  return props || 'https://janamen-edo.vercel.app';
+  return props || 'https://janamendocs.vercel.app';
 }
 
 function sendTelegramMessageWithKeyboard(chatId, text, keyboard) {
