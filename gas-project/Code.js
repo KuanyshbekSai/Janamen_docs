@@ -134,6 +134,12 @@ function doGet(e) {
     } else if (action === 'resubmit_sz') {
       result = resubmitSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''), postData || (e && e.parameter) || {});
       try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
+    } else if (action === 'revoke_sz') {
+      var szNum = (postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : '');
+      var uFio = (postData && (postData.userFio || postData.adminUser)) || ((e && e.parameter) ? (e.parameter.userFio || e.parameter.adminUser) : '');
+      var rReason = (postData && postData.reason) || ((e && e.parameter) ? e.parameter.reason : '');
+      result = revokeSZ(szNum, uFio, rReason);
+      try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
     } else if (action === 'reset_registrations') {
       var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
       var authRole = (postData && postData.adminRole) || ((e && e.parameter) ? e.parameter.adminRole : '');
@@ -240,6 +246,12 @@ function doPost(e) {
       }
     } else if (action === 'resubmit_sz') {
       result = resubmitSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''), postData || (e && e.parameter) || {});
+      try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
+    } else if (action === 'revoke_sz') {
+      var szNum = (postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : '');
+      var uFio = (postData && (postData.userFio || postData.adminUser)) || ((e && e.parameter) ? (e.parameter.userFio || e.parameter.adminUser) : '');
+      var rReason = (postData && postData.reason) || ((e && e.parameter) ? e.parameter.reason : '');
+      result = revokeSZ(szNum, uFio, rReason);
       try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
     } else if (action === 'reset_registrations') {
       var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
@@ -937,6 +949,59 @@ function resubmitSZ(szNumber, data) {
   notifyApproverInTelegram(firstApprover, szNumber, oldRow[3], data.title || oldRow[6], Number(data.amount || oldRow[7]));
 
   return { ok: true, message: 'СЗ ' + szNumber + ' успешно скорректирована и повторно направлена на согласование!' };
+}
+
+/**
+ * Отзыв запущенной СЗ инициатором или администратором
+ */
+function revokeSZ(szNumber, userFio, reason) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+  if (!sheet) return { ok: false, error: 'Лист Реестр СЗ не найден' };
+
+  var rows = sheet.getDataRange().getValues();
+  var targetRow = -1;
+  var oldRow = null;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(szNumber).trim()) {
+      targetRow = i + 1;
+      oldRow = rows[i];
+      break;
+    }
+  }
+
+  if (targetRow === -1) return { ok: false, error: 'СЗ ' + szNumber + ' не найдена' };
+
+  var initiator = String(oldRow[3]).trim();
+  var currentApprover = String(oldRow[13]).trim();
+  var currentStatus = String(oldRow[10]).trim();
+
+  // Нельзя отозвать уже утвержденную или оплаченную СЗ
+  if (/утверждено|оплачено|отработано/i.test(currentStatus)) {
+    return { ok: false, error: 'Нельзя отозвать документ, который уже утвержден или оплачен' };
+  }
+
+  // Проверка прав: отозвать может инициатор или администратор
+  if (userFio && userFio !== initiator && !isAdminAuthorized(userFio)) {
+    return { ok: false, error: 'Отозвать служебную записку может только ее автор (' + initiator + ') или Администратор' };
+  }
+
+  var revokeStatus = '🛠️ В работе (Отозвано автором)';
+  sheet.getRange(targetRow, 11).setValue(revokeStatus); // Статус согласования
+  sheet.getRange(targetRow, 14).setValue(initiator); // Текущий согласующий возвращается инициатору
+
+  logApprovalEvent(szNumber, 'ОТЗЫВ', userFio || initiator, reason || 'Инициатор отозвал документ с согласования', revokeStatus);
+
+  // Если у документа был текущий согласующий, уведомим его в Telegram об отмене
+  if (currentApprover && currentApprover !== '-' && currentApprover !== initiator) {
+    try {
+      notifyEmployeeByFio(currentApprover, '↩️ *Служебная записка отозвана автором!*\n\n• *Номер:* ' + szNumber + '\n• *Инициатор:* ' + initiator + '\n• *Тема:* ' + String(oldRow[6]) + (reason ? ('\n• *Причина отзыва:* ' + reason) : '') + '\n\nДействий по согласованию больше не требуется.');
+    } catch(eNotify) {}
+  }
+
+  try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
+
+  return { ok: true, message: 'Служебная записка ' + szNumber + ' успешно отозвана!' };
 }
 
 /**

@@ -1842,6 +1842,13 @@
             </div>
           </div>
 
+          <!-- 4b. Кнопка отзыва СЗ автором -->
+          <div id="det-revoke-bar" style="display: none; margin-top: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="confirmRevokeActiveSZ()" style="width: 100%; border: 1.5px solid #fecaca; background: #fff5f5; color: #b91c1c; font-weight: 700; padding: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>↩️</span> <span>Отозвать служебную записку</span>
+            </button>
+          </div>
+
           <!-- 5. Блок повторной подачи для отклоненной СЗ (Инициатор или Администратор) -->
           <div id="det-rejected-resubmit-bar" style="display: none; background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 12px 14px;">
             <div style="font-size: 13px; font-weight: 800; color: #9a3412;">⚠️ Документ отклонен согласующим</div>
@@ -2235,7 +2242,7 @@
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     }
 
-    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzOhjF0uFfxA7gtL_bVVac1p_dR3jxbRKUb-VpmcygpDG6QEyGZDgQYYJEMmWSReZhZ4Q/exec';
+    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbwhXXtMLhEZGHS9gb2AriaXnpu8EF6Nnq9qZRt4VyI6IfErcQx9eM-sBjiHMRIFRwVmAA/exec';
 
     // Вспомогательная функция санитизации для защиты от XSS
     function escapeHtml(str) {
@@ -4683,7 +4690,8 @@
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">💳 ' + escStatusPay + '</span>',
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📑 ' + escAvr + '</span>',
             '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📎 ' + escLegal + '</span>',
-            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" style="background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;font-size:11px;padding:3px 8px;margin-left:auto;" onclick="event.stopPropagation();confirmDeleteSZ(\'' + escNum + '\', \'' + (escTitle).replace(/'/g, "\\'") + '\')">🗑️ Удалить</button>') : ''),
+            (canRevokeSZ(item) ? ('<button type="button" class="btn" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:11px;padding:3px 8px;margin-left:auto;" onclick="event.stopPropagation();promptRevokeSZ(\'' + escNum + '\')">↩️ Отозвать</button>') : ''),
+            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" style="background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;font-size:11px;padding:3px 8px;' + (canRevokeSZ(item) ? '' : 'margin-left:auto;') + '" onclick="event.stopPropagation();confirmDeleteSZ(\'' + escNum + '\', \'' + (escTitle).replace(/'/g, "\\'") + '\')">🗑️ Удалить</button>') : ''),
           '</div>'
         ].join('');
 
@@ -4753,8 +4761,8 @@
       if (appr.indexOf('утверждено') !== -1) {
         return 'approved';
       }
-      // 5. В работе (документ на этапе подготовки / черновика / у самого автора / только запущен в работу)
-      if (appr.indexOf('в работе') !== -1 || appr.indexOf('черновик') !== -1 || appr.indexOf('формируется') !== -1 || (init && curr && (init === curr || init.indexOf(curr) !== -1 || curr.indexOf(init) !== -1))) {
+      // 5. В работе (документ на этапе подготовки / черновика / отозван автором / у самого автора / только запущен в работу)
+      if (appr.indexOf('в работе') !== -1 || appr.indexOf('черновик') !== -1 || appr.indexOf('отозван') !== -1 || appr.indexOf('формируется') !== -1 || (init && curr && (init === curr || init.indexOf(curr) !== -1 || curr.indexOf(init) !== -1))) {
         return 'in_progress';
       }
 
@@ -4817,11 +4825,17 @@
             var amountStr = (item.amount && item.amount > 0) ? ('<div style="font-size:12px;font-weight:800;color:var(--primary);margin-top:4px;">💰 ' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</div>') : '';
             
             var isRejected = (item.statusApproval || '').indexOf('Отклонено') !== -1;
-            var canResubmit = isRejected && currentUser && (
+            var isRevoked = (item.statusApproval || '').indexOf('Отозвано') !== -1;
+            var canResubmit = (isRejected || isRevoked) && currentUser && (
               currentUser.name === item.initiator || 
               (item.coExecutors || []).indexOf(currentUser.name) !== -1 || 
               isAdminUser(currentUser)
             );
+
+            var canRevoke = canRevokeSZ(item);
+            var revokeBtn = canRevoke 
+              ? ('<button type="button" class="btn-card-move-down" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca;" onclick="event.stopPropagation(); promptRevokeSZ(\'' + escNum + '\')" title="Отозвать служебную записку с согласования">↩️ Отозвать</button>') 
+              : '';
 
             var escNum = escapeHtml(item.number);
             var escTitle = escapeHtml(item.title);
@@ -4835,7 +4849,7 @@
               : '';
 
             var resubmitBtn = canResubmit 
-              ? ('<button type="button" class="btn-card-move-down" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa;" onclick="event.stopPropagation(); openEditRejectedSZModal(mockSZList.find(function(x){return x.number===\'' + escNum + '\';}))" title="Внести исправления">✏️ Исправить</button>') 
+              ? ('<button type="button" class="btn-card-move-down" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa;" onclick="event.stopPropagation(); openEditRejectedSZModal(mockSZList.find(function(x){return x.number===\'' + escNum + '\';}))" title="Внести правки и перезапустить">✏️ Исправить</button>') 
               : '';
 
             var moveDownBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); moveKanbanCardDown(\'' + escNum + '\')" title="Переместить карточку в самый низ колонки">⬇ Вниз</button>';
@@ -4864,7 +4878,7 @@
               html.push('</div>');
             }
 
-            var actionButtonsHtml = editDraftBtn + resubmitBtn + copyBtn + moveDownBtn;
+            var actionButtonsHtml = editDraftBtn + resubmitBtn + revokeBtn + copyBtn + moveDownBtn;
             if (actionButtonsHtml) {
               html.push('<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:flex-end;margin-top:7px;padding-top:6px;border-top:1px dashed var(--border);">' + actionButtonsHtml + '</div>');
             }
@@ -5030,7 +5044,8 @@
       if (!item) return;
       activeEditingRejectedSZ = item;
       document.getElementById('edit-sz-modal-title').textContent = 'Редактирование ' + item.number;
-      var rejReason = item.statusApproval || 'Замечания согласующего';
+      var isRevoked = (item.statusApproval || '').indexOf('Отозвано') !== -1;
+      var rejReason = isRevoked ? 'Документ отозван автором для внесения изменений' : (item.statusApproval || 'Замечания согласующего');
       document.getElementById('edit-sz-rejection-text').textContent = rejReason;
       document.getElementById('edit-sz-title-input').value = item.title || '';
       document.getElementById('edit-sz-body-input').value = item.body || item.title || '';
@@ -5073,9 +5088,9 @@
       closeModal('modal-edit-rejected-sz');
       closeModal('modal-detail');
 
+      try { localStorage.setItem('jm_cache_sz_list', JSON.stringify(mockSZList)); } catch(e) {}
       renderSZList();
-      awardGamificationXP(60, 'Оперативное исправление СЗ', 'Замечания устранены, СЗ ' + item.number + ' перезапущена');
-      showToast('🚀 СЗ ' + item.number + ' успешно обновлена и направлена на повторное согласование!');
+      showToast('🚀 СЗ ' + item.number + ' успешно обновлена и направлена на согласование!');
 
       if (SCRIPT_EXEC_URL) {
         fetch(SCRIPT_EXEC_URL, {
@@ -5091,6 +5106,83 @@
             route: item.routeList
           })
         }).catch(function(e) { console.warn('Resubmit SZ sync error:', e); });
+      }
+    }
+
+    // ==================== ОТЗЫВ ЗАПУЩЕННЫХ СЛУЖЕБНЫХ ЗАПИСОК ====================
+    function canRevokeSZ(item) {
+      if (!item || !currentUser) return false;
+      var appr = (item.statusApproval || '').toLowerCase();
+      var pay = (item.statusPayment || '').toLowerCase();
+      var leg = (item.statusLegal || '').toLowerCase();
+
+      // Нельзя отозвать, если уже утверждено, оплачено, отклонено, отозвано или в архиве
+      if (appr.indexOf('утверждено') !== -1 || 
+          appr.indexOf('отклонено') !== -1 || 
+          appr.indexOf('отозван') !== -1 || 
+          appr.indexOf('черновик') !== -1 ||
+          pay.indexOf('оплачено') !== -1 || 
+          pay.indexOf('отработано') !== -1 || 
+          leg.indexOf('в архиве') !== -1 || 
+          leg.indexOf('сдан в архив') !== -1) {
+        return false;
+      }
+
+      // Только на этапе рассмотрения/согласования
+      var isPending = appr.indexOf('на согласовании') !== -1 || 
+                      (item.currentApprover && item.currentApprover !== '-' && item.currentApprover !== 'Завершено');
+      if (!isPending) return false;
+
+      // Инициатор, со-исполнитель или администратор
+      return (
+        currentUser.name === item.initiator ||
+        (item.coExecutors || []).indexOf(currentUser.name) !== -1 ||
+        isAdminUser(currentUser)
+      );
+    }
+
+    function promptRevokeSZ(num) {
+      var it = mockSZList.find(function(x) { return x.number === num; });
+      if (!it) return;
+      var ok = confirm('Вы действительно хотите отозвать служебную записку ' + num + '?\n\nСогласование будет остановлено, а документ вернется в раздел «В работе», где вы сможете отредактировать его или удалить.');
+      if (ok) {
+        executeRevokeSZ(it);
+      }
+    }
+
+    function confirmRevokeActiveSZ() {
+      if (!activeDetailItem) return;
+      promptRevokeSZ(activeDetailItem.number);
+    }
+
+    function executeRevokeSZ(item, reason) {
+      if (!item) return;
+      var num = item.number;
+      item.statusApproval = '🛠️ В работе (Отозвано автором)';
+      item.currentApprover = item.initiator;
+      if (item.routeList && Array.isArray(item.routeList)) {
+        item.routeList.forEach(function(r) {
+          if (r.status.indexOf('✅') === -1) {
+            r.status = 'В очереди';
+          }
+        });
+      }
+      try { localStorage.setItem('jm_cache_sz_list', JSON.stringify(mockSZList)); } catch(e) {}
+      renderSZList();
+      closeModal('modal-detail');
+      showToast('↩️ Служебная записка ' + num + ' отозвана и возвращена в раздел «В работе»');
+
+      if (SCRIPT_EXEC_URL) {
+        fetch(SCRIPT_EXEC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'revoke_sz',
+            szNumber: num,
+            userFio: currentUser ? currentUser.name : item.initiator,
+            reason: reason || 'Отозвано автором через веб-приложение'
+          })
+        }).catch(function(e) { console.warn('Revoke sync error:', e); });
       }
     }
 
@@ -5711,16 +5803,25 @@
       document.getElementById('det-approval-actions').style.display = isMyTurn ? 'flex' : 'none';
       closeRejectReasonBox();
 
-      // Проверка на возможность редактирования отклоненной СЗ (Инициатор или Администратор)
+      // Кнопка отзыва СЗ автором
+      var revokeBar = document.getElementById('det-revoke-bar');
+      if (revokeBar) {
+        revokeBar.style.display = canRevokeSZ(item) ? 'block' : 'none';
+      }
+
+      // Проверка на возможность редактирования отклоненной или отозванной СЗ (Инициатор или Администратор)
       var rejBar = document.getElementById('det-rejected-resubmit-bar');
       var isRejected = (item.statusApproval || '').indexOf('Отклонено') !== -1;
-      var canEditRej = isRejected && isInitiatorOrManager;
+      var isRevoked = (item.statusApproval || '').indexOf('Отозвано') !== -1;
+      var canEditRej = (isRejected || isRevoked) && isInitiatorOrManager;
       if (rejBar) {
         if (canEditRej) {
           rejBar.style.display = 'block';
           var rejReasonEl = document.getElementById('det-rejected-reason-display');
           if (rejReasonEl) {
-            rejReasonEl.textContent = 'Причина отказа: ' + (item.statusApproval || 'Требуется исправление');
+            rejReasonEl.textContent = isRevoked 
+              ? 'Документ отозван автором с согласования. Вы можете скорректировать данные и запустить повторно.' 
+              : ('Причина отказа: ' + (item.statusApproval || 'Требуется исправление'));
           }
         } else {
           rejBar.style.display = 'none';
