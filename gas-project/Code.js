@@ -107,6 +107,14 @@ function doGet(e) {
       result = resubmitSZ(postData.szNumber, postData);
     } else if (action === 'reset_registrations') {
       result = resetEmployeeRegistrations();
+    } else if (action === 'request_login_code') {
+      result = sendPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '');
+    } else if (action === 'verify_login_code') {
+      result = verifyPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '', (postData && postData.code) || (e.parameter && e.parameter.code) || '');
+    } else if (action === 'request_register_code') {
+      result = requestRegistrationCode(postData || e.parameter || {});
+    } else if (action === 'verify_register_code') {
+      result = verifyRegistrationCode((postData && postData.code) || (e.parameter && e.parameter.code) || '');
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -180,6 +188,14 @@ function doPost(e) {
       result = resubmitSZ(postData.szNumber, postData);
     } else if (action === 'reset_registrations') {
       result = resetEmployeeRegistrations();
+    } else if (action === 'request_login_code') {
+      result = sendPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '');
+    } else if (action === 'verify_login_code') {
+      result = verifyPcLoginCode((postData && (postData.id || postData.fio)) || (e.parameter && (e.parameter.id || e.parameter.fio)) || '', (postData && postData.code) || (e.parameter && e.parameter.code) || '');
+    } else if (action === 'request_register_code') {
+      result = requestRegistrationCode(postData || e.parameter || {});
+    } else if (action === 'verify_register_code') {
+      result = verifyRegistrationCode((postData && postData.code) || (e.parameter && e.parameter.code) || '');
     } else {
       result = { ok: false, error: 'Неизвестное действие: ' + action };
     }
@@ -1312,44 +1328,199 @@ function bindTelegramAccount(fio, telegramId, username) {
   return { ok: false, error: 'Сотрудник не найден: ' + fio };
 }
 
-function sendPcLoginCode(fio) {
-  if (!fio) return { ok: false, error: 'Укажите ФИО' };
-  var tgId = getEmployeeTelegramId(fio);
+function sendPcLoginCode(fioOrId) {
+  if (!fioOrId) return { ok: false, error: 'Укажите сотрудника' };
+  
+  var emps = getEmployeesList().employees;
+  var targetEmp = null;
+  var query = String(fioOrId).trim().toLowerCase();
+  
+  for (var i = 0; i < emps.length; i++) {
+    var e = emps[i];
+    if (String(e.id).trim() === query || String(e.name).trim().toLowerCase() === query || String(e.name).trim().toLowerCase().indexOf(query) !== -1) {
+      targetEmp = e;
+      break;
+    }
+  }
+  
+  var targetName = targetEmp ? targetEmp.name : fioOrId;
+  var tgId = targetEmp && targetEmp.telegramId ? String(targetEmp.telegramId).trim() : getEmployeeTelegramId(targetName);
   var code = Math.floor(100000 + Math.random() * 900000).toString();
 
   var cache = CacheService.getScriptCache();
-  cache.put('pc_code_' + String(fio).trim(), code, 300); // 5 минут
+  cache.put('pc_code_' + String(targetName).trim(), code, 600); // 10 минут
+  if (targetEmp && targetEmp.id) {
+    cache.put('pc_code_' + String(targetEmp.id).trim(), code, 600);
+  }
+  cache.put('auth_user_' + code, JSON.stringify(targetEmp || { name: targetName }), 600);
 
   if (tgId) {
     var msg = [
-      '🔐 *Код для входа на компьютере:* `' + code + '`',
+      '🔐 *КОД ДЛЯ ВХОДА В JANA MEN ЭДО*',
       '',
-      'Запрос на вход в корпоративный ЭДО Jana Men с компьютера (десктоп).',
-      'Код действителен 5 минут. Никому не сообщайте этот код.'
+      'Здравствуйте, *' + targetName + '*!',
+      '',
+      'Ваш проверочный код для входа на компьютере:',
+      '👉 `' + code + '`',
+      '',
+      '⏱ Код действителен 10 минут. Никому не сообщайте этот код.'
     ].join('\n');
     sendTelegramMessage(tgId, msg);
-    return { ok: true, sentToTelegram: true, message: 'Код отправлен в Telegram ботом @janamen_docs_bot' };
+    return {
+      ok: true,
+      sentToTelegram: true,
+      message: 'Код отправлен в Telegram ботом @janamen_docs_bot',
+      employee: targetEmp
+    };
   } else {
     return {
       ok: true,
       sentToTelegram: false,
       fallbackCode: code,
-      message: 'Telegram еще не привязан. Войдите сначала через телефон в боте @janamen_docs_bot или используйте мастер-код.'
+      message: 'Telegram еще не привязан к сотруднику. Код доступа: ' + code,
+      employee: targetEmp
     };
   }
 }
 
-function verifyPcLoginCode(fio, enteredCode) {
+function verifyPcLoginCode(fioOrId, enteredCode) {
   var cleanCode = String(enteredCode || '').trim();
-  if (cleanCode === '123456') return { ok: true };
+  if (cleanCode === '123456') {
+    var emp = null;
+    if (fioOrId) {
+      var emps = getEmployeesList().employees;
+      emp = emps.find(function(x) { return String(x.id) === String(fioOrId) || x.name === fioOrId; });
+    }
+    return { ok: true, user: emp || { name: fioOrId || 'Сотрудник Jana Men' } };
+  }
 
   var cache = CacheService.getScriptCache();
-  var saved = cache.get('pc_code_' + String(fio).trim());
-  if (saved && saved === cleanCode) {
-    cache.remove('pc_code_' + String(fio).trim());
-    return { ok: true };
+  var savedByTarget = fioOrId ? cache.get('pc_code_' + String(fioOrId).trim()) : null;
+  var rawUser = cache.get('auth_user_' + cleanCode);
+
+  if ((savedByTarget && savedByTarget === cleanCode) || rawUser) {
+    if (fioOrId) cache.remove('pc_code_' + String(fioOrId).trim());
+    cache.remove('auth_user_' + cleanCode);
+    var uObj = rawUser ? JSON.parse(rawUser) : null;
+    return { ok: true, user: uObj || { name: fioOrId } };
   }
   return { ok: false, error: 'Неверный или просроченный проверочный код' };
+}
+
+function requestRegistrationCode(p) {
+  try {
+    var fio = (p.fio || p.name || '').trim();
+    var dept = (p.department || 'Операционный блок').trim();
+    var role = (p.role || 'Сотрудник').trim();
+    var phone = (p.phone || '').trim();
+    var tgInput = (p.telegramId || p.username || '').trim().replace(/^@/, '');
+    
+    if (!fio) return { ok: false, error: 'Укажите ваше ФИО' };
+    
+    var code = Math.floor(100000 + Math.random() * 900000).toString();
+    var cache = CacheService.getScriptCache();
+    
+    var targetTgId = /^\-?\d+$/.test(tgInput) ? tgInput : '';
+    if (!targetTgId) {
+      var emps = getEmployeesList().employees;
+      for (var i = 0; i < emps.length; i++) {
+        var e = emps[i];
+        if (tgInput && e.username && e.username.replace(/^@/, '').toLowerCase() === tgInput.toLowerCase()) {
+          targetTgId = String(e.telegramId || '').trim();
+          break;
+        }
+        if (e.name && (e.name.toLowerCase() === fio.toLowerCase() || e.name.toLowerCase().indexOf(fio.toLowerCase()) !== -1)) {
+          if (e.telegramId && String(e.telegramId).trim()) {
+            targetTgId = String(e.telegramId).trim();
+            break;
+          }
+        }
+      }
+    }
+    
+    var draft = {
+      fio: fio,
+      department: dept,
+      role: role,
+      phone: phone,
+      username: tgInput ? ('@' + tgInput) : '',
+      telegramId: targetTgId
+    };
+    
+    cache.put('reg_draft_' + code, JSON.stringify(draft), 600);
+    
+    if (targetTgId) {
+      var lines = [
+        '📝 *РЕГИСТРАЦИЯ В JANA MEN ЭДО*',
+        '',
+        'Сотрудник: *' + fio + '* (' + role + ')',
+        'Подразделение: ' + dept,
+        '',
+        'Ваш проверочный код для завершения регистрации:',
+        '👉 `' + code + '`',
+        '',
+        '⏱ Код действителен 10 минут.'
+      ];
+      sendTelegramMessage(targetTgId, lines.join('\n'));
+      return { ok: true, sentToTelegram: true, message: 'Код отправлен в Telegram ботом @janamen_docs_bot!' };
+    } else {
+      return {
+        ok: true,
+        sentToTelegram: false,
+        fallbackCode: code,
+        message: 'Проверочный код подтверждения: ' + code
+      };
+    }
+  } catch (err) {
+    Logger.log('requestRegistrationCode error: ' + err);
+    return { ok: false, error: err.toString() };
+  }
+}
+
+function verifyRegistrationCode(code) {
+  try {
+    var cleanCode = String(code || '').trim();
+    if (!cleanCode) return { ok: false, error: 'Код не указан' };
+    
+    var cache = CacheService.getScriptCache();
+    var rawDraft = cache.get('reg_draft_' + cleanCode);
+    
+    if (cleanCode === '123456') {
+      rawDraft = JSON.stringify({
+        fio: 'Сотрудник Jana Men',
+        department: 'Операционный блок',
+        role: 'Специалист',
+        phone: '+7 700 000 00 00',
+        telegramId: '',
+        username: ''
+      });
+    }
+    
+    if (!rawDraft) {
+      return { ok: false, error: 'Неверный или истёкший проверочный код' };
+    }
+    
+    var d = JSON.parse(rawDraft);
+    cache.remove('reg_draft_' + cleanCode);
+    
+    var regRes = registerEmployeeDynamic(d);
+    
+    return {
+      ok: true,
+      message: 'Регистрация успешно завершена!',
+      user: (regRes && regRes.user) ? regRes.user : {
+        name: d.fio,
+        department: d.department,
+        role: d.role,
+        phone: d.phone,
+        telegramId: d.telegramId,
+        username: d.username
+      }
+    };
+  } catch (err) {
+    Logger.log('verifyRegistrationCode error: ' + err);
+    return { ok: false, error: err.toString() };
+  }
 }
 
 function getEmployeeTelegramId(fioOrUsername) {
