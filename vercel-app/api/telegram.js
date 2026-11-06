@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   var update = req.body;
   
   // Forward to Google Apps Script without letting Telegram wait or receive a 302
-  var gasUrl = 'https://script.google.com/macros/s/AKfycbznJ8TdsEeUuX0fYAGZDyzdwIG9EzRJWA-Hc595DKjzZFdj97RQJzAegTATOhFi-C1zjg/exec';
+  var gasUrl = 'https://script.google.com/macros/s/AKfycbzOhjF0uFfxA7gtL_bVVac1p_dR3jxbRKUb-VpmcygpDG6QEyGZDgQYYJEMmWSReZhZ4Q/exec';
 
   try {
     if (update) {
@@ -19,7 +19,8 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(update),
-        redirect: 'follow'
+        redirect: 'follow',
+        signal: AbortSignal.timeout ? AbortSignal.timeout(9000) : undefined
       });
     }
   } catch (err) {

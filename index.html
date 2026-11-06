@@ -1064,17 +1064,12 @@
     /* Канбан доска реестра СЗ */
     .kanban-view-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      grid-template-columns: repeat(7, minmax(235px, 1fr));
       gap: 12px;
       align-items: flex-start;
       margin-top: 12px;
       overflow-x: auto;
-      padding-bottom: 12px;
-    }
-    @media (min-width: 1200px) {
-      .kanban-view-container {
-        grid-template-columns: repeat(7, minmax(215px, 1fr));
-      }
+      padding-bottom: 14px;
     }
     .kanban-column {
       background: var(--card-sub);
@@ -1088,7 +1083,8 @@
     .kanban-col-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+      gap: 6px;
       padding-bottom: 10px;
       margin-bottom: 10px;
       border-bottom: 2px solid var(--border);
@@ -2239,7 +2235,18 @@
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     }
 
-    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbznJ8TdsEeUuX0fYAGZDyzdwIG9EzRJWA-Hc595DKjzZFdj97RQJzAegTATOhFi-C1zjg/exec';
+    var SCRIPT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbzOhjF0uFfxA7gtL_bVVac1p_dR3jxbRKUb-VpmcygpDG6QEyGZDgQYYJEMmWSReZhZ4Q/exec';
+
+    // Вспомогательная функция санитизации для защиты от XSS
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
     // ==================== УПРАВЛЕНИЕ GEMINI API КЛЮЧОМ ====================
     function getActiveGeminiKey() {
@@ -2553,7 +2560,16 @@
       }
     ];
 
-    
+    try {
+      var cachedContracts = localStorage.getItem('jm_cache_contracts');
+      if (cachedContracts) {
+        var parsedContracts = JSON.parse(cachedContracts);
+        if (Array.isArray(parsedContracts) && parsedContracts.length > 0) {
+          mockContracts = parsedContracts;
+        }
+      }
+    } catch(eCachedCon) {}
+
     // ==================== СИНХРОНИЗАЦИЯ С GOOGLE ТАБЛИЦЕЙ (РЕЕСТР СЗ) ====================
     function loadSZListFromBackend() {
       if (!SCRIPT_EXEC_URL) return;
@@ -2604,6 +2620,7 @@
                 body: item.title
               };
             });
+            try { localStorage.setItem('jm_cache_sz_list', JSON.stringify(mockSZList)); } catch(e) {}
             renderSZList();
           }
         })
@@ -2662,6 +2679,7 @@
                 avrList: []
               };
             });
+            try { localStorage.setItem('jm_cache_contracts', JSON.stringify(mockContracts)); } catch(e) {}
             renderContractsList();
           }
         })
@@ -2747,6 +2765,16 @@
         body: "Прошу провести оплату по счету № 3 от 01.11.2026 г., выставленному от ИП «Алдажуманова А.Т.», за аренду помещения по адресу: ул. Анет Баба 9В, бизнес-центр «Өнер», 82 кабинет, которое используется в качестве основного склада компании в г. Астана."
       }
     ];
+
+    try {
+      var cachedSZ = localStorage.getItem('jm_cache_sz_list');
+      if (cachedSZ) {
+        var parsedSZ = JSON.parse(cachedSZ);
+        if (Array.isArray(parsedSZ) && parsedSZ.length > 0) {
+          mockSZList = parsedSZ;
+        }
+      }
+    } catch(eCachedSZ) {}
 
 // ==================== СИСТЕМА АВТОРИЗАЦИИ И РЕГИСТРАЦИИ ПО КОДУ TELEGRAM ====================
     var activeAuthUser = null;
@@ -4451,6 +4479,7 @@
           showToast('🚀 Документ сохранен: ' + fallbackNum);
         }
         mockSZList.unshift(localItem);
+        try { localStorage.setItem('jm_cache_sz_list', JSON.stringify(mockSZList)); } catch(e) {}
         renderSZList();
         switchTab('registry');
         loadSZListFromBackend();
@@ -4458,6 +4487,7 @@
       .catch(function(err) {
         console.warn('Backend save error:', err);
         mockSZList.unshift(localItem);
+        try { localStorage.setItem('jm_cache_sz_list', JSON.stringify(mockSZList)); } catch(e) {}
         renderSZList();
         showToast('🚀 Сохранено локально (' + fallbackNum + ')');
         switchTab('registry');
@@ -4620,28 +4650,40 @@
         if ((item.statusApproval || '').indexOf('Утверждено') !== -1) badgeClass = 'badge-approved';
         if ((item.statusApproval || '').indexOf('Отклонено') !== -1) badgeClass = 'badge-rejected';
 
-        var coExecHtml = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 Со-исполнители: ' + item.coExecutors.join(', ')) : '';
+        var escNum = escapeHtml(item.number);
+        var escTitle = escapeHtml(item.title);
+        var escDate = escapeHtml(item.date);
+        var escInit = escapeHtml(item.initiator);
+        var escDept = escapeHtml(item.department);
+        var escContract = escapeHtml(item.contract);
+        var escCp = escapeHtml(item.counterparty);
+        var escStatusAppr = escapeHtml(item.statusApproval);
+        var escStatusPay = escapeHtml(item.statusPayment);
+        var escAvr = escapeHtml(item.avrStatus);
+        var escLegal = escapeHtml(item.statusLegal);
+
+        var coExecHtml = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 Со-исполнители: ' + item.coExecutors.map(escapeHtml).join(', ')) : '';
 
         card.innerHTML = [
           '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">',
             '<div>',
-              '<span style="font-weight: 800; font-size: 14px; color: var(--primary);">' + item.number + '</span>',
-              '<span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">' + item.date + '</span>',
+              '<span style="font-weight: 800; font-size: 14px; color: var(--primary);">' + escNum + '</span>',
+              '<span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">' + escDate + '</span>',
             '</div>',
-            '<span class="status-badge ' + badgeClass + '">' + item.statusApproval + '</span>',
+            '<span class="status-badge ' + badgeClass + '">' + escStatusAppr + '</span>',
           '</div>',
-          '<div style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text);">' + item.title + '</div>',
+          '<div style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text);">' + escTitle + '</div>',
           '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.45;">',
-            '👤 Инициатор: <b>' + item.initiator + '</b> (' + item.department + ')',
+            '👤 Инициатор: <b>' + escInit + '</b> (' + escDept + ')',
             coExecHtml,
-            item.contract ? ('<br>📄 Договор: ' + item.contract) : '',
-            item.amount > 0 ? ('<br>💰 Сумма: <b style="color: var(--success);">' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</b>' + (item.counterparty ? ' (' + item.counterparty + ')' : '')) : '',
+            item.contract ? ('<br>📄 Договор: ' + escContract) : '',
+            item.amount > 0 ? ('<br>💰 Сумма: <b style="color: var(--success);">' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</b>' + (escCp ? ' (' + escCp + ')' : '')) : '',
           '</div>',
           '<div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; align-items: center;">',
-            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">💳 ' + item.statusPayment + '</span>',
-            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📑 ' + item.avrStatus + '</span>',
-            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📎 ' + item.statusLegal + '</span>',
-            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" style="background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;font-size:11px;padding:3px 8px;margin-left:auto;" onclick="event.stopPropagation();confirmDeleteSZ(\'' + item.number + '\', \'' + (item.title||'').replace(/'/g, "\\'") + '\')">🗑️ Удалить</button>') : ''),
+            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">💳 ' + escStatusPay + '</span>',
+            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📑 ' + escAvr + '</span>',
+            '<span style="background:var(--card-sub);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">📎 ' + escLegal + '</span>',
+            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" style="background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;font-size:11px;padding:3px 8px;margin-left:auto;" onclick="event.stopPropagation();confirmDeleteSZ(\'' + escNum + '\', \'' + (escTitle).replace(/'/g, "\\'") + '\')">🗑️ Удалить</button>') : ''),
           '</div>'
         ].join('');
 
@@ -4771,7 +4813,7 @@
           html.push('<div style="text-align:center;padding:24px 8px;color:var(--text-muted);font-size:11.5px;border:1px dashed var(--border);border-radius:6px;">Нет документов на этом этапе</div>');
         } else {
           col.items.forEach(function(item) {
-            var coExec = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 ' + item.coExecutors.join(', ')) : '';
+            var coExec = (item.coExecutors && item.coExecutors.length > 0) ? ('<br>👥 ' + item.coExecutors.map(escapeHtml).join(', ')) : '';
             var amountStr = (item.amount && item.amount > 0) ? ('<div style="font-size:12px;font-weight:800;color:var(--primary);margin-top:4px;">💰 ' + Number(item.amount).toLocaleString('ru-RU') + ' ₸</div>') : '';
             
             var isRejected = (item.statusApproval || '').indexOf('Отклонено') !== -1;
@@ -4781,37 +4823,44 @@
               isAdminUser(currentUser)
             );
 
+            var escNum = escapeHtml(item.number);
+            var escTitle = escapeHtml(item.title);
+            var escDate = escapeHtml(item.date);
+            var escInit = escapeHtml(item.initiator);
+            var escDept = escapeHtml(item.department);
+            var escApprover = escapeHtml(item.currentApprover);
+
             var adminDelCardBtn = (adminModeActive && isAdminUser(currentUser)) 
-              ? ('<button type="button" class="btn-card-del-action" onclick="event.stopPropagation(); confirmDeleteSZ(\'' + item.number + '\', \'' + (item.title || '').replace(/'/g, "\\'") + '\')" title="Удалить СЗ (Режим Администратора)">🗑️</button>') 
+              ? ('<button type="button" class="btn-card-del-action" onclick="event.stopPropagation(); confirmDeleteSZ(\'' + escNum + '\', \'' + (escTitle).replace(/'/g, "\\'") + '\')" title="Удалить СЗ (Режим Администратора)">🗑️</button>') 
               : '';
 
             var resubmitBtn = canResubmit 
-              ? ('<button type="button" class="btn-card-move-down" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa;" onclick="event.stopPropagation(); openEditRejectedSZModal(mockSZList.find(function(x){return x.number===\'' + item.number + '\';}))" title="Внести исправления">✏️ Исправить</button>') 
+              ? ('<button type="button" class="btn-card-move-down" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa;" onclick="event.stopPropagation(); openEditRejectedSZModal(mockSZList.find(function(x){return x.number===\'' + escNum + '\';}))" title="Внести исправления">✏️ Исправить</button>') 
               : '';
 
-            var moveDownBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); moveKanbanCardDown(\'' + item.number + '\')" title="Переместить карточку в самый низ колонки">⬇ Вниз</button>';
-            var copyBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); copySZAsTemplateByNumber(\'' + item.number + '\')" title="Создать похожую СЗ на основе этой">📋 Копия</button>';
+            var moveDownBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); moveKanbanCardDown(\'' + escNum + '\')" title="Переместить карточку в самый низ колонки">⬇ Вниз</button>';
+            var copyBtn = '<button type="button" class="btn-card-move-down" onclick="event.stopPropagation(); copySZAsTemplateByNumber(\'' + escNum + '\')" title="Создать похожую СЗ на основе этой">📋 Копия</button>';
 
             var isDraft = col.id === 'in_progress';
             var editDraftBtn = isDraft 
-              ? ('<button type="button" class="btn-card-move-down" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;font-weight:700;" onclick="event.stopPropagation(); copySZAsTemplateByNumber(\'' + item.number + '\')" title="Продолжить редактирование черновика">✏️ Черновик</button>') 
+              ? ('<button type="button" class="btn-card-move-down" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;font-weight:700;" onclick="event.stopPropagation(); copySZAsTemplateByNumber(\'' + escNum + '\')" title="Продолжить редактирование черновика">✏️ Черновик</button>') 
               : '';
 
-            html.push('<div class="kanban-card" draggable="true" ondragstart="onKanbanDragStart(event, \'' + item.number + '\')" ondragover="onKanbanDragOver(event)" ondrop="onKanbanDrop(event, \'' + item.number + '\')" ondragend="onKanbanDragEnd(event)" onclick="openSZDetailByNumber(\'' + item.number + '\')">');
+            html.push('<div class="kanban-card" draggable="true" ondragstart="onKanbanDragStart(event, \'' + escNum + '\')" ondragover="onKanbanDragOver(event)" ondrop="onKanbanDrop(event, \'' + escNum + '\')" ondragend="onKanbanDragEnd(event)" onclick="openSZDetailByNumber(\'' + escNum + '\')">');
             html.push('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">');
-            html.push('<span style="font-weight:800;font-size:12.5px;color:var(--primary);">' + item.number + '</span>');
+            html.push('<span style="font-weight:800;font-size:12.5px;color:var(--primary);">' + escNum + '</span>');
             html.push('<div style="display:flex;align-items:center;gap:5px;">');
-            html.push('<span style="font-size:10.5px;color:var(--text-muted);">' + item.date + '</span>');
+            html.push('<span style="font-size:10.5px;color:var(--text-muted);">' + escDate + '</span>');
             html.push(adminDelCardBtn);
             html.push('</div>');
             html.push('</div>');
-            html.push('<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.35;">' + item.title + '</div>');
-            html.push('<div style="font-size:11px;color:var(--text-muted);line-height:1.4;">👤 ' + item.initiator + ' (' + item.department + ')' + coExec + '</div>');
+            html.push('<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.35;">' + escTitle + '</div>');
+            html.push('<div style="font-size:11px;color:var(--text-muted);line-height:1.4;">👤 ' + escInit + ' (' + escDept + ')' + coExec + '</div>');
             html.push(amountStr);
 
             if (item.currentApprover && item.currentApprover !== '-' && item.currentApprover !== 'Завершено') {
-              html.push('<div style="font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Текущий согласующий: ' + item.currentApprover + '">');
-              html.push('<span>⏳</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>' + item.currentApprover + '</b></span>');
+              html.push('<div style="font-size:10.5px;background:var(--card-sub);padding:3px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Текущий согласующий: ' + escApprover + '">');
+              html.push('<span>⏳</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>' + escApprover + '</b></span>');
               html.push('</div>');
             }
 
@@ -4934,6 +4983,7 @@
       if (act.type === 'sz') {
         var idx = mockSZList.findIndex(function(x) { return x.number === act.number; });
         if (idx !== -1) mockSZList.splice(idx, 1);
+        try { localStorage.setItem('jm_cache_sz_list', JSON.stringify(mockSZList)); } catch(e) {}
         renderSZList();
         closeModal('modal-detail');
         showToast('🗑️ Служебная записка ' + act.number + ' удалена');
@@ -4942,12 +4992,18 @@
           fetch(SCRIPT_EXEC_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'delete_sz', szNumber: act.number })
+            body: JSON.stringify({
+              action: 'delete_sz',
+              szNumber: act.number,
+              adminUser: currentUser ? currentUser.name : '',
+              adminRole: (currentUser && currentUser.isAdmin) ? 'Администратор' : (currentUser ? currentUser.role : '')
+            })
           }).catch(function(e) { console.warn('Delete SZ sync error:', e); });
         }
       } else if (act.type === 'contract') {
         var cIdx = mockContracts.findIndex(function(x) { return x.number === act.number || x.id === act.id; });
         if (cIdx !== -1) mockContracts.splice(cIdx, 1);
+        try { localStorage.setItem('jm_cache_contracts', JSON.stringify(mockContracts)); } catch(e) {}
         renderContractsList();
         showToast('🗑️ Договор ' + act.number + ' удален из архива');
 
@@ -4955,7 +5011,13 @@
           fetch(SCRIPT_EXEC_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'delete_contract', contractNumber: act.number, contractId: act.id })
+            body: JSON.stringify({
+              action: 'delete_contract',
+              contractNumber: act.number,
+              contractId: act.id,
+              adminUser: currentUser ? currentUser.name : '',
+              adminRole: (currentUser && currentUser.isAdmin) ? 'Администратор' : (currentUser ? currentUser.role : '')
+            })
           }).catch(function(e) { console.warn('Delete contract sync error:', e); });
         }
       }
@@ -5104,6 +5166,7 @@
       };
 
       mockSZList.unshift(draftItem);
+      try { localStorage.setItem('jm_cache_sz_list', JSON.stringify(mockSZList)); } catch(e) {}
       renderSZList();
       switchTab('registry');
       finishSZSubmitReset();
@@ -5885,8 +5948,20 @@
         el.className = 'card';
         el.style.background = '#ffffff';
 
-        var displayTitle = c.title || (c.counterparty + ' — ' + c.subject);
-        var executorsHtml = (c.executors && c.executors.length > 0) ? ('👥 <b>Закрепленные исполнители:</b> ' + c.executors.join(', ')) : '';
+        var rawTitle = c.title || (c.counterparty + ' — ' + c.subject);
+        var displayTitle = escapeHtml(rawTitle);
+        var escNum = escapeHtml(c.number);
+        var escExtNum = escapeHtml(c.externalNumber);
+        var escBin = escapeHtml(c.bin);
+        var escSubj = escapeHtml(c.subject);
+        var escDate = escapeHtml(c.date);
+        var escValidUntil = escapeHtml(c.validUntil);
+        var escAmount = escapeHtml(c.amount);
+        var escDept = escapeHtml(c.department);
+        var escManager = escapeHtml(c.manager);
+        var escStatus = escapeHtml(c.status);
+
+        var executorsHtml = (c.executors && c.executors.length > 0) ? ('👥 <b>Закрепленные исполнители:</b> ' + c.executors.map(escapeHtml).join(', ')) : '';
 
         var avrItemsHtml = '';
         if (c.avrList && c.avrList.length > 0) {
@@ -5895,7 +5970,7 @@
             var avrBadge = avr.originalSubmitted 
               ? '<span class="status-badge badge-approved">✅ Оригинал сдан в бухгалтерию</span>' 
               : '<span class="status-badge badge-pending">⏳ Ожидается сдача оригинала</span>';
-            avrItemsHtml += '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #f1f5f9;"><span>' + avr.number + ' (' + avr.amount + ')</span>' + avrBadge + '</div>';
+            avrItemsHtml += '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #f1f5f9;"><span>' + escapeHtml(avr.number) + ' (' + escapeHtml(avr.amount) + ')</span>' + avrBadge + '</div>';
           });
           avrItemsHtml += '</div>';
         }
@@ -5905,22 +5980,22 @@
             '<div>',
               '<div style="font-size: 15px; font-weight: 800; color: var(--primary);">' + displayTitle + '</div>',
               '<div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">',
-                'Внутренний №: <span style="color: var(--text);">' + c.number + '</span>',
-                (c.externalNumber ? (' • Внешний №: <span style="color: var(--text);">' + c.externalNumber + '</span>') : ''),
-                (c.bin ? (' • БИН: <span style="color: var(--text);">' + c.bin + '</span>') : ''),
+                'Внутренний №: <span style="color: var(--text);">' + escNum + '</span>',
+                (c.externalNumber ? (' • Внешний №: <span style="color: var(--text);">' + escExtNum + '</span>') : ''),
+                (c.bin ? (' • БИН: <span style="color: var(--text);">' + escBin + '</span>') : ''),
               '</div>',
             '</div>',
             '<div style="text-align: right; flex-shrink: 0; margin-left: 8px;">',
               (isLawyer ? '<span class="status-badge badge-lawyer" style="margin-right: 4px;">⚖️ Юрист</span>' : ''),
-              '<span class="status-badge badge-approved">' + c.status + '</span>',
+              '<span class="status-badge badge-approved">' + escStatus + '</span>',
             '</div>',
           '</div>',
           '<div style="font-size: 12.5px; color: var(--text); margin-bottom: 8px; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45;">',
-            '📌 <b>Предмет / Назначение:</b> ' + c.subject,
+            '📌 <b>Предмет / Назначение:</b> ' + escSubj,
           '</div>',
           '<div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">',
-            'Срок: <b>' + c.date + ' – ' + c.validUntil + '</b> • Условия: <b style="color: var(--text);">' + c.amount + '</b> • Отдел: <b>' + c.department + '</b>',
-            '<br>Ответственный менеджер: ' + c.manager,
+            'Срок: <b>' + escDate + ' – ' + escValidUntil + '</b> • Условия: <b style="color: var(--text);">' + escAmount + '</b> • Отдел: <b>' + escDept + '</b>',
+            '<br>Ответственный менеджер: ' + escManager,
             (executorsHtml ? ('<br>' + executorsHtml) : ''),
           '</div>',
           avrItemsHtml,
@@ -5928,7 +6003,7 @@
             '<button class="btn btn-secondary" onclick="attachAvrModal(' + c.id + ')" style="font-size: 11.5px; padding: 7px 12px;">➕ Прикрепить АВР</button>',
             (c.fileUrl ? ('<a href="' + c.fileUrl + '" target="_blank" class="btn btn-secondary" style="font-size: 11.5px; padding: 7px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">☁️ Открыть на Диске</a>') : ''),
             '<button class="btn btn-secondary" onclick="downloadOrPreviewContract(' + c.id + ')" style="font-size: 11.5px; padding: 7px 12px;">📄 Скачать PDF</button>',
-            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" onclick="confirmDeleteContract(\'' + c.number + '\', ' + c.id + ', \'' + (displayTitle.replace(/'/g, "\\'")) + '\')" style="background:#fee2e2; border:1px solid #fca5a5; color:#dc2626; font-size:11.5px; padding:7px 12px; margin-left:auto;">🗑️ Удалить</button>') : ''),
+            ((adminModeActive && isAdminUser(currentUser)) ? ('<button type="button" class="btn" onclick="confirmDeleteContract(\'' + escNum + '\', ' + c.id + ', \'' + (rawTitle.replace(/'/g, "\\'")) + '\')" style="background:#fee2e2; border:1px solid #fca5a5; color:#dc2626; font-size:11.5px; padding:7px 12px; margin-left:auto;">🗑️ Удалить</button>') : ''),
           '</div>'
         ].join('');
         cont.appendChild(el);

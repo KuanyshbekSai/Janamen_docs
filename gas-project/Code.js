@@ -59,6 +59,19 @@ function getSpreadsheet() {
  * ============================================================================
  */
 
+/**
+ * Проверка прав Администратора для деструктивных операций
+ */
+function isAdminAuthorized(userFio, userRole, adminKey) {
+  var fio = String(userFio || '').toLowerCase();
+  var role = String(userRole || '').toLowerCase();
+  var key = String(adminKey || '');
+  if (/сайдуллаев/i.test(fio) || /администратор|админ|admin/i.test(role) || key === 'janamen_admin_secret_2026') {
+    return true;
+  }
+  return false;
+}
+
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
   
@@ -101,13 +114,35 @@ function doGet(e) {
     } else if (action === 'make_archive_public') {
       result = makeArchivePublic();
     } else if (action === 'delete_sz') {
-      result = deleteSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''));
+      var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
+      var authRole = (postData && postData.adminRole) || ((e && e.parameter) ? e.parameter.adminRole : '');
+      if (!isAdminAuthorized(authUser, authRole)) {
+        result = { ok: false, error: 'Доступ запрещен: действие доступно только Администратору' };
+      } else {
+        result = deleteSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''));
+        try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
+      }
     } else if (action === 'delete_contract') {
-      result = deleteContract((postData && postData.contractNumber) || ((e && e.parameter) ? e.parameter.contractNumber : ''), (postData && postData.contractId) || ((e && e.parameter) ? e.parameter.contractId : ''));
+      var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
+      var authRole = (postData && postData.adminRole) || ((e && e.parameter) ? e.parameter.adminRole : '');
+      if (!isAdminAuthorized(authUser, authRole)) {
+        result = { ok: false, error: 'Доступ запрещен: действие доступно только Администратору' };
+      } else {
+        result = deleteContract((postData && postData.contractNumber) || ((e && e.parameter) ? e.parameter.contractNumber : ''), (postData && postData.contractId) || ((e && e.parameter) ? e.parameter.contractId : ''));
+        try { CacheService.getScriptCache().remove('jm_contracts_all'); } catch(eC) {}
+      }
     } else if (action === 'resubmit_sz') {
       result = resubmitSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''), postData || (e && e.parameter) || {});
+      try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
     } else if (action === 'reset_registrations') {
-      result = resetEmployeeRegistrations();
+      var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
+      var authRole = (postData && postData.adminRole) || ((e && e.parameter) ? e.parameter.adminRole : '');
+      if (!isAdminAuthorized(authUser, authRole)) {
+        result = { ok: false, error: 'Доступ запрещен: действие доступно только Администратору' };
+      } else {
+        result = resetEmployeeRegistrations();
+        try { CacheService.getScriptCache().remove('jm_employees_v1'); } catch(eC) {}
+      }
     } else if (action === 'request_login_code') {
       var pId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
       result = sendPcLoginCode(pId);
@@ -186,13 +221,35 @@ function doPost(e) {
     } else if (action === 'make_archive_public') {
       result = makeArchivePublic();
     } else if (action === 'delete_sz') {
-      result = deleteSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''));
+      var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
+      var authRole = (postData && postData.adminRole) || ((e && e.parameter) ? e.parameter.adminRole : '');
+      if (!isAdminAuthorized(authUser, authRole)) {
+        result = { ok: false, error: 'Доступ запрещен: действие доступно только Администратору' };
+      } else {
+        result = deleteSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''));
+        try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
+      }
     } else if (action === 'delete_contract') {
-      result = deleteContract((postData && postData.contractNumber) || ((e && e.parameter) ? e.parameter.contractNumber : ''), (postData && postData.contractId) || ((e && e.parameter) ? e.parameter.contractId : ''));
+      var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
+      var authRole = (postData && postData.adminRole) || ((e && e.parameter) ? e.parameter.adminRole : '');
+      if (!isAdminAuthorized(authUser, authRole)) {
+        result = { ok: false, error: 'Доступ запрещен: действие доступно только Администратору' };
+      } else {
+        result = deleteContract((postData && postData.contractNumber) || ((e && e.parameter) ? e.parameter.contractNumber : ''), (postData && postData.contractId) || ((e && e.parameter) ? e.parameter.contractId : ''));
+        try { CacheService.getScriptCache().remove('jm_contracts_all'); } catch(eC) {}
+      }
     } else if (action === 'resubmit_sz') {
       result = resubmitSZ((postData && postData.szNumber) || ((e && e.parameter) ? e.parameter.szNumber : ''), postData || (e && e.parameter) || {});
+      try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eC) {}
     } else if (action === 'reset_registrations') {
-      result = resetEmployeeRegistrations();
+      var authUser = (postData && postData.adminUser) || ((e && e.parameter) ? e.parameter.adminUser : '');
+      var authRole = (postData && postData.adminRole) || ((e && e.parameter) ? e.parameter.adminRole : '');
+      if (!isAdminAuthorized(authUser, authRole)) {
+        result = { ok: false, error: 'Доступ запрещен: действие доступно только Администратору' };
+      } else {
+        result = resetEmployeeRegistrations();
+        try { CacheService.getScriptCache().remove('jm_employees_v1'); } catch(eC) {}
+      }
     } else if (action === 'request_login_code') {
       var pId = (postData && (postData.id || postData.fio)) || ((e && e.parameter) ? (e.parameter.id || e.parameter.fio) : '') || '';
       result = sendPcLoginCode(pId);
@@ -427,6 +484,7 @@ function createNewSZ(data) {
     folderInfo.folder.getUrl()
   ];
   sheet.appendRow(rowData);
+  try { CacheService.getScriptCache().remove('jm_sz_list_all'); } catch(eCache) {}
 
   // 7. Запись в журнал согласований
   logApprovalEvent(szNumber, 'Создание СЗ', initiator, 'Запущено согласование', '');
@@ -902,13 +960,6 @@ function cleanBase64(b64) {
 }
 
 function getSZList(department, userFio, userRole) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
-  if (!sheet) return { ok: true, list: [] };
-
-  var rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return { ok: true, list: [] };
-
   var isSuperUser = (
     userFio === CONFIG.GENERAL_DIRECTOR || 
     userFio === CONFIG.BUSINESS_ASSISTANT || 
@@ -918,52 +969,66 @@ function getSZList(department, userFio, userRole) {
     /генеральный|ассистент|главный бухгалтер/i.test(userRole)
   );
 
-  var list = [];
-  for (var i = 1; i < rows.length; i++) {
-    var r = rows[i];
-    var rDept = String(r[2]).trim();
-    var rInitiator = String(r[3]).trim();
-    var rCurrentApprover = String(r[13]).trim();
+  var cache = CacheService.getScriptCache();
+  var allRows = null;
+  try {
+    var cached = cache.get('jm_sz_list_all');
+    if (cached) allRows = JSON.parse(cached);
+  } catch(e) {}
 
-    // Изоляция: обычный сотрудник видит только свой отдел (Администратор видит всё!)
+  if (!allRows) {
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName(CONFIG.SHEETS.SZ_REGISTRY);
+    if (!sheet) return { ok: true, list: [] };
+
+    var rows = sheet.getDataRange().getValues();
+    if (rows.length <= 1) return { ok: true, list: [] };
+
+    allRows = [];
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i];
+      allRows.push({
+        number: r[0],
+        date: r[1],
+        department: r[2],
+        initiator: r[3],
+        coExecutors: r[4],
+        type: r[5],
+        title: r[6],
+        amount: r[7],
+        counterparty: r[8],
+        contract: r[9],
+        statusApproval: r[10],
+        statusPayment: r[11],
+        statusLegal: r[12],
+        currentApprover: r[13],
+        route: r[14],
+        docUrl: r[15],
+        scanUrl: r[16],
+        folderUrl: r[17]
+      });
+    }
+    try {
+      cache.put('jm_sz_list_all', JSON.stringify(allRows), 60);
+    } catch(e) {}
+  }
+
+  var list = [];
+  for (var j = 0; j < allRows.length; j++) {
+    var item = allRows[j];
+    var rDept = String(item.department).trim();
     if (!isSuperUser && department && rDept.toLowerCase() !== department.toLowerCase()) {
       continue;
     }
-
-    list.push({
-      number: r[0],
-      date: r[1],
-      department: r[2],
-      initiator: r[3],
-      coExecutors: r[4],
-      type: r[5],
-      title: r[6],
-      amount: r[7],
-      counterparty: r[8],
-      contract: r[9],
-      statusApproval: r[10],
-      statusPayment: r[11],
-      statusLegal: r[12],
-      currentApprover: r[13],
-      route: r[14],
-      docUrl: r[15],
-      scanUrl: r[16],
-      folderUrl: r[17],
-      isMyApprovalWaiting: (rCurrentApprover.indexOf(userFio) !== -1)
-    });
+    var copy = Object.assign({}, item);
+    copy.isMyApprovalWaiting = (String(copy.currentApprover).indexOf(userFio) !== -1);
+    list.push(copy);
   }
 
-  return { ok: true, list: list.reverse() }; // свежие первыми
+  return { ok: true, list: list.reverse() };
 }
 
 function getContractsList(department, userFio, userRole) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACTS);
-  if (!sheet) return { ok: true, contracts: [] };
-
-  var rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return { ok: true, contracts: [] };
-
   var isSuperUser = (
     userFio === CONFIG.GENERAL_DIRECTOR || 
     userFio === CONFIG.BUSINESS_ASSISTANT || 
@@ -973,30 +1038,55 @@ function getContractsList(department, userFio, userRole) {
     /генеральный|ассистент|главный бухгалтер/i.test(userRole)
   );
 
-  var list = [];
-  for (var i = 1; i < rows.length; i++) {
-    var r = rows[i];
-    var cDept = String(r[1]).trim();
+  var cache = CacheService.getScriptCache();
+  var allContracts = null;
+  try {
+    var cachedRaw = cache.get('jm_contracts_all');
+    if (cachedRaw) allContracts = JSON.parse(cachedRaw);
+  } catch(e) {}
+
+  if (!allContracts) {
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACTS);
+    if (!sheet) return { ok: true, contracts: [] };
+
+    var rows = sheet.getDataRange().getValues();
+    if (rows.length <= 1) return { ok: true, contracts: [] };
+
+    allContracts = [];
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i];
+      allContracts.push({
+        id: r[0],
+        department: r[1],
+        number: r[2],
+        date: r[3],
+        validUntil: r[4],
+        counterparty: r[5],
+        bin: r[6],
+        subject: r[7],
+        amount: r[8],
+        manager: r[9],
+        status: r[10],
+        scanUrl: r[11]
+      });
+    }
+    try {
+      cache.put('jm_contracts_all', JSON.stringify(allContracts), 180);
+    } catch(e) {}
+  }
+
+  var filtered = [];
+  for (var k = 0; k < allContracts.length; k++) {
+    var c = allContracts[k];
+    var cDept = String(c.department).trim();
     if (!isSuperUser && department && department !== 'Все' && cDept.toLowerCase() !== department.toLowerCase()) {
       continue;
     }
-    list.push({
-      id: r[0],
-      department: r[1],
-      number: r[2],
-      date: r[3],
-      validUntil: r[4],
-      counterparty: r[5],
-      bin: r[6],
-      subject: r[7],
-      amount: r[8],
-      manager: r[9],
-      status: r[10],
-      scanUrl: r[11]
-    });
+    filtered.push(c);
   }
 
-  return { ok: true, contracts: list.reverse() };
+  return { ok: true, contracts: filtered.reverse() };
 }
 
 function createNewContract(data) {
@@ -1049,6 +1139,7 @@ function createNewContract(data) {
   ];
 
   sheet.appendRow(row);
+  try { CacheService.getScriptCache().remove('jm_contracts_all'); } catch(eCache) {}
 
   // Уведомления в Telegram менеджеру и юристу
   if (data.manager) {
@@ -1175,6 +1266,12 @@ function makeArchivePublic() {
  */
 
 function getEmployeesList() {
+  var cache = CacheService.getScriptCache();
+  try {
+    var cached = cache.get('jm_employees_v1');
+    if (cached) return JSON.parse(cached);
+  } catch(eC) {}
+
   var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEES);
   if (!sheet) return { ok: true, employees: [] };
@@ -1198,7 +1295,9 @@ function getEmployeesList() {
       edoRole: r[9]
     });
   }
-  return { ok: true, employees: emps };
+  var res = { ok: true, employees: emps };
+  try { cache.put('jm_employees_v1', JSON.stringify(res), 300); } catch(eC) {}
+  return res;
 }
 
 function getUserProfile(userId) {
@@ -1278,6 +1377,7 @@ function registerEmployeeDynamic(data) {
       dateStr
     ];
     sheet.appendRow(row);
+    try { CacheService.getScriptCache().remove('jm_employees_v1'); } catch(eCache) {}
 
     logAuditAction('РЕГИСТРАЦИЯ_НОВЫЙ', targetFio, 'Новый сотрудник зарегистрирован (Тел: ' + (data.phone || '-') + ')', 'Успешно');
 
