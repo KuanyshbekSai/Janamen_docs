@@ -2205,10 +2205,14 @@
     }
 
     // ==================== УПРАВЛЕНИЕ GEMINI API КЛЮЧОМ ====================
+    function getBuiltinGeminiKey() {
+      return window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6JOZ6qCbNlleuAJAOFLaxziwkngagRWKb-TNhwLO0PvXw'].join('');
+    }
+
     function getActiveGeminiKey() {
       var saved = localStorage.getItem('JANAMEN_GEMINI_KEY');
-      if (saved && saved.trim()) return saved.trim();
-      return window.__GEMINI_KEY || ['AQ', '.', 'Ab8RN6JOZ6qCbNlleuAJAOFLaxziwkngagRWKb-TNhwLO0PvXw'].join('');
+      if (saved && saved.trim() && saved.trim().length > 15) return saved.trim();
+      return getBuiltinGeminiKey();
     }
 
     function openGeminiKeyModal() {
@@ -2227,10 +2231,51 @@
         showToast('✅ API ключ Gemini успешно сохранен!');
       } else {
         localStorage.removeItem('JANAMEN_GEMINI_KEY');
-        GEMINI_API_KEY = ['AQ', '.', 'Ab8RN6JOZ6qCbNlleuAJAOFLaxziwkngagRWKb-TNhwLO0PvXw'].join('');
+        GEMINI_API_KEY = getBuiltinGeminiKey();
         showToast('ℹ️ Возвращен стандартный ключ проекта');
       }
       closeModal('modal-gemini-key');
+    }
+
+    // Универсальный и отказоустойчивый парсер JSON-ответов от Gemini
+    function extractJsonFromGeminiResponse(data) {
+      if (!data) return null;
+      var rawText = '';
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+        var partsArr = data.candidates[0].content.parts;
+        for (var i = 0; i < partsArr.length; i++) {
+          if (partsArr[i].text && !partsArr[i].thought) {
+            rawText = partsArr[i].text;
+            break;
+          }
+        }
+        if (!rawText && partsArr[0] && partsArr[0].text) {
+          rawText = partsArr[0].text;
+        }
+      } else if (typeof data === 'string') {
+        rawText = data;
+      }
+
+      if (!rawText) return null;
+
+      // 1. Попытка через regex поиск первого { и последнего }
+      var jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch(e) {
+          console.warn('Regex match JSON parse error:', e);
+        }
+      }
+
+      // 2. Очистка от markdown code fences
+      try {
+        var clean = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        return JSON.parse(clean);
+      } catch(err) {
+        console.error('All JSON parse attempts failed:', err, 'Raw text:', rawText);
+        return null;
+      }
     }
 
     function testGeminiApiKey() {
@@ -3269,7 +3314,7 @@
 
       for (var i = 0; i < fileArray.length; i++) {
         var file = fileArray[i];
-        var compressed = await compressImageFileToJpeg(file, 1000, 0.72);
+        var compressed = await compressImageFileToJpeg(file, 1600, 0.82);
         if (compressed) {
           szUploadedFiles.push({
             id: 'sz_f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -3612,7 +3657,8 @@
     }
 
     function callGeminiDocComposer(raw, callback) {
-      if (!GEMINI_API_KEY) {
+      var activeKey = getActiveGeminiKey();
+      if (!activeKey) {
         callback(null);
         return;
       }
@@ -3625,7 +3671,7 @@
         '1. СТИЛЬ: Сухой, деловой, предельно лаконичный. БЕЗ «воды» и высокопарных слов.',
         '   ЗАПРЕЩЕНО писать: «для обеспечения непрерывной текущей операционной деятельности», «настоящим уведомляю», «прошу принять к сведению».',
         '   ЗАПРЕЩЕНО дублировать: «Прошу согласовать... Обоснование: Прошу согласовать...».',
-        '2. Если прикреплены изображения (счет на оплату, накладная, АВР, чеки): обязательно считай номер счета/акта, дату, контрагента, список позиций и точную сумму!',
+        '2. Если прикреплены документы (счет на оплату, договор, накладная, АВР, чеки): обязательно считай номер документа/акта, дату, контрагента, список позиций и точную сумму!',
         '3. Если есть перечень позиций с ценой и количеством: математически перемножь и выведи аккуратный нумерованный список: 1. Наименование — Кол-во шт. × Цена ₸ = Сумма ₸.',
         '4. СТРУКТУРА body:',
         '   - Одно краткое первое предложение (о чем просьба, кому и краткая цель).',
@@ -3651,21 +3697,24 @@
       var parts = [];
       if (szUploadedFiles && szUploadedFiles.length > 0) {
         szUploadedFiles.forEach(function(item) {
-          if (item.base64 && item.type && item.type.indexOf('image') !== -1) {
-            parts.push({
-              inlineData: {
-                mimeType: item.type || 'image/jpeg',
-                data: item.base64
-              }
-            });
+          if (item && item.base64) {
+            var m = item.type || (item.name && item.name.match(/\.pdf$/i) ? 'application/pdf' : 'image/jpeg');
+            if (m.indexOf('image') !== -1 || m === 'application/pdf') {
+              parts.push({
+                inlineData: {
+                  mimeType: m,
+                  data: item.base64
+                }
+              });
+            }
           }
         });
       }
       parts.push({
-        text: promptText + '\n\nЧерновик/описание от сотрудника:\n' + (raw || '(пользователь прикрепил скан документа счета/накладной/АВР, извлеки данные напрямую из изображения)')
+        text: promptText + '\n\nЧерновик/описание от сотрудника:\n' + (raw || '(пользователь прикрепил скан документа счета/накладной/АВР/договора, извлеки данные напрямую из прикрепленного файла)')
       });
 
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + GEMINI_API_KEY;
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + activeKey;
       var bodyPayload = {
         contents: [{ parts: parts }],
         generationConfig: {
@@ -3684,10 +3733,8 @@
         return res.json();
       })
       .then(function(data) {
-        var rawText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
-        if (rawText) {
-          var clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-          var parsed = JSON.parse(clean);
+        var parsed = extractJsonFromGeminiResponse(data);
+        if (parsed) {
           parsed.docTypeCategory = currentDocType;
           if (selectedContract) {
             parsed.contract = selectedContract.number + ' — ' + (selectedContract.counterparty || selectedContract.title || selectedContract.subject);
@@ -6031,10 +6078,10 @@
       }
     }
 
-    // Сжатие изображения через Canvas (уменьшает 3-4 МБ фото до 120-180 КБ JPEG 1200px без потери качества текста)
+    // Сжатие изображения через Canvas (до 1600px с качеством 0.82 для четкого считывания мелкого текста, реквизитов и БИН)
     function compressImageFileToJpeg(file, maxDimension, quality) {
-      maxDimension = maxDimension || 1200;
-      quality = quality || 0.8;
+      maxDimension = maxDimension || 1600;
+      quality = quality || 0.82;
       return new Promise(function(resolve) {
         if (!file) {
           resolve(null);
@@ -6055,7 +6102,7 @@
         }
 
         var isImg = file.type && file.type.indexOf('image') !== -1;
-        var isNamedImg = file.name && file.name.match(/\.(jpg|jpeg|png|heic|webp)$/i);
+        var isNamedImg = file.name && file.name.match(/\.(jpg|jpeg|png|heic|heif|webp)$/i);
 
         if (!isImg && !isNamedImg) {
           var rdr = new FileReader();
@@ -6096,8 +6143,9 @@
           var reader = new FileReader();
           reader.onload = function(e) {
             var b64 = e.target.result.split(',')[1] || '';
-            resolve({ mimeType: 'image/jpeg', base64: b64, dataUrl: e.target.result });
+            resolve({ mimeType: file.type || 'image/jpeg', base64: b64, dataUrl: e.target.result });
           };
+          reader.onerror = function() { resolve(null); };
           reader.readAsDataURL(file);
         };
         img.src = url;
@@ -6109,12 +6157,12 @@
       if (!files || files.length === 0) return;
 
       var fileArray = Array.from(files);
-      updateAiProgress(10, '📷 Подготовка и сжатие страниц (0 из ' + fileArray.length + ')...');
+      updateAiProgress(10, '📷 Подготовка и оптимизация страниц (0 из ' + fileArray.length + ')...');
 
       for (var i = 0; i < fileArray.length; i++) {
         var file = fileArray[i];
-        updateAiProgress(10 + Math.round(((i + 1) / fileArray.length) * 30), '📷 Сжатие страницы ' + (i + 1) + ' из ' + fileArray.length + '...');
-        var compressed = await compressImageFileToJpeg(file, 1000, 0.72);
+        updateAiProgress(10 + Math.round(((i + 1) / fileArray.length) * 30), '📷 Обработка страницы ' + (i + 1) + ' из ' + fileArray.length + '...');
+        var compressed = await compressImageFileToJpeg(file, 1600, 0.82);
         if (compressed) {
           newContractUploadedFiles.push({
             id: 'nc_f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -6222,38 +6270,39 @@
       }
     }
 
-    function callGeminiMultiPageContractVision(filesList, activeKey) {
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + activeKey;
+    function callGeminiMultiPageContractVision(filesList, activeKey, isRetry) {
+      var keyToUse = activeKey || getActiveGeminiKey();
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + keyToUse;
       
       var systemPrompt = [
         'Ты старший корпоративный юрист компании JANAMEN.',
-        'Перед тобой сканы официального договора (страницы 1, 2, 3 и т.д.).',
+        'Перед тобой официальный договор (сканы страниц или PDF).',
         '',
         'СТРОГИЕ ПРАВИЛА ИЗВЛЕЧЕНИЯ ДАННЫХ:',
         '1. СТОРОНЫ ДОГОВОРА (КТО КОНТРАГЕНТ):',
         '   - В договоре участвуют две стороны: наша компания (ТОО «Jana Men» или ИП «JANAMEN HEALTH») и Контрагент.',
         '   - В поле "counterparty" ОБЯЗАТЕЛЬНО укажи ВТОРУЮ СТОРОНУ сделки (Контрагента), а НЕ Jana Men!',
-        '   - Пример: ТОО «Сиба Групп Казахстан» (а не ИП JANAMEN HEALTH).',
+        '   - Пример: ТОО «Сиба Групп Казахстан» или ИП «NURMOLDA».',
         '',
         '2. БИН / ИИН КОНТРАГЕНТА:',
         '   - Найди в разделе реквизитов, печатях или штампах БИН именно КОНТРАГЕНТА (12 цифр).',
         '   - НЕ указывай БИН/ИИН Jana Men (610531400794)!',
         '',
         '3. ВНЕШНИЙ НОМЕР ДОГОВОРА:',
-        '   - Найди оригинальный исходящий номер договора из шапки (например: 80132413 или № 105/26).',
+        '   - Найди оригинальный исходящий номер договора из шапки (например: 80132413 или № 105/26). Если номер не указан явно, напиши "б/н".',
         '',
         '4. ПРЕДМЕТ ДОГОВОРА (ТОЧНО И ЕМКО):',
-        '   - На что именно договор: аренда оборудования, поставка товаров, оказание услуг (например: Аренда настольной кофемашины LF-400 и поставка порционных капсул).',
+        '   - На что именно договор: аренда оборудования, поставка товаров, оказание услуг (например: Аренда настольной кофемашины LF-400 и поставка капсул).',
         '',
         '5. СУММА И УСЛОВИЯ ОПЛАТЫ:',
-        '   - Точная стоимость, тарифная сетка или ежемесячный платеж (например: 13 500 ₸ / месяц или 250 000 ₸ за единицу).',
+        '   - Точная стоимость или ежемесячный платеж (например: 28 000 ₸ / месяц или 250 000 ₸).',
         '',
         '6. ДАТЫ:',
         '   - Дата подписания договора (ДД.ММ.ГГГГ).',
         '   - Срок окончания действия (ДД.ММ.ГГГГ или "До полного исполнения обязательств").',
         '',
         '7. ОТДЕЛ:',
-        '   - Определи отдел: Операционный блок | Отдел маркетинга | Отдел продаж | Финансовый блок | Административный блок.',
+        '   - Определи отдел: Операционный блок | Отдел маркетинга | Отдел продаж | Финансовый блок | Административный блок | Отдел логистики.',
         '',
         'Верни СТРОГО валидный JSON следующей схемы без markdown и без лишнего текста:',
         '{',
@@ -6270,8 +6319,8 @@
 
       var parts = [];
       var hasPdf = false;
-      filesList.forEach(function(item) {
-        if (item.base64) {
+      (filesList || []).forEach(function(item) {
+        if (item && item.base64) {
           var mType = item.type;
           if (!mType || mType === 'application/octet-stream') {
             mType = (item.name && item.name.match(/\.pdf$/i)) ? 'application/pdf' : 'image/jpeg';
@@ -6285,6 +6334,13 @@
           });
         }
       });
+
+      if (parts.length === 0) {
+        var statusEl = document.getElementById('nc-ai-status-text');
+        if (statusEl) statusEl.innerHTML = '⚠️ Файл не содержит данных изображения или PDF. Попробуйте выбрать другой файл.';
+        return;
+      }
+
       parts.push({ text: systemPrompt });
 
       updateAiProgress(70, hasPdf ? '⚡ Умный анализ PDF-договора, сторон, БИН и сумм...' : '⚡ Распознавание сторон, БИН, сумм и предмета...');
@@ -6303,15 +6359,21 @@
         body: JSON.stringify(bodyPayload)
       })
       .then(function(res) {
-        if (!res.ok) throw new Error('Код ошибки API: ' + res.status);
+        if (!res.ok) {
+          var builtin = getBuiltinGeminiKey();
+          if (!isRetry && keyToUse !== builtin && (res.status === 400 || res.status === 403 || res.status === 402)) {
+            console.warn('Custom Gemini key failed with status ' + res.status + ', retrying with builtin project key...');
+            return callGeminiMultiPageContractVision(filesList, builtin, true);
+          }
+          throw new Error('Код ошибки API: ' + res.status);
+        }
         return res.json();
       })
       .then(function(data) {
-        var rawText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
-        if (rawText) {
+        if (!data) return;
+        var parsed = extractJsonFromGeminiResponse(data);
+        if (parsed) {
           updateAiProgress(95, '📝 Заполнение карточки договора...');
-          var clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-          var parsed = JSON.parse(clean);
           applyContractParsedData(parsed);
 
           setTimeout(function() {
@@ -6319,7 +6381,7 @@
             showToast('✅ Договор успешно распознан!');
           }, 400);
         } else {
-          throw new Error('Пустой ответ модели');
+          throw new Error('Не удалось извлечь реквизиты из документа');
         }
       })
       .catch(function(err) {
@@ -6328,7 +6390,7 @@
         var percentEl = document.getElementById('nc-ai-percent');
         var bar = document.getElementById('nc-ai-progress-bar');
         if (statusEl) {
-          statusEl.innerHTML = '❌ <span style="color:#b91c1c;">Ошибка считывания: ' + err.message + '</span> <a href="javascript:void(0)" onclick="openGeminiKeyModal()" style="color:#2563eb;font-weight:700;margin-left:6px;text-decoration:underline;">Проверить ключ</a>';
+          statusEl.innerHTML = '❌ <span style="color:#b91c1c;">Ошибка считывания: ' + err.message + '</span> <button type="button" onclick="analyzeContractWithAI(newContractUploadedFiles)" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;margin-left:6px;cursor:pointer;">🔄 Повторить</button>';
         }
         if (percentEl) percentEl.textContent = 'Ошибка';
         if (bar) {
@@ -6710,7 +6772,8 @@
         dataUrl: compressed ? compressed.dataUrl : ''
       };
 
-      if (!GEMINI_API_KEY) {
+      var activeKey = getActiveGeminiKey();
+      if (!activeKey) {
         if (statusBox) statusBox.style.display = 'none';
         return;
       }
@@ -6741,7 +6804,7 @@
         '}'
       ].join('\n');
 
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + GEMINI_API_KEY;
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + activeKey;
       var bodyPayload = {
         contents: [{
           parts: [
@@ -6770,11 +6833,8 @@
         return res.json();
       })
       .then(function(data) {
-        var rawText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
-        if (rawText) {
-          var clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-          var parsed = JSON.parse(clean);
-
+        var parsed = extractJsonFromGeminiResponse(data);
+        if (parsed) {
           var dt = parsed.docType || 'Акт';
           var num = (parsed.number || '').trim();
           var dDate = (parsed.date || '').trim();
@@ -6788,6 +6848,8 @@
             statusText.innerHTML = '✅ <b style="color:#15803d;">Документ распознан:</b> ' + fullNum + ' (' + amtStr + ')';
           }
           showToast('✅ Реквизиты ' + dt + ' считаны!');
+        } else {
+          throw new Error('Пустой ответ');
         }
       })
       .catch(function(err) {
